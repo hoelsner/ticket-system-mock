@@ -1,0 +1,85 @@
+name: "u_${USER}_itoticket_dev"
+
+x-buildargs-config: &buildargs-config
+  BUILD_VERSION: "development"
+  REQUIREMENTS_FILE: "requirements.txt"
+  COMMIT_ID: "devonly"
+  UID: "1000"
+  GID: "1000"
+
+x-app-config: &app-config
+  POSTGRES_PASSWORD: "PlsChgMePostgres"
+  POSTGRES_USER: "itoticketing"
+  POSTGRES_DB: "itoticketing"
+  CACHE_PASSWORD: "PlsChgMeCache"
+  DJANGO_DEBUG: "True"
+
+services:
+  workspace:
+    image: localhost.local/itoticketing-dev:latest
+    build:
+      context: ../..
+      dockerfile: .devcontainer/Dockerfile
+      args: *buildargs-config
+    command: sleep infinity
+    environment:
+      <<: *app-config
+    volumes:
+      - ../../..:/workspaces:cached
+    depends_on:
+      - database
+      - cache
+    networks:
+      - dev_internal
+
+  webapp:
+    image: localhost.local/itoticketing-dev:latest
+    build:
+      context: ../..
+      dockerfile: .devcontainer/Dockerfile
+      args: *buildargs-config
+    working_dir: /workspace
+    # run a development server for django and make it available on port 8000
+    command: '/bin/bash -c "make webapp-runserver"'
+    environment:
+      <<: *app-config
+    volumes:
+      - ../..:/workspace:cached
+    depends_on:
+      - database
+      - cache
+    networks:
+      - dev_internal
+
+  database:
+    image: postgres:18
+    environment:
+      <<: *app-config
+    command: "postgres -c 'max_connections=1000' -c 'tcp_keepalives_idle=120' -c 'tcp_keepalives_interval=15' -c 'tcp_keepalives_count=4'"
+    #ports:
+    #  - "5432:5432"
+    networks:
+      - dev_internal
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+  cache:
+    image: redis:8
+    environment:
+      <<: *app-config
+    networks:
+      - dev_internal
+    command: "redis-server --save 900 1 --save 300 10 --save 60 10000 --appendonly yes --appendfsync everysec --no-appendfsync-on-rewrite yes --tcp-keepalive 300 --loglevel warning --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${CACHE_PASSWORD:-PlsChgMeRedis}"
+    volumes:
+      - redis-data:/data
+
+    #ports:
+    #  - "6379:6379"
+
+networks:
+  dev_internal:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

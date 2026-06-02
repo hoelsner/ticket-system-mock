@@ -1,0 +1,46 @@
+{
+  "name": "itoticket-test",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "LOCAL_WORKSPACE_BASENAME": "${localWorkspaceFolderBasename}",
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+    "DJANGO_SETTINGS_MODULE": "djangoapp.settings",
+    "DJANGO_BASE_DATA_PATH": "/workspaces/${localWorkspaceFolderBasename}/data/test",
+    "DJANGO_DEBUG": "1",
+    "COMPOSE_PROJECT_NAME": "u_${localEnv:USER}_itoticket_test",
+    "DEVCONTAINER_PROFILE": "test"
+  },
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "COMPOSE_PROJECT_NAME": "u_${localEnv:USER}_itoticket_test",
+    "COMPOSE_FILE": "/workspaces/${localWorkspaceFolderBasename}/.devcontainer/test/docker-compose.yml",
+    "DEVCONTAINER_PROFILE": "test"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:2.0.0": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.14"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:3.0.1": {
+      "version": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "EditorConfig.EditorConfig",
+      ]
+    }
+  },
+  "postCreateCommand": "./.devcontainer/test/postCreateCommand.sh"
+}

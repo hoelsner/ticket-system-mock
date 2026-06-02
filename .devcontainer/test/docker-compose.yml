@@ -1,0 +1,27 @@
+name: "u_${USER}_itoticket_test"
+
+x-buildargs-config: &buildargs-config
+  BUILD_VERSION: "test"
+  REQUIREMENTS_FILE: "requirements.txt"
+  COMMIT_ID: "testonly"
+  UID: "1000"
+  GID: "1000"
+
+x-app-config: &app-config
+  POSTGRES_PASSWORD: "PlsChgMeDatabase"
+  POSTGRES_USER: "itoticketing"
+  POSTGRES_DB: "itoticketing"
+  CACHE_PASSWORD: "PlsChgMeCache"
+
+services:
+  workspace:
+    image: localhost.local/itoticketing-test:latest
+    build:
+      context: ../..
+      dockerfile: .devcontainer/Dockerfile
+      args: *buildargs-config
+    command: sleep infinity
+    environment:
+      <<: *app-config
+    volumes:
+      - ../../..:/workspaces:cached

@@ -1,0 +1,49 @@
+{
+  "name": "itoticket-development",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "LOCAL_WORKSPACE_BASENAME": "${localWorkspaceFolderBasename}",
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+    "DJANGO_SETTINGS_MODULE": "djangoapp.settings",
+    "DJANGO_BASE_DATA_PATH": "/workspaces/${localWorkspaceFolderBasename}/data/development",
+    "DJANGO_DEBUG": "1",
+    "COMPOSE_PROJECT_NAME": "u_${localEnv:USER}_itoticket_dev",
+    "DEVCONTAINER_PROFILE": "development"
+  },
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "COMPOSE_PROJECT_NAME": "u_${localEnv:USER}_itoticket_dev",
+    "COMPOSE_FILE": "/workspaces/${localWorkspaceFolderBasename}/.devcontainer/development/docker-compose.yml",
+    "DEVCONTAINER_PROFILE": "development"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:2.0.0": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.14"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "EditorConfig.EditorConfig",
+        "ms-vscode.vscode-chat-customizations-evaluations",
+        "tamasfe.even-better-toml",
+        "eeyore.yapf"
+      ]
+    }
+  },
+  "postCreateCommand": "./.devcontainer/development/postCreateCommand.sh"
+}

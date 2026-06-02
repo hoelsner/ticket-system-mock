@@ -1,0 +1,1 @@
+# custom n8n node for the application

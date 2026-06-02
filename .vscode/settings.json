@@ -1,0 +1,69 @@
+{
+    "ruff.configuration": "${workspaceFolder}/.ruff.toml",
+    "ruff.exclude": [],
+    "[python]": {
+        "editor.formatOnSaveMode": "file",
+        "editor.formatOnType": false,
+        // For formatting with YAPF install extension: https://marketplace.visualstudio.com/items?itemName=eeyore.yapf
+        // Then use 'eeyore.yapf' as below for editor.defaultFormatter:
+        // "editor.defaultFormatter": "eeyore.yapf",
+        // For formatting with Ruff install extension: https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff
+        // Then use 'charliermarsh.ruff' as below for editor.defaultFormatter:
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff",
+    },
+    "ruff.nativeServer": "on",
+    "ruff.format.preview": true,
+    "[markdown]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/src/webapp"
+    ],
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    "github.copilot.chat.scopeSelection": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "github.copilot.chat.codesearch.enabled": true,
+    "github.copilot.chat.notebook.followCellExecution.enabled": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "github.copilot.renameSuggestions.triggerAutomatically": true,
+    "chat.tools.terminal.autoApprove": {
+        "make": true,
+        "docker compose": true,
+        "printf": true
+    },
+    "chat.agent.sandbox.fileSystem.linux": {
+        "denyRead": [],
+        "allowWrite": [
+            ".",
+            "/tmp"
+        ],
+        "denyWrite": []
+    },
+    "chat.agent.sandbox.fileSystem.mac": {
+        "denyRead": [],
+        "allowWrite": [
+            ".",
+            "/tmp"
+        ],
+        "denyWrite": []
+    },
+    "chat.agent.deniedNetworkDomains": [],
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    "chat.agent.sandbox.enabled": "off",
+    "chat.planAgent.defaultModel": "GPT-5.4 (copilot)",
+    "chat.useNestedAgentsMdFiles": true,
+    "chat.experimental.useSkillAdherencePrompt": true,
+    "inlineChat.defaultModel": "GPT-5.4 (copilot)"
+}
