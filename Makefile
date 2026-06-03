@@ -1,4 +1,4 @@
-check: clean webapp-compile webapp-complexity-check webapp-bandit-tests webapp-unittest
+check: clean validate-bash webapp-compile webapp-complexity-check webapp-bandit-tests webapp-unittest
 test: clean webapp-test-coverage
 
 webapp-runserver:
@@ -9,6 +9,9 @@ webapp-restart-devserver:
 
 clean:
 	@./scripts/clean_directories.bash
+
+validate-bash:
+	@./scripts/validate_bash.bash
 
 webapp-compile:
 	@./scripts/webapp/compile.bash

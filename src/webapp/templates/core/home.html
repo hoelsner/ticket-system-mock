@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header>
+    <h1>IT Operation Ticketing Demo Service</h1>
+    <p>Signed in as {{ user.username }}</p>
+  </header>
+
+  <c-panel title="Authenticated User Frontend">
+    All user frontend views are protected with Django session authentication.
+  </c-panel>
+
+  <p>
+    The admin frontend is available under <a href="/admin/">/admin/</a> and the
+    REST API is available under <a href="/api/docs">/api/docs</a>.
+  </p>
+
+  <form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">Sign out</button>
+  </form>
+{% endblock %}

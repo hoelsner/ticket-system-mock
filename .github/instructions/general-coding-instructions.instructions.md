@@ -39,3 +39,9 @@ If you encounter errors, fix them before proceeding to the next step.
 
 8. Document your code and any important decisions or assumptions
 9. check for documentation drift and update the documentation if needed
+10. check for common patterns and guidelines and update the instructions if needed
+
+## Common Principles
+
+- avoid unnecessary abstractions and complexity; prefer simple, direct solutions that are easy to understand and maintain
+- avoid duplicated knowledge; if you find yourself copying and pasting code or explanations, consider whether there is a better way to structure the code or documentation to keep the information in one place

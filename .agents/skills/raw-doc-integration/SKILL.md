@@ -1,7 +1,7 @@
 ---
 name: raw-doc-integration
 description: 'Integrate source documents from .raw into the project documentation. Use when importing, classifying, rewriting, or placing raw markdown into docs/development, docs/architecture, docs/external, or docs/user.'
-argument-hint: 'Describe which .raw files to integrate and whether to classify only or also rewrite and place them'
+argument-hint: 'Describe which .raw files to integrate'
 disable-model-invocation: true
 user-invocable: true
 ---
@@ -83,6 +83,7 @@ Typical signals:
 
 ## Procedure
 
+1. read the `UBIQUITOUS_LANGUAGE.md` file for this repository to understand the shared terminology and naming conventions
 1. Read the requested files from `.raw/`.
 2. For each file, identify the primary audience and the primary question it answers.
 3. Classify the file using the documentation-area rules above.
@@ -95,6 +96,7 @@ Typical signals:
 6. Save the result under the chosen docs subtree using a stable, descriptive markdown filename.
 7. Add or update nearby index or navigation files if that docs subtree already uses them.
 8. Report the final placement decisions and any unresolved ambiguity.
+9. Move the processed files to `.raw/done/`
 
 ## Decision Check
 
@@ -107,16 +109,6 @@ Use this quick discriminator before placing a document:
 
 If two areas seem plausible, choose the one that best matches the document's dominant purpose and move the remaining material into a separate follow-up document.
 
-## Current `.raw/` Mapping For This Repository
-
-Based on the current source files:
-
-- `.raw/product-overview.md` -> `docs/user/` because it describes product purpose, capabilities, workflow phases, and target users.
-- `.raw/application-tech-stack.md` -> `docs/external/` because it is primarily a dependency and technology reference for the stack used by the application.
-- `.raw/deployment-structure.md` -> `docs/architecture/` because it describes runtime roles, deployment topology, shared volumes, and container responsibilities.
-
-No current `.raw/` source clearly belongs in `docs/development/`.
-
 ## Quality Criteria
 
 The integration is complete when:
@@ -128,6 +120,10 @@ The integration is complete when:
 - placement decisions and remaining gaps are summarized clearly
 - if the document contains multiple concerns, it is split into separate documents that each fit a single area
 - if the document contains guidelines, principles and best-practices, extract the key facts and common information and place it in the most relevant area, then link to it from the other areas as needed
+
+## Constraints
+
+- if the terminology is not aligned with the current project, propose the changes to the user and ask for clarification before rewriting
 
 ## Output Expectations
 

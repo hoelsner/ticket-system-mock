@@ -9,7 +9,6 @@
     "LOCAL_WORKSPACE_BASENAME": "${localWorkspaceFolderBasename}",
     "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
     "DJANGO_SETTINGS_MODULE": "djangoapp.settings",
-    "DJANGO_BASE_DATA_PATH": "/workspaces/${localWorkspaceFolderBasename}/data/development",
     "DJANGO_DEBUG": "1",
     "COMPOSE_PROJECT_NAME": "u_${localEnv:USER}_itoticket_dev",
     "DEVCONTAINER_PROFILE": "development"

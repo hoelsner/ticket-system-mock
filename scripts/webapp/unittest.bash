@@ -14,6 +14,25 @@ if [[ ! -x "$python_bin" ]]; then
     exit 1
 fi
 
+collect_test_labels() {
+    local test_packages=()
+
+    while IFS= read -r init_file; do
+        local rel_path module_name
+
+        rel_path="${init_file#"$webapp_dir/"}"
+        module_name="${rel_path%/__init__.py}"
+        module_name="${module_name//\//.}"
+        test_packages+=("$module_name")
+    done < <(find "$webapp_dir/djangoapp" -type f -path "*/tests/__init__.py" | sort)
+
+    if [[ ${#test_packages[@]} -eq 0 ]]; then
+        return 1
+    fi
+
+    printf '%s\n' "${test_packages[@]}"
+}
+
 # Runs a command silently; only prints output if the command fails.
 run_silent() {
     local tmpfile
@@ -30,4 +49,11 @@ run_silent() {
 }
 
 printf "running unit tests... "
-run_silent env "$python_bin" manage.py test --noinput
+mapfile -t test_labels < <(collect_test_labels)
+
+if [[ ${#test_labels[@]} -eq 0 ]]; then
+    echo "no internal tests packages found under $webapp_dir/djangoapp"
+    exit 1
+fi
+
+run_silent env "$python_bin" manage.py test --noinput "${test_labels[@]}"
