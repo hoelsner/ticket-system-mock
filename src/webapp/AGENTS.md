@@ -14,6 +14,8 @@
 - the entire application must support multiple languages using Django's built-in i18n approach
 - the login or sign-up page must use a split layout with a functional left panel and a contextual right-side product illustration
 - the authenticated application must use a top-down shell with a persistent top navigation bar, a left burger menu for collapsible detailed navigation, a top-right utility area, and a main content area for page-specific workflows
+- when building or restyling frontend screens, keep the repository layout rules authoritative and use the `frontend-design` skill for deliberate visual direction instead of defaulting to generic layouts
+- visual tone must come from palette, typography, structure, and texture, not from fabricated issue data, filler labels, or themed replacements for standard UI copy
 
 ## Database and Migrations
 
@@ -29,6 +31,8 @@
 - keep authenticated HTML views and UI URL wiring in `djangoapp.user_interface`
 - `djangoapp.rest_api` and `djangoapp.user_interface` may depend on `djangoapp.core`, but `djangoapp.core` should not depend on either surface app
 - implement entity-specific business logic through controller classes in Python instead of placing it directly in Django views, forms, signals, or REST API views
+- when a domain area in `djangoapp.core` grows beyond a small single-file implementation, split it into a package and keep one class per file for models and controllers
+- preserve stable package-level imports for Django integration points such as admin modules, signals, tests, and migrations by re-exporting public classes from the package `__init__.py`
 - use the following structural flow for the user frontend: view -> controller -> model
 - use the following structural flow for form handling in the user frontend: view -> form -> controller -> model
 - use the following structural flow for model event handling: signal -> controller
@@ -36,6 +40,7 @@
 - use Django's built-in internationalization support for multilingual features, including `LocaleMiddleware`, translation tags, and message catalogs
 - design the user and admin frontends so both light mode and dark mode are supported as first-class UI requirements
 - keep controllers focused on business rules per entity and use models for persistence and Django-native validation
+- for model packages, keep shared helpers such as enums and upload-path functions in dedicated files inside the same package instead of recreating monolithic modules
 
 ## Dependency Management
 
@@ -48,6 +53,7 @@
 - all static files should be placed in the `src/webapp/static` directory, you can create subdirectories to organize your static files if needed
 - do not use any cdn for static files, all static files should be served from the application itself
 - download the static files and place them in the `src/webapp/static` directory using the `fetch_static_files.bash` script located in the `scripts` directory, you can run the script with `bash scripts/fetch_static_files.bash`
+- for frontend enhancements, prefer semantic HTML, Pico CSS primitives and variables, Django Cotton components, HTMX, and data attributes before introducing heavier custom structure or scripting
 
 ## Unit Testing
 
@@ -60,3 +66,4 @@
 
 - you have a running version of the application available at `http://webapp:8000` when running the development server
 - you can restart the development server with `make webapp-restart-devserver` command, this will restart the webapp service in the docker compose setup
+- to verify that the development server is working, use the command `docker compose logs webapp` to check the logs for any errors or issues, you should see a message indicating that the server is running and listening on port 8000, use this also to troubleshoot wrong behavior

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load tz %}
+
+{% block title %}Personal Dashboard{% endblock %}
+
+{% block content %}
+  <section class="dashboard-page">
+  <header class="app-page-header">
+    <div>
+      <p class="app-page-header__eyebrow">User workspace</p>
+      <h1>Personal Dashboard</h1>
+      <p>Issues assigned to you and comments that mention you.</p>
+    </div>
+
+    <div class="app-page-header__actions">
+      <a href="{% url 'home' %}" role="button" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="kanban" %}<span>Open board</span></a>
+      <a href="{% url 'issue-create' %}" role="button" class="app-inline-icon-link">{% include "includes/icon.html" with name="plus" %}<span>Create New Issue</span></a>
+    </div>
+  </header>
+
+  <section class="detail-section-grid">
+    <article class="app-surface">
+      <h2>Assigned Issues</h2>
+      {% if assigned_issues %}
+        <div class="dashboard-card-grid">
+          {% for issue in assigned_issues %}
+            <c-issue.card :issue="issue" />
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>No issues are currently assigned to you.</p>
+      {% endif %}
+    </article>
+
+    <article class="app-surface">
+      <h2>Mentioned Comments</h2>
+      {% if mentioned_comments %}
+        <ul class="detail-list dashboard-mention-list">
+          {% for comment in mentioned_comments %}
+            <li>
+              <a href="{% url 'issue-detail' comment.issue.pk %}">{{ comment.issue.issue_number }}: {{ comment.issue.title }}</a>
+              <span>{{ comment.author_user.get_full_name|default:comment.author_user.username }} mentioned you at {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
+              <p>{{ comment.body|linebreaksbr }}</p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No comment mentions currently target you.</p>
+      {% endif %}
+    </article>
+  </section>
+  </section>
+{% endblock %}

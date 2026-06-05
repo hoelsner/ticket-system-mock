@@ -97,6 +97,16 @@ keeping the web application as the system of record.
 The REST API uses HTTP Basic Authentication instead of Django session login
 redirects.
 
+The current REST API surface includes:
+
+- metadata endpoints for the authenticated user, groups, users, collections,
+    and issue categories
+- read projections for the board, dashboard, issue list, and issue detail
+- mutation endpoints for issue creation, update, archive, comment creation,
+    and board movement
+- multipart attachment support on issue create, update, and comment flows so
+    integrations can submit files through the same business rules used by the UI
+
 ## Shared Domain Layer
 
 All three surfaces use the same underlying application data and business rules.
@@ -106,8 +116,9 @@ All three surfaces use the same underlying application data and business rules.
 - The REST API exposes domain operations to systems.
 - Users are represented through Django `User`.
 - Groups are represented through Django `Group`.
-- The product display name is provided through environment-backed Django
-    settings rather than persisted configuration data.
+- Branding starts from environment-backed Django settings and may be overridden
+    by persisted `App Branding` configuration for the displayed product name,
+    navbar logo, and login background image.
 
 All operations and domain data models should be available through the REST API
 in addition to the user and admin frontends.
@@ -178,4 +189,5 @@ bar. Primary navigation is exposed in the top bar, while a collapsible burger
 menu on the left provides access to detailed and contextual navigation. Utility
 links and the authenticated user context are placed on the top-right side. The
 main content area is reserved for task-specific workflows and operational
-views."
+views. Selected board workflows may temporarily omit this shell chrome for a
+fullscreen presentation mode."

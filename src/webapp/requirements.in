@@ -3,4 +3,5 @@ django-cotton>=2.7,<2.8
 django-ninja>=1.6,<1.7
 gunicorn>=26.0,<26.1
 psycopg[binary]>=3.3,<3.4
+PyYAML>=6.0,<6.1
 redis>=7.4,<7.5

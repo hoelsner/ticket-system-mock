@@ -23,7 +23,8 @@
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/src/webapp"
+        "${workspaceFolder}/src/webapp",
+        "${workspaceFolder}/src/webapp/venv/lib/python3.12/site-packages"
     ],
     "files.exclude": {
         "**/__pycache__": true,
@@ -65,5 +66,5 @@
     "chat.planAgent.defaultModel": "GPT-5.4 (copilot)",
     "chat.useNestedAgentsMdFiles": true,
     "chat.experimental.useSkillAdherencePrompt": true,
-    "inlineChat.defaultModel": "GPT-5.4 (copilot)"
+    "inlineChat.defaultModel": "GPT-5.4 (copilot)",
 }

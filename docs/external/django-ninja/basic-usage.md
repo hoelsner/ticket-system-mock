@@ -178,7 +178,32 @@ request-scoped values.
     authorized cases.
 - Assert both status codes and response payloads so the API contract stays
     stable.
-```
+
+## Swagger and OpenAPI Maintenance
+
+In this repository, the Django Ninja declarations in `djangoapp.rest_api.api`
+are the source of truth for the interactive API documentation at `/api/docs`
+and the generated schema at `/api/openapi.json`.
+
+When changing or adding REST API endpoints:
+
+- add an explicit `summary`, `description`, and `tags` value on the endpoint
+    decorator instead of relying on the generated defaults
+- describe query parameters with `Query(..., description=...)` when filters or
+    selectors appear in the URL
+- describe every response schema attribute with `Field(description=...)` so the
+    schema explains nested objects and scalar fields in Swagger UI
+- document request payloads for JSON or multipart mutations so integrations can
+    see the accepted attributes directly in Swagger UI
+- keep the terminology aligned with the repository's ubiquitous language,
+    especially `Issue`, `Workflow State`, `Collection`, `Group`, and `User`
+
+When changing the API contract:
+
+- request `/api/openapi.json` in a Django test and assert representative
+    summaries, request-body attributes, and schema field descriptions
+- review `/api/docs` manually for the touched endpoints to confirm the rendered
+    documentation stays readable and complete
 
 ## Project Guidance
 

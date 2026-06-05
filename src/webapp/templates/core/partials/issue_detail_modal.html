@@ -1,0 +1,18 @@
+<article class="issue-detail-modal__content" data-issue-detail-modal-content>
+  <div class="issue-detail-modal__toolbar">
+    <button
+      type="button"
+      class="secondary issue-detail-modal__close"
+      data-issue-detail-modal-close
+      aria-label="Close issue detail dialog"
+      data-tooltip="Close issue detail dialog"
+      data-placement="left"
+    >
+      {% include "includes/icon.html" with name="close" %}
+    </button>
+  </div>
+
+  <section class="issue-detail-page issue-detail-page--modal" data-issue-detail-page>
+    {% include "core/partials/issue_detail_content.html" with modal_mode=True %}
+  </section>
+</article>

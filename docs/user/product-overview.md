@@ -39,6 +39,8 @@ when a ticket does not follow the standard path.
 - Move tickets through the predefined workflow
 - Track ownership, priority, category, status, and timestamps
 - Monitor work on a Kanban board
+- Toggle the Kanban board into a fullscreen presentation mode
+- Customize the displayed product name, navbar logo, and login background
 
 ## Interface Structure
 
@@ -71,17 +73,31 @@ navigation and secondary side navigation.
 4. The main content area is reserved for dashboards, issues, forms, tables,
 	 reports, and other workflow-specific views.
 
+For presentation-heavy walkthroughs, the `Instance Kanban Board` can also be
+opened in a fullscreen mode that hides the top navigation, page title, and
+search and filter controls while keeping the board content itself available.
+
 ## Kanban Board
 
 The main entry point is a Kanban board. Each column represents a workflow phase,
 and each card represents a ticket. The board is intended to reflect the current
 operational state and support live updates without a full page reload.
 
+The standard board view also includes search and filter controls for assignee,
+priority, collection, and category. When needed for demos or wallboard-style
+display, the board can be switched into fullscreen mode from the board header.
+The fullscreen toggle keeps the active board filters when entering or leaving
+that mode.
+
 ## Integration Use
 
 The web application exposes a REST API for automation and external systems.
 Integrations can create, enrich, query, or transition tickets while the web
 application remains the source of truth for workflow state and business rules.
+
+The API includes metadata endpoints, board and dashboard projections, issue
+listing and detail responses, and issue mutation operations for create, update,
+archive, comment, and board movement workflows.
 
 ## Product Boundaries
 
@@ -93,6 +109,7 @@ Included:
 - Group and individual dispatching
 - Backend administration through Django Admin
 - Configurable product display name
+- Configurable navbar logo and login background artwork
 
 Not included in the initial scope:
 

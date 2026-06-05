@@ -15,6 +15,11 @@ source src/webapp/.venv/bin/activate
 uv pip install --no-cache-dir --requirement src/webapp/requirements.txt --prefix src/webapp/.venv
 uv pip install --no-cache-dir --requirement .devcontainer/requirements.txt --prefix src/webapp/.venv
 
+echo "install npx dependencies..."
+npx -g -y playwright install
+npx -g -y playwright install-deps
+npx -y @playwright/mcp install-browser chrome-for-testing
+
 echo "customizing shell..."
 
 echo "DONE"

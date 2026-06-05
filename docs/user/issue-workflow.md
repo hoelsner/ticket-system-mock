@@ -103,6 +103,11 @@ DUPLICATE
 - The `Issue Detail View` shows the full issue title, markdown description,
   comments, and attachments.
 
+The `Instance Kanban Board` supports search and filtering in its standard view.
+For presentations or wallboard-style monitoring, it can also be opened in a
+fullscreen mode that hides the global top navigation, the visible board title,
+and the search and filter controls.
+
 ## Attachments
 
 Files can be attached to an `Issue` as supporting material.

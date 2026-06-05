@@ -1,4 +1,4 @@
-check: clean validate-bash webapp-compile webapp-complexity-check webapp-bandit-tests webapp-unittest
+check: clean validate-bash validate-yaml webapp-compile webapp-complexity-check webapp-bandit-tests webapp-unittest
 test: clean webapp-test-coverage
 
 webapp-runserver:
@@ -12,6 +12,9 @@ clean:
 
 validate-bash:
 	@./scripts/validate_bash.bash
+
+validate-yaml:
+	@bash ./scripts/validate_yaml.bash
 
 webapp-compile:
 	@./scripts/webapp/compile.bash

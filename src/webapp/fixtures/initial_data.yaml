@@ -1,0 +1,27 @@
+#
+# import to a new instance as part of the bootstrap process.
+#
+- model: auth.user
+  pk: 16
+  fields:
+    # Bootstrap password: admin1234
+    password: pbkdf2_sha256$390000$cW1jJpqD6FHkAFFrCnrM2U$bR1Slnv105yooe+vlbgHa6B2DsBPDNHYAv73IVt6iMM=
+    is_superuser: true
+    username: admin
+    first_name: 'Admin'
+    last_name: 'User'
+    is_staff: true
+    is_active: true
+    groups: []
+    user_permissions: []
+- model: branding.appbranding
+  pk: 1
+  fields:
+    singleton_enforcer: app-branding
+    display_name_override: ''
+    logo_image: branding/logo/favicon.png
+    login_background_image: branding/login-background/default_app_hero_image.png
+    light_primary_color: '#0172ad'
+    light_primary_hover_color: '#015887'
+    dark_primary_color: '#01aaff'
+    dark_primary_hover_color: '#79c0ff'

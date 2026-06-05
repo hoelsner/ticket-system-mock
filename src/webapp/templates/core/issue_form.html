@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/issue-markdown-editor.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <nav class="issue-detail-nav">
+    {% if issue %}
+      <a href="{% url 'issue-detail' issue.pk %}">Back to issue</a>
+    {% else %}
+      <a href="{% url 'home' %}">Back to board</a>
+    {% endif %}
+  </nav>
+
+  <header class="app-page-header app-page-header--stacked">
+    <div>
+      <p class="app-page-header__eyebrow">Issue workflow</p>
+      <h1>{{ form_title }}</h1>
+      {% if issue %}
+        <p>{{ issue.issue_number }}: {{ issue.title }}</p>
+      {% endif %}
+    </div>
+  </header>
+
+  <article class="app-surface app-form-shell">
+    <form method="post" enctype="multipart/form-data" class="app-form-layout">
+      {% csrf_token %}
+      {% for hidden_field in form.hidden_fields %}{{ hidden_field }}{% endfor %}
+      {{ form.non_field_errors }}
+
+      <section class="app-form-section">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Core details</p>
+          <h2>Issue definition</h2>
+        </div>
+        <div class="app-form-fields">
+          <label class="app-form-field app-form-field--wide">
+            {{ form.title.label }}
+            {{ form.title }}
+            {% if form.title.help_text %}<small>{{ form.title.help_text }}</small>{% endif %}
+            {{ form.title.errors }}
+          </label>
+          <label class="app-form-field">
+            {{ form.collection.label }}
+            {{ form.collection }}
+            {% if form.collection.help_text %}<small>{{ form.collection.help_text }}</small>{% endif %}
+            {{ form.collection.errors }}
+          </label>
+          <label class="app-form-field">
+            {{ form.category.label }}
+            {{ form.category }}
+            {% if form.category.help_text %}<small>{{ form.category.help_text }}</small>{% endif %}
+            {{ form.category.errors }}
+          </label>
+          <label class="app-form-field">
+            {{ form.priority.label }}
+            {{ form.priority }}
+            {% if form.priority.help_text %}<small>{{ form.priority.help_text }}</small>{% endif %}
+            {{ form.priority.errors }}
+          </label>
+        </div>
+      </section>
+
+      <section class="app-form-section app-form-section--full">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Description</p>
+          <h2>Describe the issue</h2>
+        </div>
+          {% url 'user-suggestions' as user_suggestions_url %}
+          {% url 'issue-suggestions' as issue_suggestions_url %}
+          {% if issue %}
+            {% url 'issue-markdown-preview' issue.pk as preview_url %}
+            {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="1" only %}
+          {% else %}
+            {% url 'markdown-preview' as preview_url %}
+            {% url 'draft-attachment-suggestions' as attachment_suggestions_url %}
+            {% url 'draft-attachment-upload' as attachment_upload_url %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url=attachment_upload_url attachment_hint="Drop files here to upload immediately or use the upload tool in the toolbar. Multi-file selection on submit is still available below." preview_collapsible="1" preview_open="1" only %}
+          {% endif %}
+          {% if form.description_markdown.help_text %}<small>{{ form.description_markdown.help_text }}</small>{% endif %}
+          <small class="markdown-editor__help-text">
+            Use standard markdown plus
+            <code>{% templatetag openvariable %}user:username{% templatetag closevariable %}</code>
+            to mention a user,
+            <code>{% templatetag openvariable %}issue:ISS-000001{% templatetag closevariable %}</code>
+            to reference another issue, and
+            <code>{% templatetag openvariable %}attachment:...{% templatetag closevariable %}</code>
+            to embed uploaded attachments.
+          </small>
+      </section>
+
+      <section class="app-form-section">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Routing</p>
+          <h2>Assignment and escalation</h2>
+        </div>
+        <div class="app-form-fields">
+          {% if form.workflow_state %}
+            <label class="app-form-field">
+              {{ form.workflow_state.label }}
+              {{ form.workflow_state }}
+              {% if form.workflow_state.help_text %}<small>{{ form.workflow_state.help_text }}</small>{% endif %}
+              {{ form.workflow_state.errors }}
+            </label>
+          {% endif %}
+          <label class="app-form-field">
+            {{ form.group.label }}
+            {{ form.group }}
+            {% if form.group.help_text %}<small>{{ form.group.help_text }}</small>{% endif %}
+            {{ form.group.errors }}
+          </label>
+          <label class="app-form-field">
+            {{ form.user.label }}
+            {{ form.user }}
+            {% if form.user.help_text %}<small>{{ form.user.help_text }}</small>{% endif %}
+            {{ form.user.errors }}
+          </label>
+          <label class="app-form-field app-form-toggle">
+            <span>{{ form.is_escalated.label }}</span>
+            <span class="app-form-toggle__control">{{ form.is_escalated }}</span>
+            {{ form.is_escalated.errors }}
+          </label>
+          {% if form.transition_reason %}
+            <label class="app-form-field app-form-field--wide">
+              {{ form.transition_reason.label }}
+              {{ form.transition_reason }}
+              {% if form.transition_reason.help_text %}<small>{{ form.transition_reason.help_text }}</small>{% endif %}
+              {{ form.transition_reason.errors }}
+            </label>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="app-form-section">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Supporting material</p>
+          <h2>{% if issue %}Initial attachment{% else %}Initial attachments{% endif %}</h2>
+        </div>
+        <div class="app-form-fields">
+          <label class="app-form-field">
+            {{ form.attachment_file.label }}
+            {{ form.attachment_file }}
+            {% if form.attachment_file.help_text %}<small>{{ form.attachment_file.help_text }}</small>{% endif %}
+            {{ form.attachment_file.errors }}
+          </label>
+          <label class="app-form-field app-form-field--wide">
+            {{ form.attachment_description.label }}
+            {{ form.attachment_description }}
+            {% if form.attachment_description.help_text %}<small>{{ form.attachment_description.help_text }}</small>{% endif %}
+            {{ form.attachment_description.errors }}
+          </label>
+        </div>
+      </section>
+
+      <div class="form-actions-row">
+        <button type="submit">{{ submit_label }}</button>
+        {% if issue %}
+          <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Cancel</a>
+        {% else %}
+          <a href="{% url 'home' %}" role="button" class="secondary">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </article>
+{% endblock %}

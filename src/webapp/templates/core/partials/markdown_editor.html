@@ -1,0 +1,64 @@
+<div
+  class="markdown-editor"
+  data-markdown-editor
+  data-preview-url="{{ preview_url }}"
+  data-user-suggestions-url="{{ user_suggestions_url }}"
+  data-issue-suggestions-url="{{ issue_suggestions_url }}"
+  data-attachment-suggestions-url="{{ attachment_suggestions_url|default:'' }}"
+  data-attachment-upload-url="{{ attachment_upload_url|default:'' }}"
+>
+  <div class="markdown-editor__toolbar" role="toolbar" aria-label="Markdown tools">
+    <div class="markdown-editor__toolbar-group">
+      <button type="button" class="secondary outline" data-markdown-helper-button data-helper-type="user">Mention user</button>
+      <button type="button" class="secondary outline" data-markdown-helper-button data-helper-type="issue">Reference issue</button>
+      {% if attachment_suggestions_url %}
+        <button type="button" class="secondary outline" data-markdown-helper-button data-helper-type="attachment">Link attachment</button>
+      {% endif %}
+      {% if attachment_upload_url|default:'' %}
+        <button type="button" class="secondary outline" data-markdown-upload-button>Upload attachment</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <label class="markdown-editor__field">
+    {{ field.label }}
+    {{ field }}
+    {{ field.errors }}
+  </label>
+
+  {% if attachment_upload_url|default:'' %}
+    <input type="file" name="draft-attachment-upload" hidden multiple data-markdown-upload-input>
+    <p class="markdown-editor__upload-status" data-markdown-upload-status></p>
+  {% endif %}
+
+  <section class="markdown-editor__assist" hidden data-markdown-assist>
+    <header class="markdown-editor__assist-header">
+      <strong data-markdown-assist-title>Insert reference</strong>
+      <button type="button" class="secondary outline" data-markdown-assist-close>Close</button>
+    </header>
+    <label>
+      Search
+      <input type="search" name="markdown-assist-query" data-markdown-assist-input autocomplete="off" aria-autocomplete="list">
+    </label>
+    <ul class="markdown-editor__assist-results" data-markdown-assist-results></ul>
+  </section>
+
+  {% if attachment_hint|default:'' %}
+    <p class="markdown-editor__hint">{{ attachment_hint|default:'' }}</p>
+  {% endif %}
+
+  {% if preview_collapsible|default:'' %}
+    <details class="markdown-editor__preview-panel markdown-editor__preview-panel--collapsible" data-markdown-preview-details{% if preview_open|default:'' %} open{% endif %}>
+      <summary class="markdown-editor__preview-summary">
+        <p class="app-page-header__eyebrow">Preview</p>
+        <span class="markdown-editor__preview-toggle-label">Toggle preview</span>
+      </summary>
+      <div class="detail-markdown markdown-editor__preview" data-markdown-preview>Start typing to preview markdown output.</div>
+    </details>
+  {% else %}
+    <section class="markdown-editor__preview-panel">
+      <p class="app-page-header__eyebrow">Preview</p>
+      <div class="detail-markdown markdown-editor__preview" data-markdown-preview>Start typing to preview markdown output.</div>
+    </section>
+  {% endif %}
+</div>

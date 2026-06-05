@@ -42,6 +42,34 @@ Suggested attachment metadata:
 - uploaded timestamp
 - optional description
 
+Attachments may enter the system through the user frontend or through the REST
+API mutation flows for issue creation, issue update, and issue comments.
+
+Those API flows should accept multipart form uploads so integrations can submit
+files without bypassing the same validation and controller rules used by the
+HTML forms.
+
+### Create Form Staging
+
+The HTML issue create page allows uploads before the `Issue` exists.
+
+To keep the rule that a persisted attachment belongs to exactly one `Issue`,
+the create flow stores uploads temporarily as `Draft Issue Attachment` records.
+
+The staged record must keep the draft token, file metadata, and uploading
+`User` so markdown preview and attachment suggestions can resolve the temporary
+reference during form editing.
+
+When the issue is created successfully:
+
+- each staged file is materialized as an `Issue Attachment`
+- draft attachment tokens in the markdown description are rewritten to the
+  final attachment references
+- the staged records are removed
+
+If issue creation fails, the staged uploads remain tied to the draft token so
+the user can continue editing without uploading the same files again.
+
 ## Attachment Embedding
 
 An attached file can be embedded at a specific point inside the markdown
@@ -55,12 +83,15 @@ Example markdown syntax:
 ```markdown
 Please review the attached log output:
 
-{{ attachment:network-log-2026-06-04.txt }}
+{{ attachment:42 }}
 
 The error appears after the interface reset.
 ```
 
 The embedded attachment reference should point to an existing issue attachment.
+
+During issue creation only, the editor may temporarily use a draft reference in
+the form `{{ attachment:draft-<id> }}` until the final issue is saved.
 
 Do not store embedded file content directly in the issue description.
 

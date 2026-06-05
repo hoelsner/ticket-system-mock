@@ -1,0 +1,201 @@
+{% load issue_markdown tz %}
+
+  <header class="app-page-header app-page-header--stacked issue-detail-view__header">
+    <div>
+      <p class="app-page-header__eyebrow">Issue detail</p>
+      <h1>
+        {% if modal_mode %}
+          <a href="{% url 'issue-detail' issue.pk %}" class="issue-detail-view__title-link">{{ issue.issue_number }}: {{ issue.title }}</a>
+        {% else %}
+          {{ issue.issue_number }}: {{ issue.title }}
+        {% endif %}
+      </h1>
+    </div>
+
+    <div class="app-page-header__actions">
+      {% if modal_mode %}
+        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Open Full Page</a>
+      {% else %}
+        <a href="{% url 'dashboard' %}" role="button" class="secondary">Back to dashboard</a>
+        <a href="{% url 'home' %}" role="button" class="secondary">Back to board</a>
+      {% endif %}
+      <a href="{% url 'issue-update' issue.pk %}" role="button">Update Existing Issue</a>
+    </div>
+  </header>
+
+  <article class="issue-detail-panel issue-detail-panel--details">
+    <h2>Issue Details</h2>
+    <div class="issue-detail-summary">
+      <div>
+        <p class="app-page-header__eyebrow">Workflow state</p>
+        <p class="issue-detail-summary__value">{{ issue.get_workflow_state_display }}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Priority</p>
+        <p class="issue-detail-summary__value">{{ issue.get_priority_display }}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Category</p>
+        <p class="issue-detail-summary__value">{{ issue.category.name }}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Associated team</p>
+        <p class="issue-detail-summary__value">{% if issue.group %}{{ issue.group.name }}{% else %}Not assigned{% endif %}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Assigned user</p>
+        <p class="issue-detail-summary__value">{% if issue.user %}{{ issue.user.get_full_name|default:issue.user.username }}{% else %}Not assigned{% endif %}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Escalated</p>
+        <p class="issue-detail-summary__value">{% if issue.is_escalated %}Yes{% else %}No{% endif %}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Created</p>
+        <p class="issue-detail-summary__value">{{ issue.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</p>
+      </div>
+      <div>
+        <p class="app-page-header__eyebrow">Last change</p>
+        <p class="issue-detail-summary__value">{{ issue.updated_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="issue-detail-panel issue-detail-panel--description">
+    <div class="issue-detail-description">
+      <h2>Issue Description</h2>
+      {% if issue.description_markdown %}
+        {% render_issue_markdown issue.description_markdown issue as rendered_issue_description %}
+        <div class="detail-markdown">{{ rendered_issue_description }}</div>
+      {% else %}
+        <p>No description provided.</p>
+      {% endif %}
+
+      <details class="issue-detail-editor"{% if description_edit_open or not issue.description_markdown %} open{% endif %}>
+        <summary>Edit description</summary>
+        <form method="post" action="{% url 'issue-description-update' issue.pk %}" class="issue-description-inline-form">
+          {% csrf_token %}
+          {{ description_form.non_field_errors }}
+          {% url 'issue-markdown-preview' issue.pk as preview_url %}
+          {% url 'user-suggestions' as user_suggestions_url %}
+          {% url 'issue-suggestions' as issue_suggestions_url %}
+          {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
+          {% include "core/partials/markdown_editor.html" with field=description_form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" only %}
+          <div class="form-actions-row">
+            <button type="submit">Save description</button>
+          </div>
+        </form>
+      </details>
+    </div>
+  </article>
+
+  <section class="issue-subentity-zone" aria-labelledby="issue-subentity-heading">
+    <header class="issue-subentity-zone__header app-surface">
+      <div>
+        <p class="app-page-header__eyebrow">Related records</p>
+        <h2 id="issue-subentity-heading">Sub-entities and activity</h2>
+        <p>Comments, attachments, and workflow history for this Issue are grouped here.</p>
+      </div>
+    </header>
+
+    <div class="issue-subentity-zone__grid">
+      <article class="issue-detail-panel issue-detail-panel--comments">
+        <h2>Comments</h2>
+        {% if issue_comments %}
+          <ul class="comment-thread">
+            {% for comment in issue_comments %}
+              <li class="comment-thread__item{% if comment.author_user_id == request.user.id %} comment-thread__item--self{% endif %}">
+                <article class="comment-thread__bubble">
+                  <header class="comment-thread__meta">
+                    <strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong>
+                    <span>{{ comment.get_visibility_display }} at {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
+                  </header>
+                  {% render_issue_markdown comment.body issue as rendered_comment_body %}
+                  <div class="detail-markdown detail-markdown--comment">{{ rendered_comment_body }}</div>
+                </article>
+                {% if comment.mentions.all %}
+                  <small class="comment-thread__mentions">
+                    Mentions:
+                    {% for mention in comment.mentions.all %}
+                      @{{ mention.mentioned_as }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  </small>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No comments yet.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'issue-comment-create' issue.pk %}" enctype="multipart/form-data" class="issue-comment-inline-form app-form-layout app-form-layout--compact">
+          {% csrf_token %}
+          {{ comment_form.non_field_errors }}
+          {% url 'issue-markdown-preview' issue.pk as preview_url %}
+          {% url 'user-suggestions' as user_suggestions_url %}
+          {% url 'issue-suggestions' as issue_suggestions_url %}
+          {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
+          <section class="app-form-section app-form-section--full">
+            {% include "core/partials/markdown_editor.html" with field=comment_form.body preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" only %}
+          </section>
+          <section class="app-form-section">
+            <div class="app-form-fields app-form-fields--compact">
+              <label class="app-form-field">
+                {{ comment_form.visibility.label }}
+                {{ comment_form.visibility }}
+                {{ comment_form.visibility.errors }}
+              </label>
+              <label class="app-form-field">
+                {{ comment_form.attachment_file.label }}
+                {{ comment_form.attachment_file }}
+                {{ comment_form.attachment_file.errors }}
+              </label>
+              <label class="app-form-field app-form-field--wide">
+                {{ comment_form.attachment_description.label }}
+                {{ comment_form.attachment_description }}
+                {{ comment_form.attachment_description.errors }}
+              </label>
+            </div>
+          </section>
+          <div class="form-actions-row">
+            <button type="submit">Add comment</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="issue-detail-panel issue-detail-panel--attachments">
+      <h2>Attachments</h2>
+      {% if issue_attachments %}
+        <ul class="detail-list detail-list--attachments">
+          {% for attachment in issue_attachments %}
+            <li>
+              <a href="{{ attachment.file.url }}" target="_blank" rel="noopener noreferrer">{{ attachment.original_filename }}</a>
+              {% if attachment.description %}<span>{{ attachment.description }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No attachments available.</p>
+      {% endif %}
+      </article>
+
+      <article class="issue-detail-panel issue-detail-panel--timeline">
+        <h2>Transition History</h2>
+        {% if issue_transitions %}
+          <ol class="transition-timeline">
+            {% for transition in issue_transitions %}
+              <li class="transition-timeline__item">
+                <div class="transition-timeline__content">
+                  <strong>{{ transition.get_from_state_display }} -> {{ transition.get_to_state_display }}</strong>
+                  <span>{{ transition.changed_by_user.get_full_name|default:transition.changed_by_user.username }} at {{ transition.changed_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
+                  {% if transition.reason %}<p>{{ transition.reason }}</p>{% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p>No workflow transitions recorded yet.</p>
+        {% endif %}
+      </article>
+    </div>
+  </section>

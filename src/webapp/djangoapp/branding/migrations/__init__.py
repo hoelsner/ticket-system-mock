@@ -1,0 +1,1 @@
+"""Branding app migrations."""

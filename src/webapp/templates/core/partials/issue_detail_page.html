@@ -1,0 +1,9 @@
+<section
+  class="issue-detail-page"
+  data-issue-detail-page
+  data-issue-detail-live
+  data-issue-detail-events-url="{% url 'board-events' %}"
+  data-issue-detail-refresh-url="{% url 'issue-detail' issue.pk %}?fragment=1"
+>
+  {% include "core/partials/issue_detail_content.html" with modal_mode=False %}
+</section>

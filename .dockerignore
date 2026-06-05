@@ -1,0 +1,7 @@
+/src/webapp/.venv
+/src/webapp/runtime
+/src/webapp/covreport
+/src/webapp/.tmp
+/src/webapp/.coverage
+/src/webapp/.coveragerc
+AGENTS.md

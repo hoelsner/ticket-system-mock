@@ -1,0 +1,20 @@
+{
+	"servers": {
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@latest",
+                "--allowed-hosts", "*",
+                "--browser", "chromium",
+                "--caps", "vision",
+                "--ignore-https-errors",
+                "--isolated",
+                "--sandbox",
+                "--shared-browser-context",
+                "--snapshot-mode", "full",
+                "--viewport-size", "1600,900"
+            ]
+        },
+	},
+	"inputs": []
+}

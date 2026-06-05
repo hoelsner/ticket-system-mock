@@ -5,6 +5,7 @@
 | Term | Definition | Aliases to avoid |
 | --- | --- | --- |
 | **Issue** | A single work item that moves through the support workflow. | Ticket, case, item |
+| **Collection** | A logical grouping of issues that shares one identifier prefix and one local sequence. | Queue prefix, ticket namespace |
 | **Issue Description** | The large markdown body that captures the detailed content of an issue. | Long description, issue body |
 | **Workflow State** | The authoritative lifecycle position of an issue. | Status, phase |
 | **Priority** | The urgency level used to order or escalate work. | Severity |
@@ -41,6 +42,7 @@
 ## Relationships
 
 - An **Issue** has one current **Workflow State**.
+- An **Issue** belongs to one **Collection** that determines its identifier prefix.
 - An **Issue** has one **Issue Description** stored as markdown content.
 - An **Issue** has one **Issue Category**.
 - An **Issue** can be associated to zero or one **Group** for dispatching.
@@ -54,6 +56,7 @@
 - A **User** can belong to many **Group** records through Django's built-in **Group Membership** relationship.
 - The **Instance Kanban Board** is derived from **Issue** records and their current
   **Workflow State**.
+- A **Collection** owns the next local issue sequence for its prefixed identifiers.
 - The **Web Application** owns the **REST API** and remains the source of truth
   for the issue lifecycle.
 

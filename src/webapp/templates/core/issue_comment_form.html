@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add Comment{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/issue-markdown-editor.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <nav class="issue-detail-nav">
+    <a href="{% url 'issue-detail' issue.pk %}">Back to issue</a>
+  </nav>
+
+  <header class="app-page-header app-page-header--stacked">
+    <div>
+      <p class="app-page-header__eyebrow">Issue workflow</p>
+      <h1>Add Comment</h1>
+      <p>{{ issue.issue_number }}: {{ issue.title }}</p>
+    </div>
+  </header>
+
+  <c-issue.card :issue="issue" />
+
+  <article class="app-surface app-form-shell">
+    <form method="post" enctype="multipart/form-data" class="app-form-layout">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <section class="app-form-section app-form-section--full">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Comment</p>
+          <h2>Write the update</h2>
+        </div>
+        {% url 'issue-markdown-preview' issue.pk as preview_url %}
+        {% url 'user-suggestions' as user_suggestions_url %}
+        {% url 'issue-suggestions' as issue_suggestions_url %}
+        {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
+        {% include "core/partials/markdown_editor.html" with field=form.body preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" only %}
+      </section>
+
+      <section class="app-form-section">
+        <div class="app-form-section__header">
+          <p class="app-page-header__eyebrow">Visibility and files</p>
+          <h2>Comment settings</h2>
+        </div>
+        <div class="app-form-fields">
+          <label class="app-form-field">
+            {{ form.visibility.label }}
+            {{ form.visibility }}
+            {{ form.visibility.errors }}
+          </label>
+          <label class="app-form-field">
+            {{ form.attachment_file.label }}
+            {{ form.attachment_file }}
+            {{ form.attachment_file.errors }}
+          </label>
+          <label class="app-form-field app-form-field--wide">
+            {{ form.attachment_description.label }}
+            {{ form.attachment_description }}
+            {{ form.attachment_description.errors }}
+          </label>
+        </div>
+      </section>
+
+      <div class="form-actions-row">
+        <button type="submit">Add comment</button>
+        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Cancel</a>
+      </div>
+    </form>
+  </article>
+{% endblock %}

@@ -23,6 +23,8 @@ development.
   supports session-based login flows.
 - `/admin/` is provided by Django Admin and serves the authenticated admin
   frontend.
+- `/admin/` also hosts the `App Branding` management surface used to override
+  the display name, navbar logo, and login background image.
 - `/api/` is owned by `djangoapp.rest_api` and exposes the machine-facing REST
   API protected by HTTP Basic Authentication.
 
@@ -54,7 +56,8 @@ flowchart TD
 - `Personal Dashboard`: shows the user's direct issue assignments and issue
   comments where the user was mentioned.
 - `Instance Kanban Board`: shows the overall operational board grouped by
-  workflow state.
+  workflow state. The same page also supports `?fullscreen=1` to suppress the
+  authenticated shell chrome for presentation use.
 - `Issue Detail View`: shows the full issue title, markdown description,
   comments, and workflow context.
 - `Create New Issue`: starts a new issue in the user frontend.
@@ -77,6 +80,17 @@ flowchart TD
   status.
 - `Authenticated User Lookup`: available at `/api/auth/me` and returns the
   authenticated user's username and privilege flags.
+- `Reference Data`: available at `/api/groups`, `/api/users`,
+  `/api/collections`, and `/api/categories` for integration-friendly metadata.
+- `Board Projection`: available at `/api/board` and returns the filtered board
+  context used by the user frontend.
+- `Dashboard Projection`: available at `/api/dashboard` and returns the current
+  user's assigned issues and mentions.
+- `Issue Listing and Detail`: available at `/api/issues` and
+  `/api/issues/{issue_id}`.
+- `Issue Mutations`: available at `/api/issues`, `/api/issues/{issue_id}`,
+  `/api/issues/{issue_id}/archive`, `/api/issues/{issue_id}/comments`, and
+  `/api/issues/{issue_id}/move`.
 
 ## Resolved Route Tree
 
@@ -121,6 +135,17 @@ api/
   docs
   health
   auth/me
+  groups
+  users
+  collections
+  categories
+  board
+  dashboard
+  issues
+  issues/{issue_id}
+  issues/{issue_id}/archive
+  issues/{issue_id}/comments
+  issues/{issue_id}/move
 ```
 
 ## Notes for Contributors
@@ -130,6 +155,12 @@ api/
   `djangoapp.rest_api.api`.
 - Keep the REST API operation list in this document aligned with the concrete
   endpoints registered on the Django Ninja `api` object.
+- Keep `/api/docs` and `/api/openapi.json` aligned with the concrete REST API
+  contract by updating endpoint summaries, descriptions, tags, request payload
+  metadata, and schema field descriptions in `djangoapp.rest_api.api` whenever
+  an endpoint or payload changes.
+- Keep the admin-facing branding notes aligned with the registered
+  `djangoapp.branding` admin model.
 - Treat the `Personal Dashboard`, the `Instance Kanban Board`, and the `Issue
   Detail View` as the primary user-facing entry points inside the authenticated
   user frontend.

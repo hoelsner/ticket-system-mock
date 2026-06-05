@@ -63,6 +63,8 @@ system design instead of mixing audiences in one document.
 - Follow the existing formatter, linter, and project conventions for the
   language being changed.
 - Handle errors consistently and make failure modes easy to understand.
+- do not add ignore verdicts for coverage (e.g. #cov-ignore) without any explicit confirmation from the user, if you think an ignore verdict is needed, mention it first and wait for confirmation before adding it to the codebase
+- do not add ignore verdicts for bandit (e.g. #nosec) without confirmation, if you think a bandit ignore verdict is needed, mention it first and wait for confirmation before adding it to the codebase
 
 ## Documentation Standards
 
@@ -70,6 +72,9 @@ system design instead of mixing audiences in one document.
   describes.
 - Update documentation in the same change set as the code when behavior,
   configuration, or workflows change.
+- When a REST API contract changes, update the Swagger or OpenAPI metadata in
+  the same change so `/api/docs` and `/api/openapi.json` still describe the
+  endpoint purpose, request payloads, and schema fields.
 - Prefer practical project-specific guidance over copied vendor or marketing
   material.
 - Split mixed-content documents by dominant audience when needed.
@@ -90,8 +95,10 @@ Documentation quality is part of code review. Reviewers should check whether:
 1. Make the code change.
 2. Update the relevant tests or validation steps.
 3. Update developer, user, or architecture documentation if the change affects
-   behavior, operation, or design.
-4. Review the result for duplicated or outdated explanations.
+  behavior, operation, or design.
+4. If the change affects the REST API, review `/api/docs` and `/api/openapi.json`
+  and update the generated documentation inputs in `djangoapp.rest_api.api`.
+5. Review the result for duplicated or outdated explanations.
 
 ## Repository-Specific Guidance
 

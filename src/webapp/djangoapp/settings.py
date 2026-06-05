@@ -51,6 +51,8 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 
 DEFAULT_LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 
+PRODUCT_DISPLAY_NAME = os.environ.get("PRODUCT_DISPLAY_NAME", "IT Operation Ticketing Demo Service")
+
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["*"])
 
 
@@ -64,6 +66,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_cotton",
+    "djangoapp.branding",
     "djangoapp.core",
     "djangoapp.rest_api",
     "djangoapp.user_interface",
@@ -89,6 +92,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "djangoapp.branding.context_processors.app_branding",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -180,6 +184,9 @@ DJANGO_PROVISIONING_FLAG = Path(
         str(DJANGO_PROVISIONING_DIR / "fixtures-loaded.flag"),
     )
 )
+DJANGO_FIXTURE_ROOT = BASE_DIR / "fixtures"
+DJANGO_BOOTSTRAP_FIXTURES = env_list("DJANGO_BOOTSTRAP_FIXTURES", ["initial_data"])
+DJANGO_STATIC_FIXTURES = env_list("DJANGO_STATIC_FIXTURES", ["static_data"])
 
 
 LOGGING = {
@@ -206,6 +213,11 @@ LOGGING = {
             "level": DJANGO_LOG_LEVEL,
             "propagate": False,
         },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }
 
@@ -213,14 +225,17 @@ LOGGING = {
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = str(DJANGO_STATIC_ROOT)
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
-MEDIA_URL = "media/"
+SERVICE_BASE_URL = os.environ.get("SERVICE_BASE_URL", "http://localhost")
+MEDIA_URL = "/media/"
 MEDIA_ROOT = str(DJANGO_MEDIA_ROOT)
 
-FIXTURE_DIRS = [BASE_DIR / "fixtures"]
+FIXTURE_DIRS = [str(DJANGO_FIXTURE_ROOT)]
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True

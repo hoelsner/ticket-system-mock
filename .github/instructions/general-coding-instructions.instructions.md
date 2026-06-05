@@ -16,6 +16,7 @@ When developing code, use the following workflow to ensure that your code is cle
 
 - If you need additional information, look at `docs/architecture` and `docs/external`
 - If you notice a bug, mention it - don't fix it without confirmation.
+- If the task involves building or restyling frontend screens in `src/webapp`, use the `frontend-design` skill so the visual direction stays deliberate while still following the repository's Pico CSS, Django Cotton, HTMX, dark-mode, and i18n rules.
 
 3. Break down the problem into smaller, manageable tasks
 4. based on the karpathy-guidelines, write clean, modular code that follows the project's style and guidelines
@@ -41,7 +42,21 @@ If you encounter errors, fix them before proceeding to the next step.
 9. check for documentation drift and update the documentation if needed
 10. check for common patterns and guidelines and update the instructions if needed
 
+- for REST API changes in `src/webapp`, update the Django Ninja metadata that
+  feeds `/api/docs` and `/api/openapi.json` in the same change set; this
+  includes endpoint summaries, descriptions, tags, query parameter
+  descriptions, request payload attributes, and response schema field
+  descriptions
+
 ## Common Principles
 
 - avoid unnecessary abstractions and complexity; prefer simple, direct solutions that are easy to understand and maintain
 - avoid duplicated knowledge; if you find yourself copying and pasting code or explanations, consider whether there is a better way to structure the code or documentation to keep the information in one place
+- maintain release-build configuration variables in `deploy/docker-compose/docker-compose-template.yaml` as the primary runtime source, keep `docs/user/configuration.md` aligned with those variables, and use the Dockerfile only for stable non-secret container defaults and build metadata
+- for frontend design work, let visual distinctiveness come from a single held design direction and disciplined tokens, not from fabricated data, filler copy, or themed replacements for standard UI labels
+- for frontend styling in `src/webapp`, keep color treatment close to Pico CSS by default; avoid adding tinted gradients, blurred color washes, or custom background colorization unless the user explicitly asks for a stronger visual departure
+- when a webapp domain module becomes crowded, prefer a package with one class per file for models and controllers rather than continuing to grow a single large module
+- keep package-level compatibility imports in `__init__.py` when splitting Django models or controllers so existing admin, signal, test, and migration imports remain stable
+- do not modify the code related to complexity or linting, if you think a change is needed, mention it first and wait for confirmation before making any changes to the codebase
+- if you run into complexity violations, refactor the code to reduce complexity while preserving behavior, and then update the instructions to prevent similar issues in the future
+- for REST API work, treat `/api/docs` and `/api/openapi.json` as maintained deliverables, not incidental output; add or update OpenAPI-focused tests when changing endpoint purpose or payload shape

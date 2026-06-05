@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ issue.issue_number }}{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/issue-markdown-editor.js' %}" defer></script>
+  <script src="{% static 'js/issue-detail-sync.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  {% include "core/partials/issue_detail_page.html" %}
+{% endblock %}

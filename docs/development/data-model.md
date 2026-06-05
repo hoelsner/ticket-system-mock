@@ -78,6 +78,16 @@ while also being marked as escalated.
 Issue categories should be managed through admin data instead of a hard-coded
 enumeration.
 
+### Scope issue identifiers through collections
+
+Issue identifiers should not be derived from the database primary key. Each
+Issue should belong to one Collection, and the Collection should own the
+identifier prefix and the next local sequence number.
+
+This document uses the format `TASK-000` to describe that rule. The numeric
+portion must always render with at least three digits, while still allowing
+larger values such as `TASK-1024`.
+
 ### Separate internal and customer-visible comments
 
 Issue comments should distinguish between internal notes and customer-visible
@@ -110,6 +120,8 @@ Suggested fields:
 
 - `id`
 - `issue_number`
+- `collection_id`
+- `collection_issue_sequence`
 - `title`
 - `description_markdown`
 - `category_id`
@@ -140,6 +152,19 @@ Suggested fields:
 If the project later needs group-specific metadata beyond Django `Group`, that
 should be added through a separate profile-style model rather than replacing the
 built-in permission grouping.
+
+### Collection
+
+Represents a logical grouping of issues that share a common identifier prefix.
+
+Suggested fields:
+
+- `id`
+- `name`
+- `prefix`
+- `description`
+- `is_active`
+- `next_issue_sequence`
 
 ### User
 
@@ -268,6 +293,7 @@ Issue comments should be separated by visibility:
 ## Relationships
 
 - An `Issue` belongs to one `IssueCategory`.
+- An `Issue` belongs to one `Collection`.
 - An `Issue` can be associated to zero or one `Group` for dispatching.
 - An `Issue` can be associated to zero or one `User`.
 - If an `Issue` is associated to a `User`, that `User` should belong to the
@@ -289,6 +315,8 @@ erDiagram
     ISSUE {
         uuid id
         string issue_number
+      uuid collection_id
+      int collection_issue_sequence
         string title
       text description_markdown
         uuid category_id
@@ -304,6 +332,15 @@ erDiagram
         datetime closed_at
         datetime archived_at
         uuid archived_by_user_id
+    }
+
+    COLLECTION {
+      uuid id
+      string name
+      string prefix
+      text description
+      boolean is_active
+      int next_issue_sequence
     }
 
     ISSUE_CATEGORY {
@@ -357,6 +394,7 @@ erDiagram
         string reason
     }
 
+    COLLECTION ||--o{ ISSUE : scopes
     ISSUE_CATEGORY ||--o{ ISSUE : classifies
     GROUP o|--o{ ISSUE : dispatches
     USER o|--o{ ISSUE : takes
@@ -372,6 +410,7 @@ erDiagram
 ## Resolved Decisions
 
 - `IssueCategory` is managed through admin-maintained reference data.
+- Issue identifiers are scoped by `Collection` and formatted as `PREFIX-000`.
 - Escalation is an Issue flag, not a workflow state.
 - Issue comments are separated into customer-visible and internal comments.
 - Issue archival uses soft-delete fields instead of hard deletion.
@@ -392,6 +431,8 @@ erDiagram
 - Start with this conceptual model before introducing Django models.
 - Keep `workflow_state` as the single lifecycle source of truth unless the
   product requirements later distinguish it from status.
+- Keep issue numbering scoped by `Collection` so each prefix can maintain its
+  own local sequence independently.
 - Treat the Kanban board as a read model derived from issues rather than a
   stored structure.
 - Treat the `Instance Kanban Board` as the user-facing projection of the
