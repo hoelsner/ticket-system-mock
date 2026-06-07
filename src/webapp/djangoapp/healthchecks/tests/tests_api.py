@@ -80,3 +80,25 @@ class HealthcheckApiTests(TestCase):
             response.json()["checks"]["webhooks"]["message"], "No enabled webhook endpoints are configured."
         )
         self.assertIn("healthcheck failed", captured_logs.output[0])
+
+    @patch("djangoapp.healthchecks.views.HealthcheckService.run_all_checks")
+    def test_api_logs_errors_for_exception_backed_failures(self, mock_run_all_checks):
+        mock_run_all_checks.return_value = HealthCheckSummary(
+            status="unhealthy",
+            duration_ms=31,
+            checks={
+                "database": HealthCheckResult(
+                    name="database",
+                    status="unhealthy",
+                    duration_ms=31,
+                    message="Database connectivity check failed.",
+                    exception_type="RuntimeError",
+                )
+            },
+        )
+
+        with self.assertLogs("djangoapp.healthchecks.views", level="ERROR") as captured_logs:
+            response = self.client.get(reverse("healthcheck-api"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("exception_type=RuntimeError", captured_logs.output[0])

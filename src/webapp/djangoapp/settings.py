@@ -51,7 +51,7 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 
 DEFAULT_LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 
-PRODUCT_DISPLAY_NAME = os.environ.get("PRODUCT_DISPLAY_NAME", "IT Operation Ticketing Demo Service")
+PRODUCT_DISPLAY_NAME = os.environ.get("PRODUCT_DISPLAY_NAME", "Ticket System Mock")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["*"])
 

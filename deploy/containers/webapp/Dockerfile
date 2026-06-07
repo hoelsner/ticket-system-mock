@@ -15,7 +15,7 @@ ENV DJANGO_ALLOWED_HOSTS="*"
 ENV DJANGO_TIME_ZONE="UTC"
 ENV DJANGO_LOG_LEVEL="INFO"
 ENV SERVICE_BASE_URL="http://localhost"
-ENV PRODUCT_DISPLAY_NAME="IT Operation Ticketing Demo Service"
+ENV PRODUCT_DISPLAY_NAME="Ticket System Mock"
 ENV DJANGO_RUNTIME_ROOT="/runtime"
 ENV DJANGO_STATIC_ROOT="/runtime/static"
 ENV DJANGO_MEDIA_ROOT="/runtime/media"
@@ -67,7 +67,7 @@ RUN mkdir -p /app/build /runtime/static /runtime/media /runtime/certificates /ru
     && printf '%s\n' "$COMMIT_ID" > /app/build/image-commit.txt \
     && chown -R appuser:appuser /app /runtime
 
-LABEL org.opencontainers.image.title="IT Operation Ticketing Demo Service" \
+LABEL org.opencontainers.image.title="Ticket System Mock" \
       org.opencontainers.image.version="$BUILD_VERSION" \
       org.opencontainers.image.revision="$COMMIT_ID"
 

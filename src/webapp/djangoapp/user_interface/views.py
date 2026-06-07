@@ -341,6 +341,20 @@ class IssueCommentCreateView(IssueContextMixin, AuthenticatedFormView):
         return TemplateResponse(self.request, "core/issue_detail.html", context, status=400)
 
 
+class IssueAttachmentDeleteView(IssueContextMixin, AppLoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        attachment_name, issue = controllers.delete_issue_attachment(
+            self.get_issue(),
+            self.kwargs["attachment_pk"],
+            request.user,
+        )
+        board_event_broker.publish("kanban.board.updated", {"scope": "board"})
+        messages.success(request, f"Attachment {attachment_name} was removed from {issue.issue_number}.")
+        return redirect("issue-detail", pk=issue.pk)
+
+
 class MarkdownPreviewView(AppLoginRequiredMixin, View):
     http_method_names = ["post"]
 

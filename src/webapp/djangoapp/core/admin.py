@@ -9,6 +9,7 @@ from .models import (
     IssueCategory,
     IssueComment,
     IssueCommentMention,
+    IssueHistoryEvent,
     IssueStateTransition,
     WebhookDeliveryAttempt,
     WebhookEndpoint,
@@ -82,6 +83,14 @@ class IssueStateTransitionInline(admin.TabularInline):
     can_delete = False
 
 
+class IssueHistoryEventInline(admin.TabularInline):
+    model = IssueHistoryEvent
+    extra = 0
+    fields = ("event_type", "field_name", "old_value", "new_value", "changed_by_user", "changed_at")
+    readonly_fields = ("event_type", "field_name", "old_value", "new_value", "changed_by_user", "changed_at")
+    can_delete = False
+
+
 @admin.register(Collection)
 class CollectionAdmin(admin.ModelAdmin):
     list_display = ("name", "prefix", "is_active", "next_issue_sequence")
@@ -131,7 +140,7 @@ class IssueAdmin(admin.ModelAdmin):
         "archived_at",
         "archived_by_user",
     )
-    inlines = (IssueAttachmentInline, IssueCommentInline, IssueStateTransitionInline)
+    inlines = (IssueAttachmentInline, IssueCommentInline, IssueStateTransitionInline, IssueHistoryEventInline)
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -156,11 +165,17 @@ class IssueAdmin(admin.ModelAdmin):
                 obj.workflow_state,
                 changed_by_user=request.user,
             )
+            from .controllers import IssueHistoryController
+
+            IssueHistoryController.record_snapshot_changes(original, original_snapshot, request.user)
             WebhookController.create_issue_updated_event(original, original_snapshot, actor=request.user)
             WebhookController.create_issue_queue_assigned_event(original, original_snapshot, actor=request.user)
             return
 
         super().save_model(request, obj, form, change)
+        from .controllers import IssueHistoryController
+
+        IssueHistoryController.record_snapshot_changes(obj, original_snapshot, request.user)
         WebhookController.create_issue_updated_event(obj, original_snapshot, actor=request.user)
         WebhookController.create_issue_queue_assigned_event(obj, original_snapshot, actor=request.user)
 
@@ -187,6 +202,17 @@ class IssueStateTransitionAdmin(admin.ModelAdmin):
     list_filter = ("from_state", "to_state", "changed_at")
     search_fields = ("issue__issue_number", "changed_by_user__username", "reason")
     readonly_fields = ("issue", "from_state", "to_state", "changed_by_user", "changed_at", "reason")
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(IssueHistoryEvent)
+class IssueHistoryEventAdmin(admin.ModelAdmin):
+    list_display = ("issue", "event_type", "field_name", "changed_by_user", "changed_at")
+    list_filter = ("event_type", "field_name", "changed_at")
+    search_fields = ("issue__issue_number", "changed_by_user__username", "old_value", "new_value")
+    readonly_fields = ("issue", "event_type", "field_name", "old_value", "new_value", "changed_by_user", "changed_at")
 
     def has_add_permission(self, request):
         return False

@@ -53,37 +53,37 @@
         <div class="top-navigation__start">
           {% if user.is_authenticated %}
             <details class="side-navigation" data-side-navigation>
-              <summary class="side-navigation__toggle" aria-label="Toggle detailed navigation">{% include "includes/icon.html" with name="menu" %}</summary>
+              <summary class="side-navigation__toggle" aria-label="Toggle detailed navigation">{% include "includes/icon.html" with name="menu" class_name="" %}</summary>
               <nav class="side-navigation__panel" aria-label="Detailed navigation">
                 <div class="side-navigation__header">
-                  <button type="button" class="side-navigation__header-action" aria-label="Close detailed navigation" data-side-navigation-dismiss>{% include "includes/icon.html" with name="menu" %}</button>
+                  <button type="button" class="side-navigation__header-action" aria-label="Close detailed navigation" data-side-navigation-dismiss>{% include "includes/icon.html" with name="menu" class_name="" %}</button>
                 </div>
                 <ul class="side-navigation__list side-navigation__list--primary">
                   <li class="side-navigation__item">
-                    <a href="{% url 'dashboard' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" %}<span>Dashboard</span></a>
+                    <a href="{% url 'dashboard' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>Dashboard</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'home' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" %}<span>Board</span></a>
+                    <a href="{% url 'home' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>Board</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'issue-create' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" %}<span>Create Issue</span></a>
+                    <a href="{% url 'issue-create' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>Create Issue</span></a>
                   </li>
                 </ul>
                 <div class="side-navigation__spacer" aria-hidden="true"></div>
                 <ul class="side-navigation__list side-navigation__list--secondary">
                   <li class="side-navigation__item">
-                    <a href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="administration" %}<span>Administration</span></a>
+                    <a href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="administration" class_name="" %}<span>Administration</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" %}<span>Healthcheck</span></a>
+                    <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" class_name="" %}<span>Healthcheck</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="api" %}<span>API Docs</span></a>
+                    <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="api" class_name="" %}<span>API Docs</span></a>
                   </li>
                   <li class="side-navigation__item">
                     <form action="{% url 'logout' %}" method="post" class="side-navigation__form">
                       {% csrf_token %}
-                      <button type="submit" class="side-navigation__action contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="logout" %}<span>Sign out</span></button>
+                      <button type="submit" class="side-navigation__action contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="logout" class_name="" %}<span>Sign out</span></button>
                     </form>
                   </li>
                 </ul>
@@ -100,9 +100,9 @@
 
         {% if user.is_authenticated %}
           <div class="top-navigation__links">
-            <a href="{% url 'dashboard' %}" class="contrast app-inline-icon-link"{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" %}<span>Dashboard</span></a>
-            <a href="{% url 'home' %}" class="contrast app-inline-icon-link"{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" %}<span>Board</span></a>
-            <a href="{% url 'issue-create' %}" class="contrast app-inline-icon-link"{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" %}<span>Create Issue</span></a>
+            <a href="{% url 'dashboard' %}" class="contrast app-inline-icon-link"{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>Dashboard</span></a>
+            <a href="{% url 'home' %}" class="contrast app-inline-icon-link"{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>Board</span></a>
+            <a href="{% url 'issue-create' %}" class="contrast app-inline-icon-link"{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>Create Issue</span></a>
           </div>
         {% endif %}
 
@@ -118,10 +118,10 @@
             <span class="top-navigation__user">{{ user.get_full_name|default:user.username }}</span>
             <form action="{% url 'logout' %}" method="post">
               {% csrf_token %}
-              <button type="submit" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="logout" %}<span>Sign out</span></button>
+              <button type="submit" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="logout" class_name="" %}<span>Sign out</span></button>
             </form>
           {% else %}
-            <a href="{% url 'login' %}" role="button" class="secondary contrast app-inline-icon-link">{% include "includes/icon.html" with name="login" %}<span>Sign in</span></a>
+            <a href="{% url 'login' %}" role="button" class="secondary contrast app-inline-icon-link">{% include "includes/icon.html" with name="login" class_name="" %}<span>Sign in</span></a>
           {% endif %}
         </div>
       </nav>

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-IT Operation Ticketing Demo Service is a lightweight ticketing system for demos,
+Ticket System Mock is a lightweight ticketing system for demos,
 workflow simulations, and integration scenarios. It provides a realistic IT
 operations workflow without the overhead of a full ITSM platform.
 

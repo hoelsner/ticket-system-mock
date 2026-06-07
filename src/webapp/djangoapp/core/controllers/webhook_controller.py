@@ -29,6 +29,8 @@ class WebhookController:
         "is_escalated",
         "resolved_at",
         "closed_at",
+        "archived_at",
+        "archived_by_user",
     )
 
     @staticmethod
@@ -45,6 +47,8 @@ class WebhookController:
             "is_escalated": issue.is_escalated,
             "resolved_at": WebhookController._serialize_datetime(issue.resolved_at),
             "closed_at": WebhookController._serialize_datetime(issue.closed_at),
+            "archived_at": WebhookController._serialize_datetime(issue.archived_at),
+            "archived_by_user": WebhookController._serialize_user(issue.archived_by_user),
         }
 
     @staticmethod
@@ -207,6 +211,7 @@ class WebhookController:
             "updated_at": WebhookController._serialize_datetime(issue.updated_at),
             "resolved_at": WebhookController._serialize_datetime(issue.resolved_at),
             "closed_at": WebhookController._serialize_datetime(issue.closed_at),
+            "archived_at": WebhookController._serialize_datetime(issue.archived_at),
             "links": WebhookController._serialize_issue_links(issue),
         }
 

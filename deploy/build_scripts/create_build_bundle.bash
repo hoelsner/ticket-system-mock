@@ -58,7 +58,9 @@ cp "$user_docs_dir/product-overview.md" "$bundle_dir/docs/user/product-overview.
 cp "$user_docs_dir/configuration.md" "$bundle_dir/docs/user/configuration.md"
 
 cat >"$bundle_dir/.env.example" <<EOF
-# Docker Compose deployment defaults for IT Operation Ticketing Demo Service
+# Docker Compose deployment defaults for Ticket System Mock
+# Recommended published image: hoelsner/ticket-system-mock:latest
+# Override WEBAPP_IMAGE if you want to deploy a different published tag or a locally built image.
 WEBAPP_IMAGE=$image_ref
 DJANGO_SECRET_KEY=change-me
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
@@ -93,8 +95,9 @@ This bundle was generated from commit $commit_id for build version $build_versio
 ## Quick Start
 
 1. Copy .env.example to .env and replace the placeholder secrets.
-2. Review docker-compose.override.yaml and remove it if not needed.
-3. Start the stack with docker compose -f docker-compose.yaml up -d.
+2. Keep WEBAPP_IMAGE set to the published Docker Hub image hoelsner/ticket-system-mock:latest unless you are intentionally deploying a different published tag or a locally built image.
+3. Review docker-compose.override.yaml and remove it if not needed.
+4. Start the stack with docker compose -f docker-compose.yaml up -d.
 EOF
 
 cat >"$bundle_dir/SETUP_AND_CONFIGURATION.md" <<EOF
@@ -105,7 +108,7 @@ It summarizes the current product and configuration documentation shipped with t
 
 ## Product Summary
 
-IT Operation Ticketing Demo Service is a lightweight ticketing system for demos,
+Ticket System Mock is a lightweight ticketing system for demos,
 workflow simulations, and integration scenarios. It provides:
 
 - an authenticated user frontend with issue workflows and a Kanban board
@@ -137,7 +140,7 @@ Database data and Redis data are stored in their own named Docker volumes.
 ## Deployment Steps
 
 1. Copy .env.example to .env.
-2. Set WEBAPP_IMAGE to the published or locally built image tag.
+2. Keep WEBAPP_IMAGE set to the published Docker Hub image hoelsner/ticket-system-mock:latest for the standard production path, or replace it with a different published tag or a locally built image when needed.
 3. Replace the placeholder values for DJANGO_SECRET_KEY, POSTGRES_PASSWORD, and CACHE_PASSWORD.
 4. Set SERVICE_BASE_URL, DJANGO_ALLOWED_HOSTS, and NGINX_SERVER_NAME for the target hostname.
 5. Start the stack with docker compose -f docker-compose.yaml up -d.
@@ -153,7 +156,7 @@ Database data and Redis data are stored in their own named Docker volumes.
 | DJANGO_ALLOWED_HOSTS | localhost,127.0.0.1 | Sets the allowed hosts list as a comma-separated value. |
 | DJANGO_TIME_ZONE | UTC | Sets the Django application time zone. |
 | DJANGO_LOG_LEVEL | INFO | Sets the Django log level written to stdout. |
-| PRODUCT_DISPLAY_NAME | IT Operation Ticketing Demo Service | Provides the default product name used by the frontend and admin. |
+| PRODUCT_DISPLAY_NAME | Ticket System Mock | Provides the default product name used by the frontend and admin. |
 | POSTGRES_DB | itoticketing | Sets the PostgreSQL database name. |
 | POSTGRES_USER | itoticketing | Sets the PostgreSQL user name. |
 | POSTGRES_PASSWORD | PlsChgMePostgres | Sets the PostgreSQL password. Override this in production. |

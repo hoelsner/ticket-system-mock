@@ -100,6 +100,17 @@ class IssueTransitionSchema(Schema):
     changed_by_user: UserSummarySchema = Field(description="User who performed the workflow state change.")
 
 
+class IssueHistoryEntrySchema(Schema):
+    entry_type: str = Field(description="Normalized history entry type for workflow, field, or attachment changes.")
+    field_name: str = Field(description="Field or entity that changed for this history entry.")
+    message: str = Field(description="Human-readable summary of the recorded change.")
+    detail: str = Field(description="Optional secondary detail associated with the history entry.")
+    from_value: str = Field(description="Previous human-readable value, when available.")
+    to_value: str = Field(description="New human-readable value, when available.")
+    changed_at: str = Field(description="Timestamp when the change was recorded, encoded as ISO 8601.")
+    changed_by_user: UserSummarySchema = Field(description="User who performed the recorded change.")
+
+
 class IssueSummarySchema(Schema):
     id: int = Field(description="Unique identifier of the issue.")
     issue_number: str = Field(
@@ -131,6 +142,9 @@ class IssueSummarySchema(Schema):
 class IssueDetailSchema(IssueSummarySchema):
     attachments: list[IssueAttachmentSchema] = Field(description="Attachments currently associated with the issue.")
     comments: list[IssueCommentSchema] = Field(description="Comments recorded on the issue.")
+    history: list[IssueHistoryEntrySchema] = Field(
+        description="Combined issue history across workflow, field, and attachment changes."
+    )
     transitions: list[IssueTransitionSchema] = Field(description="Workflow state transition history for the issue.")
 
 
@@ -466,11 +480,11 @@ INVALID_PAYLOAD_ERROR = (400, {"error": "Invalid request payload."})
 
 
 api = NinjaAPI(
-    title="IT Operation Ticketing Demo Service API",
+    title="Ticket System Mock API",
     version="1.0.0",
     description=(
         "Machine-facing REST API for reading issue data, reference data, dashboard projections, "
-        "and issue workflow mutations in the IT Operation Ticketing Demo Service."
+        "and issue workflow mutations in Ticket System Mock."
     ),
     auth=DjangoBasicAuth(),
 )
@@ -612,7 +626,21 @@ def _serialize_issue_detail(issue):
         **_serialize_issue(issue),
         "attachments": [_serialize_attachment(attachment) for attachment in detail_context["issue_attachments"]],
         "comments": [_serialize_comment(comment) for comment in detail_context["issue_comments"]],
+        "history": [_serialize_history_entry(history_entry) for history_entry in detail_context["issue_history"]],
         "transitions": [_serialize_transition(transition) for transition in detail_context["issue_transitions"]],
+    }
+
+
+def _serialize_history_entry(history_entry):
+    return {
+        "entry_type": history_entry["entry_type"],
+        "field_name": history_entry["field_name"],
+        "message": history_entry["message"],
+        "detail": history_entry["detail"],
+        "from_value": history_entry["from_value"],
+        "to_value": history_entry["to_value"],
+        "changed_at": history_entry["changed_at"].isoformat(),
+        "changed_by_user": _serialize_user(history_entry["changed_by_user"]),
     }
 
 
@@ -1160,8 +1188,21 @@ def update_issue_attachment(request, issue_id: int, attachment_id: int):
     if not form.is_valid():
         return _form_error_response(form)
 
-    updated_attachment = IssueAttachmentController.update(issue_attachment, form.cleaned_data)
+    updated_attachment = IssueAttachmentController.update(issue_attachment, form.cleaned_data, request.auth)
     return {"status": "updated", "attachment": _serialize_attachment(updated_attachment)}
+
+
+@api.delete(
+    "/issues/{issue_id}/attachments/{attachment_id}",
+    response={200: dict},
+    summary="Delete issue attachment",
+    description="Delete an existing attachment from an issue.",
+    tags=["Issues"],
+)
+def delete_issue_attachment(request, issue_id: int, attachment_id: int):
+    issue_attachment = _get_issue_attachment(issue_id, attachment_id)
+    IssueAttachmentController.delete(issue_attachment, request.auth)
+    return {"status": "deleted", "attachment_id": attachment_id}
 
 
 @api.get(

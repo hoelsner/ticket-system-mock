@@ -7,7 +7,12 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from djangoapp.core.controllers import IssueController, WebhookController
+from djangoapp.core.controllers import (
+    IssueAttachmentController,
+    IssueController,
+    IssueHistoryController,
+    WebhookController,
+)
 from djangoapp.core.models import (
     Collection,
     DraftIssueAttachment,
@@ -40,6 +45,28 @@ BOARD_PRIORITIES = (
 PRIORITY_RANKS = {priority: index for index, priority in enumerate(BOARD_PRIORITIES)}
 BOARD_STATE_VALUES = {state.value for state in BOARD_STATES}
 DRAFT_ATTACHMENT_TOKEN_RE = re.compile(r"\{\{\s*attachment\s*:\s*draft-(\d+)\s*\}\}")
+HISTORY_EVENT_MESSAGES = {
+    "title": "Issue title changed",
+    "description": "Issue description changed",
+    "priority": "Priority changed",
+    "collection": "Collection changed",
+    "category": "Category changed",
+    "group": "Group assignment changed",
+    "user": "User assignment changed",
+    "resolved_at": "Resolved timestamp updated",
+    "closed_at": "Closed timestamp updated",
+    "archived_at": "Archived timestamp updated",
+    "archived_by_user": "Archived by user changed",
+}
+ESCALATION_HISTORY_MESSAGES = {
+    "Enabled": "Escalation enabled",
+    "Disabled": "Escalation disabled",
+}
+ATTACHMENT_HISTORY_MESSAGES = {
+    "ATTACHMENT_ADDED": "Attachment added",
+    "ATTACHMENT_UPDATED": "Attachment updated",
+    "ATTACHMENT_REMOVED": "Attachment removed",
+}
 
 
 def build_board_context(params, column_states=None):
@@ -89,6 +116,7 @@ def build_issue_detail_context(issue):
         "active_nav": "board",
         "issue_comments": list(issue.comments.all()),
         "issue_attachments": list(issue.attachments.all()),
+        "issue_history": _build_issue_history(issue),
         "issue_transitions": list(issue.state_transitions.all()),
     }
 
@@ -138,6 +166,7 @@ def update_issue(issue, cleaned_data, changed_by_user):
     IssueController.sync_board_position(issue, original_state, original_priority)
 
     _sync_attachments(issue, cleaned_data, changed_by_user)
+    IssueHistoryController.record_snapshot_changes(issue, original_snapshot, changed_by_user)
     WebhookController.create_issue_updated_event(issue, original_snapshot, actor=changed_by_user)
     WebhookController.create_issue_queue_assigned_event(issue, original_snapshot, actor=changed_by_user)
     return issue
@@ -147,12 +176,16 @@ def update_issue_description(issue, cleaned_data, changed_by_user):
     original_snapshot = WebhookController.capture_issue_snapshot(issue)
     issue.description_markdown = cleaned_data["description_markdown"]
     issue.save(update_fields=["description_markdown", "updated_at"])
+    IssueHistoryController.record_snapshot_changes(issue, original_snapshot, changed_by_user)
     WebhookController.create_issue_updated_event(issue, original_snapshot, actor=changed_by_user)
     return issue
 
 
 def archive_issue(issue, archived_by_user):
-    return IssueController.archive(issue, archived_by_user)
+    original_snapshot = WebhookController.capture_issue_snapshot(issue)
+    archived_issue = IssueController.archive(issue, archived_by_user)
+    IssueHistoryController.record_snapshot_changes(archived_issue, original_snapshot, archived_by_user)
+    return archived_issue
 
 
 def add_issue_comment(issue, cleaned_data, author_user):
@@ -233,8 +266,15 @@ def move_issue(issue, target_state, position_index, changed_by_user):
         position_index=position_index,
         reason="Moved on the kanban board.",
     )
+    IssueHistoryController.record_snapshot_changes(moved_issue, original_snapshot, changed_by_user)
     WebhookController.create_issue_updated_event(moved_issue, original_snapshot, actor=changed_by_user)
     return moved_issue
+
+
+def delete_issue_attachment(issue, attachment_id, deleted_by_user):
+    issue_attachment = get_object_or_404(issue.attachments.all(), pk=attachment_id)
+    IssueAttachmentController.delete(issue_attachment, deleted_by_user)
+    return issue_attachment.original_filename, issue
 
 
 def is_board_state(value):
@@ -338,6 +378,7 @@ def _get_issue_queryset():
         "attachments",
         "comments__author_user",
         "comments__mentions__mentioned_user",
+        "history_events__changed_by_user",
         "state_transitions__changed_by_user",
     )
 
@@ -385,10 +426,65 @@ def _sync_attachments(issue, cleaned_data, uploaded_by_user):
         return []
 
     attachment_description = cleaned_data.get("attachment_description", "").strip()
-    return [
+    attachments = [
         _create_issue_attachment(issue, attachment_file, attachment_description, uploaded_by_user)
         for attachment_file in attachment_files
     ]
+    for attachment in attachments:
+        IssueHistoryController.record_attachment_added(issue, attachment, uploaded_by_user)
+    return attachments
+
+
+def _build_issue_history(issue):
+    history_entries = [_build_transition_history_entry(transition) for transition in issue.state_transitions.all()]
+    history_entries.extend(_build_history_event_entry(history_event) for history_event in issue.history_events.all())
+    return sorted(
+        history_entries,
+        key=lambda entry: (entry["changed_at"], entry["sort_id"]),
+        reverse=True,
+    )
+
+
+def _build_transition_history_entry(transition):
+    return {
+        "entry_type": "workflow_state_changed",
+        "field_name": "workflow_state",
+        "message": f"{transition.get_from_state_display()} -> {transition.get_to_state_display()}",
+        "detail": transition.reason,
+        "from_value": "",
+        "to_value": "",
+        "changed_at": transition.changed_at,
+        "changed_by_user": transition.changed_by_user,
+        "sort_id": transition.pk,
+    }
+
+
+def _build_history_event_entry(history_event):
+    return {
+        "entry_type": history_event.event_type.lower(),
+        "field_name": history_event.field_name,
+        "message": _build_history_event_message(history_event),
+        "detail": "",
+        "from_value": history_event.old_value,
+        "to_value": history_event.new_value,
+        "changed_at": history_event.changed_at,
+        "changed_by_user": history_event.changed_by_user,
+        "sort_id": history_event.pk,
+    }
+
+
+def _build_history_event_message(history_event):
+    if history_event.event_type == "FIELD_CHANGED":
+        return _build_field_change_history_message(history_event)
+    if history_event.event_type in ATTACHMENT_HISTORY_MESSAGES:
+        return ATTACHMENT_HISTORY_MESSAGES[history_event.event_type]
+    return "Issue updated"
+
+
+def _build_field_change_history_message(history_event):
+    if history_event.field_name == "is_escalated":
+        return ESCALATION_HISTORY_MESSAGES.get(history_event.new_value, "Issue updated")
+    return HISTORY_EVENT_MESSAGES.get(history_event.field_name, "Issue updated")
 
 
 def _get_attachment_files(cleaned_data):

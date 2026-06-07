@@ -1,5 +1,6 @@
+{% firstof class_name '' as resolved_class_name %}
 <svg
-  class="app-icon{% if class_name|default:'' %} {{ class_name }}{% endif %}"
+  class="app-icon{% if resolved_class_name %} {{ resolved_class_name }}{% endif %}"
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 24 24"
   fill="none"

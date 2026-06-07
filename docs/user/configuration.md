@@ -15,7 +15,7 @@ the default value applied when a variable is not provided.
 | `DJANGO_ALLOWED_HOSTS` | `*` | Sets the allowed hosts list as a comma-separated value. |
 | `DJANGO_TIME_ZONE` | `UTC` | Sets the Django application time zone. |
 | `DJANGO_LOG_LEVEL` | `DEBUG` when `DJANGO_DEBUG=True`, otherwise `INFO` | Sets the Django logging level used by the basic stdout logging configuration. |
-| `PRODUCT_DISPLAY_NAME` | `IT Operation Ticketing Demo Service` | Provides the default product name used by the frontend, admin, and branding fallback behavior. |
+| `PRODUCT_DISPLAY_NAME` | `Ticket System Mock` | Provides the default product name used by the frontend, admin, and branding fallback behavior. |
 | `DJANGO_STATIC_ROOT` | `src/webapp/runtime/static` | Sets the filesystem path where Django writes collected static files. |
 | `DJANGO_MEDIA_ROOT` | `src/webapp/runtime/media` | Sets the filesystem path where Django stores media files. |
 | `POSTGRES_DB` | `itoticketing` | Sets the PostgreSQL database name used by the Web Application. |
@@ -102,7 +102,7 @@ SERVICE_BASE_URL=http://localhost
 DJANGO_ALLOWED_HOSTS=*
 DJANGO_TIME_ZONE=UTC
 DJANGO_LOG_LEVEL=DEBUG
-PRODUCT_DISPLAY_NAME=IT Operation Ticketing Demo Service
+PRODUCT_DISPLAY_NAME=Ticket System Mock
 DJANGO_STATIC_ROOT=/app/runtime/static
 DJANGO_MEDIA_ROOT=/app/runtime/media
 POSTGRES_DB=itoticketing

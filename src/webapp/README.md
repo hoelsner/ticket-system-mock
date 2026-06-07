@@ -1,1 +1,1 @@
-# Django Web Application for the IT Operation Ticketing Demo Service
+# Django Web Application for Ticket System Mock

@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This document defines the conceptual data model for the IT Operation Ticketing
-Demo Service based on the current product overview. It is intended for
+This document defines the conceptual data model for Ticket System Mock based on
+the current product overview. It is intended for
 contributors who need a shared understanding of the core entities, their
 relationships, and the main modeling decisions before implementation details are
 finalized.

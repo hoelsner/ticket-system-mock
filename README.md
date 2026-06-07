@@ -1,7 +1,11 @@
-# IT Operation Ticketing Demo Service
+# Ticket System Mock for Demos and Integrations
 
-IT Operation Ticketing Demo Service is a compact Django-based ticketing system
+Ticket System Mock is a compact Django-based ticketing system
 for demos, workflow walkthroughs, and integration scenarios.
+
+<p align="center">
+    <img src="src/webapp/static/img/default_app_hero_image.png" alt="Hero image" width="700">
+</p>
 
 It currently provides:
 
@@ -31,7 +35,8 @@ NGINX containers.
 ### Option 1: Use an Image from a Central Container Registry
 
 Use this option when you only need to run the stack and do not want to keep the
-full repository on the target host.
+full repository on the target host. The published Docker Hub image
+`hoelsner/ticket-system-mock:latest` is the recommended production default.
 
 1. Prepare a deployment directory on the target host.
 2. Copy the generated deployment bundle there, or copy these files manually:
@@ -43,7 +48,7 @@ full repository on the target host.
 4. Set at least these values in `.env`:
 
 ```env
-WEBAPP_IMAGE=registry.example.com/your-org/itoperation-ticketing-demo-service:20260605-1
+WEBAPP_IMAGE=hoelsner/ticket-system-mock:latest
 DJANGO_SECRET_KEY=replace-this-with-a-secret-value
 DJANGO_ALLOWED_HOSTS=ticketing.example.com
 POSTGRES_PASSWORD=replace-this-with-a-secret-value
@@ -79,7 +84,8 @@ HTTP and HTTPS ports.
 ### Option 2: Build and Deploy from a Full Repository Checkout
 
 Use this option when the full repository is available on the deployment host and
-you want to build the web application image locally.
+you want to build the web application image locally instead of using the
+published Docker Hub image.
 
 1. Build a versioned image and generate a deployment bundle:
 

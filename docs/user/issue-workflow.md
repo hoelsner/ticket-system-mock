@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This guide explains how an `Issue` moves through the IT Operation Ticketing
-Demo Service from creation to completion. It is intended for users who need to
+This guide explains how an `Issue` moves through Ticket System Mock from
+creation to completion. It is intended for users who need to
 understand the product workflow and the main actions available during issue
 handling.
 

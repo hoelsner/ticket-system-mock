@@ -7,6 +7,7 @@ from .issue_category import IssueCategory
 from .issue_comment import IssueComment
 from .issue_comment_mention import IssueCommentMention
 from .issue_comment_visibility import IssueCommentVisibility
+from .issue_history_event import IssueHistoryEvent
 from .issue_priority import IssuePriority
 from .issue_state_transition import IssueStateTransition
 from .webhook_delivery_attempt import WebhookDeliveryAttempt
@@ -25,6 +26,7 @@ __all__ = [
     "IssueComment",
     "IssueCommentMention",
     "IssueCommentVisibility",
+    "IssueHistoryEvent",
     "IssuePriority",
     "IssueStateTransition",
     "WebhookDeliveryAttempt",

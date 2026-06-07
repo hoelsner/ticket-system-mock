@@ -9,7 +9,7 @@
 
 ## Application Appearance and Behavior
 
-- the application name `IT Operation Ticketing Demo Service` is within the webapplication
+- the application name `Ticket System Mock` is within the webapplication
 - the user frontend and the admin frontend must both support a light mode and a dark mode
 - the entire application must support multiple languages using Django's built-in i18n approach
 - the login or sign-up page must use a split layout with a functional left panel and a contextual right-side product illustration

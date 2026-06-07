@@ -17,7 +17,7 @@ class BrandingTests(TestCase):
     def test_branding_snapshot_uses_default_assets_when_not_configured(self):
         snapshot = get_branding_snapshot()
 
-        self.assertEqual(snapshot.display_name, "IT Operation Ticketing Demo Service")
+        self.assertEqual(snapshot.display_name, "Ticket System Mock")
         self.assertTrue(snapshot.logo_url.endswith("/static/img/default_app_logo.png"))
         self.assertTrue(snapshot.login_background_url.endswith("/static/img/default_app_hero_image.png"))
         self.assertEqual(snapshot.light_primary_color, "#0172ad")

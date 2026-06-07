@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from djangoapp.core.admin import (
     IssueAdmin,
+    IssueHistoryEventAdmin,
     IssueStateTransitionAdmin,
     WebhookDeliveryAttemptAdmin,
     WebhookEndpointAdmin,
@@ -21,6 +22,7 @@ from djangoapp.core.models import (
     Collection,
     Issue,
     IssueCategory,
+    IssueHistoryEvent,
     IssueStateTransition,
     WebhookDeliveryAttempt,
     WebhookEndpoint,
@@ -122,6 +124,11 @@ class CoreAdminTests(TestCase):
         self.assertEqual(updated_issue.title, "Closed from admin")
         self.assertEqual(transition.to_state, WorkflowState.CLOSED)
         self.assertEqual(transition.changed_by_user, self.admin_user)
+        self.assertGreaterEqual(updated_issue.history_events.count(), 3)
+        self.assertEqual(
+            set(updated_issue.history_events.values_list("field_name", flat=True)),
+            {"title", "group", "user", "closed_at"},
+        )
 
     def test_issue_admin_save_model_updates_without_transition_when_state_unchanged(self):
         admin_instance = IssueAdmin(Issue, self.site)
@@ -142,6 +149,11 @@ class CoreAdminTests(TestCase):
 
     def test_issue_state_transition_admin_disables_manual_adds(self):
         admin_instance = IssueStateTransitionAdmin(IssueStateTransition, self.site)
+
+        self.assertFalse(admin_instance.has_add_permission(request=None))
+
+    def test_issue_history_event_admin_disables_manual_adds(self):
+        admin_instance = IssueHistoryEventAdmin(IssueHistoryEvent, self.site)
 
         self.assertFalse(admin_instance.has_add_permission(request=None))
 

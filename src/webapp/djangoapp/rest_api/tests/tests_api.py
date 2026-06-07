@@ -12,7 +12,16 @@ from django.test import RequestFactory, TestCase
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 
-from djangoapp.core.models import Collection, Issue, IssueCategory, IssueComment, IssuePriority, WorkflowState
+from djangoapp.core.models import (
+    Collection,
+    Issue,
+    IssueCategory,
+    IssueComment,
+    IssueHistoryEvent,
+    IssuePriority,
+    IssueStateTransition,
+    WorkflowState,
+)
 from djangoapp.rest_api.api import (
     DjangoBasicAuth,
     _move_payload,
@@ -101,7 +110,7 @@ class RestApiTests(TestCase):
         self.assertEqual(
             schema["info"]["description"],
             "Machine-facing REST API for reading issue data, reference data, dashboard projections, "
-            "and issue workflow mutations in the IT Operation Ticketing Demo Service.",
+            "and issue workflow mutations in Ticket System Mock.",
         )
         self.assertEqual(schema["paths"]["/api/health"]["get"]["summary"], "Check API health")
         self.assertEqual(schema["paths"]["/api/auth/me"]["get"]["tags"], ["Authentication"])
@@ -619,6 +628,52 @@ class RestApiTests(TestCase):
         self.assertEqual(response.json()["issue_number"], issue.issue_number)
         self.assertEqual(response.json()["comments"][0]["body"], "Investigating now.")
 
+    def test_issue_detail_endpoint_orders_workflow_and_field_history_newest_first(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.CRITICAL,
+        )
+        IssueHistoryEvent.objects.create(
+            issue=issue,
+            event_type=IssueHistoryEvent.FIELD_CHANGED,
+            field_name="priority",
+            old_value="High",
+            new_value="Critical",
+            changed_by_user=self.user,
+            changed_at=timezone.now() - timezone.timedelta(minutes=2),
+        )
+        IssueStateTransition.objects.create(
+            issue=issue,
+            from_state=WorkflowState.NEW,
+            to_state=WorkflowState.ASSIGNED,
+            changed_by_user=self.user,
+            reason="Triaged and dispatched.",
+            changed_at=timezone.now() - timezone.timedelta(minutes=1),
+        )
+        IssueHistoryEvent.objects.create(
+            issue=issue,
+            event_type=IssueHistoryEvent.FIELD_CHANGED,
+            field_name="title",
+            old_value="Primary outage",
+            new_value="Primary uplink outage",
+            changed_by_user=self.user,
+            changed_at=timezone.now(),
+        )
+
+        response = self.client.get(f"/api/issues/{issue.pk}", headers=self.basic_auth_header())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [entry["field_name"] for entry in response.json()["history"][:3]],
+            ["title", "workflow_state", "priority"],
+        )
+
     def test_create_issue_endpoint_uses_same_validation_and_controller_behavior(self):
         response = self.client.post(
             "/api/issues",
@@ -700,6 +755,43 @@ class RestApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
         self.assertEqual(issue.state_transitions.count(), 1)
+
+    def test_update_issue_endpoint_returns_combined_history_for_non_workflow_changes(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "title": issue.title,
+                "description_markdown": "Still assigned to network operations.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_escalated": True,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "",
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.history_events.count(), 2)
+        self.assertEqual(response.json()["issue"]["history"][0]["message"], "Escalation enabled")
+        self.assertEqual(response.json()["issue"]["history"][1]["message"], "Issue description changed")
 
     def test_update_issue_endpoint_accepts_multipart_attachments(self):
         issue = Issue.objects.create(
@@ -844,7 +936,7 @@ class RestApiTests(TestCase):
         self.assertEqual(comment.mentions.count(), 1)
         self.assertEqual(response.json()["comment"]["body"], "Updated for {{user:observer}}")
 
-    def test_attachment_endpoints_support_create_and_update(self):
+    def test_attachment_endpoints_support_create_update_and_delete_with_history(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
             description_markdown="Core switch unreachable from branch office.",
@@ -888,6 +980,24 @@ class RestApiTests(TestCase):
         self.assertEqual(
             update_response.json()["attachment"]["file_url"],
             f"/api/issues/{issue.pk}/attachments/{attachment.pk}/download",
+        )
+
+        delete_response = self.client.delete(
+            f"/api/issues/{issue.pk}/attachments/{attachment.pk}",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(delete_response.json()["status"], "deleted")
+        self.assertEqual(issue.attachments.count(), 0)
+
+        detail_response = self.client.get(f"/api/issues/{issue.pk}", headers=self.basic_auth_header())
+
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(
+            [entry["message"] for entry in detail_response.json()["history"][:3]],
+            ["Attachment removed", "Attachment updated", "Attachment added"],
         )
 
     def test_attachment_download_endpoint_returns_file_response(self):

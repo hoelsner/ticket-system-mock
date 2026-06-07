@@ -63,6 +63,8 @@ class HealthcheckStatusView(FrontendAccessMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["active_nav"] = "healthcheck"
         context["check_names"] = CHECK_SEQUENCE
+        context["board_fullscreen_mode"] = False
+        context["board_fullscreen_querystring"] = "?fullscreen=1"
         return context
 
 

@@ -18,6 +18,7 @@ from djangoapp.core.models import (
     IssueAttachment,
     IssueCategory,
     IssueComment,
+    IssueHistoryEvent,
     IssuePriority,
     IssueStateTransition,
     WorkflowState,
@@ -58,7 +59,7 @@ class UserInterfaceTests(TestCase):
         response = self.client.get(reverse("login"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "IT Operation Ticketing Demo Service")
+        self.assertContains(response, "Ticket System Mock")
         self.assertContains(response, "default_app_logo.png")
         self.assertContains(response, "default_app_hero_image.png")
         self.assertContains(response, reverse("home"))
@@ -132,7 +133,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "/api/docs")
         self.assertContains(response, "Demo User")
         self.assertContains(response, "Sign out")
-        self.assertContains(response, "IT Operation Ticketing Demo Service")
+        self.assertContains(response, "Ticket System Mock")
         self.assertContains(response, "default_app_logo.png")
         self.assertContains(response, reverse("dashboard"))
         self.assertContains(response, reverse("issue-create"))
@@ -422,9 +423,10 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Back to board")
         self.assertContains(response, "Working on switch replacement.")
         self.assertContains(response, "network-log.txt")
+        self.assertContains(response, reverse("issue-attachment-delete", args=[issue.pk, issue.attachments.get().pk]))
         self.assertContains(response, 'target="_blank"', html=False)
         self.assertContains(response, reverse("issue-comment-create", args=[issue.pk]))
-        self.assertContains(response, "Transition History")
+        self.assertContains(response, "Issue history")
         self.assertContains(response, "Assigned to the network team.")
         self.assertContains(response, "data-issue-detail-refresh-url")
         self.assertNotContains(response, 'class="issue-card"', html=False)
@@ -434,7 +436,7 @@ class UserInterfaceTests(TestCase):
         self.assertLess(response_content.index("Issue Description"), response_content.index("Related records"))
         self.assertLess(response_content.index("Related records"), response_content.index("Comments"))
         self.assertLess(response_content.index("Comments"), response_content.index("Attachments"))
-        self.assertLess(response_content.index("Attachments"), response_content.index("Transition History"))
+        self.assertLess(response_content.index("Attachments"), response_content.index("Issue history"))
 
     def test_issue_detail_renders_description_and_comment_tokens(self):
         referenced_issue = Issue.objects.create(
@@ -1026,6 +1028,46 @@ class UserInterfaceTests(TestCase):
         self.assertRedirects(response, reverse("issue-detail", args=[issue.pk]))
         self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
         self.assertEqual(issue.state_transitions.count(), 0)
+        self.assertEqual(issue.history_events.count(), 1)
+        history_event = issue.history_events.get()
+        self.assertEqual(history_event.event_type, IssueHistoryEvent.FIELD_CHANGED)
+        self.assertEqual(history_event.field_name, "description")
+
+    def test_issue_update_view_without_state_change_records_issue_history(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.HIGH,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-update", args=[issue.pk]),
+            {
+                "title": "Primary uplink outage",
+                "description_markdown": "Still assigned to network operations.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "No workflow change.",
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_escalated": "on",
+                "attachment_description": "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Issue history")
+        self.assertContains(response, "Issue description changed")
+        self.assertContains(response, "Escalation enabled")
 
     def test_issue_comment_create_view_persists_comment(self):
         issue = Issue.objects.create(
@@ -1055,6 +1097,40 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(comment.mentions.count(), 1)
         self.assertEqual(comment.mentions.get().mentioned_as, "observer")
         self.assertContains(response, f"A new issue comment was added to {issue.issue_number}.")
+
+    def test_issue_attachment_delete_view_removes_attachment_and_records_history(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+        )
+        attachment = IssueAttachment.objects.create(
+            issue=issue,
+            file=SimpleUploadedFile("network-log.txt", b"link down"),
+            original_filename="network-log.txt",
+            content_type="text/plain",
+            file_size=9,
+            description="Diagnostic log",
+            uploaded_by_user=self.user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-attachment-delete", args=[issue.pk, attachment.pk]),
+            follow=True,
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.attachments.count(), 0)
+        self.assertContains(response, "Attachment removed")
+        self.assertContains(
+            response, f"Attachment {attachment.original_filename} was removed from {issue.issue_number}."
+        )
 
     def test_issue_archive_view_archives_issue(self):
         issue = Issue.objects.create(

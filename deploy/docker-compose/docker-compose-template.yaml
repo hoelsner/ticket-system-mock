@@ -89,7 +89,7 @@ services:
       - application
 
   management:
-    image: ${WEBAPP_IMAGE:-itoperation-ticketing-demo-service:latest}
+    image: ${WEBAPP_IMAGE:-hoelsner/ticket-system-mock:latest}
     restart: "no"
     depends_on:
       database:
@@ -106,7 +106,7 @@ services:
       - application
 
   webapp:
-    image: ${WEBAPP_IMAGE:-itoperation-ticketing-demo-service:latest}
+    image: ${WEBAPP_IMAGE:-hoelsner/ticket-system-mock:latest}
     restart: unless-stopped
     depends_on:
       management:

@@ -171,6 +171,10 @@
             <li>
               <a href="{{ attachment.file.url }}" target="_blank" rel="noopener noreferrer">{{ attachment.original_filename }}</a>
               {% if attachment.description %}<span>{{ attachment.description }}</span>{% endif %}
+              <form method="post" action="{% url 'issue-attachment-delete' issue.pk attachment.pk %}" class="issue-attachment-inline-action">
+                {% csrf_token %}
+                <button type="submit" class="secondary">Remove</button>
+              </form>
             </li>
           {% endfor %}
         </ul>
@@ -180,21 +184,23 @@
       </article>
 
       <article class="issue-detail-panel issue-detail-panel--timeline">
-        <h2>Transition History</h2>
-        {% if issue_transitions %}
+        <h2>Issue history</h2>
+        {% if issue_history %}
           <ol class="transition-timeline">
-            {% for transition in issue_transitions %}
+            {% for entry in issue_history %}
               <li class="transition-timeline__item">
                 <div class="transition-timeline__content">
-                  <strong>{{ transition.get_from_state_display }} -> {{ transition.get_to_state_display }}</strong>
-                  <span>{{ transition.changed_by_user.get_full_name|default:transition.changed_by_user.username }} at {{ transition.changed_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
-                  {% if transition.reason %}<p>{{ transition.reason }}</p>{% endif %}
+                  <strong>{{ entry.message }}</strong>
+                  <span>{{ entry.changed_by_user.get_full_name|default:entry.changed_by_user.username }} at {{ entry.changed_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
+                  {% if entry.detail %}<p>{{ entry.detail }}</p>{% endif %}
+                  {% if entry.from_value %}<p>From: {{ entry.from_value }}</p>{% endif %}
+                  {% if entry.to_value %}<p>To: {{ entry.to_value }}</p>{% endif %}
                 </div>
               </li>
             {% endfor %}
           </ol>
         {% else %}
-          <p>No workflow transitions recorded yet.</p>
+          <p>No issue history recorded yet.</p>
         {% endif %}
       </article>
     </div>
