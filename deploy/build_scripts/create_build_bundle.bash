@@ -43,7 +43,7 @@ if ! command -v zip >/dev/null 2>&1; then
 	exit 1
 fi
 
-archive_basename="itoperation-ticketing-demo-service-$build_version"
+archive_basename="ticket-system-mock-$build_version"
 bundle_dir="$output_root/$archive_basename"
 bundle_zip="$output_root/$archive_basename.zip"
 
@@ -59,19 +59,19 @@ cp "$user_docs_dir/configuration.md" "$bundle_dir/docs/user/configuration.md"
 
 cat >"$bundle_dir/.env.example" <<EOF
 # Docker Compose deployment defaults for Ticket System Mock
-# Recommended published image: hoelsner/ticket-system-mock:latest
-# Override WEBAPP_IMAGE if you want to deploy a different published tag or a locally built image.
-WEBAPP_IMAGE=$image_ref
+# WEBAPP_IMAGE is intentionally omitted here.
+# docker-compose.yaml already defaults to the published image.
 DJANGO_SECRET_KEY=change-me
+SERVICE_BASE_URL=https://localhost:8443
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 DJANGO_TIME_ZONE=UTC
 POSTGRES_DB=itoticketing
 POSTGRES_USER=itoticketing
 POSTGRES_PASSWORD=change-me
 CACHE_PASSWORD=change-me
-NGINX_SERVER_NAME=_
-NGINX_HTTP_PORT=80
-NGINX_HTTPS_PORT=443
+NGINX_SERVER_NAME=localhost
+NGINX_HTTP_PORT=8080
+NGINX_HTTPS_PORT=8443
 EOF
 
 cat >"$bundle_dir/build-metadata.env" <<EOF
@@ -95,9 +95,10 @@ This bundle was generated from commit $commit_id for build version $build_versio
 ## Quick Start
 
 1. Copy .env.example to .env and replace the placeholder secrets.
-2. Keep WEBAPP_IMAGE set to the published Docker Hub image hoelsner/ticket-system-mock:latest unless you are intentionally deploying a different published tag or a locally built image.
+2. The compose template already defaults to the published Docker Hub image hoelsner/ticket-system-mock:latest.
 3. Review docker-compose.override.yaml and remove it if not needed.
-4. Start the stack with docker compose -f docker-compose.yaml up -d.
+4. Adjust SERVICE_BASE_URL, DJANGO_ALLOWED_HOSTS, NGINX_SERVER_NAME, and the published ports when you are deploying to a non-local hostname or different host ports.
+5. Start the stack with docker compose -f docker-compose.yaml up -d.
 EOF
 
 cat >"$bundle_dir/SETUP_AND_CONFIGURATION.md" <<EOF
@@ -140,9 +141,9 @@ Database data and Redis data are stored in their own named Docker volumes.
 ## Deployment Steps
 
 1. Copy .env.example to .env.
-2. Keep WEBAPP_IMAGE set to the published Docker Hub image hoelsner/ticket-system-mock:latest for the standard production path, or replace it with a different published tag or a locally built image when needed.
+2. The compose template already defaults to the published Docker Hub image hoelsner/ticket-system-mock:latest.
 3. Replace the placeholder values for DJANGO_SECRET_KEY, POSTGRES_PASSWORD, and CACHE_PASSWORD.
-4. Set SERVICE_BASE_URL, DJANGO_ALLOWED_HOSTS, and NGINX_SERVER_NAME for the target hostname.
+4. Adjust SERVICE_BASE_URL, DJANGO_ALLOWED_HOSTS, NGINX_SERVER_NAME, and the published ports when you are deploying to a non-local hostname or different host ports.
 5. Start the stack with docker compose -f docker-compose.yaml up -d.
 6. Check docker compose -f docker-compose.yaml logs management until migrations and provisioning finish.
 
@@ -152,7 +153,7 @@ Database data and Redis data are stored in their own named Docker volumes.
 | --- | --- | --- |
 | DJANGO_DEBUG | False in the compose template | Enables or disables Django debug mode. |
 | DJANGO_SECRET_KEY | change-me in the compose template | Sets Django's secret key. |
-| SERVICE_BASE_URL | http://localhost | Defines the canonical externally exposed base URL that API consumers can prepend to relative REST API URLs such as attachment download paths. |
+| SERVICE_BASE_URL | https://localhost:8443 | Defines the canonical externally exposed base URL that API consumers can prepend to relative REST API URLs such as attachment download paths. |
 | DJANGO_ALLOWED_HOSTS | localhost,127.0.0.1 | Sets the allowed hosts list as a comma-separated value. |
 | DJANGO_TIME_ZONE | UTC | Sets the Django application time zone. |
 | DJANGO_LOG_LEVEL | INFO | Sets the Django log level written to stdout. |
@@ -166,9 +167,9 @@ Database data and Redis data are stored in their own named Docker volumes.
 | CACHE_HOST | cache | Sets the Redis host used by the cache configuration. |
 | CACHE_PORT | 6379 | Sets the Redis port used by the cache configuration. |
 | CACHE_DB | 0 | Sets the Redis database index used by the cache configuration. |
-| NGINX_SERVER_NAME | _ | Sets the NGINX server_name value used by the generated reverse proxy config. |
-| NGINX_HTTP_PORT | 80 | Publishes the HTTP port on the host. |
-| NGINX_HTTPS_PORT | 443 | Publishes the HTTPS port on the host. |
+| NGINX_SERVER_NAME | localhost | Sets the NGINX server_name value used by the generated reverse proxy config. |
+| NGINX_HTTP_PORT | 8080 | Publishes the HTTP port on the host. |
+| NGINX_HTTPS_PORT | 8443 | Publishes the HTTPS port on the host. |
 
 ## Branding Notes
 

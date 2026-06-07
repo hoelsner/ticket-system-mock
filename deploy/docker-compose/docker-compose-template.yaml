@@ -7,7 +7,7 @@ x-webapp-environment: &webapp-environment
   DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}"
   DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-UTC}"
   DJANGO_LOG_LEVEL: "${DJANGO_LOG_LEVEL:-INFO}"
-  SERVICE_BASE_URL: "${SERVICE_BASE_URL:-http://localhost}"
+  SERVICE_BASE_URL: "${SERVICE_BASE_URL:-https://localhost:8443}"
   DJANGO_RUNTIME_ROOT: "/runtime"
   DJANGO_STATIC_ROOT: "/runtime/static"
   DJANGO_MEDIA_ROOT: "/runtime/media"
@@ -25,7 +25,7 @@ x-webapp-environment: &webapp-environment
   CACHE_PORT: "${CACHE_PORT:-6379}"
   CACHE_DB: "${CACHE_DB:-0}"
   CACHE_PASSWORD: "${CACHE_PASSWORD:-PlsChgMeCache}"
-  NGINX_SERVER_NAME: "${NGINX_SERVER_NAME:-_}"
+  NGINX_SERVER_NAME: "${NGINX_SERVER_NAME:-localhost}"
   NGINX_CLIENT_MAX_BODY_SIZE: "${NGINX_CLIENT_MAX_BODY_SIZE:-10m}"
 
 services:
@@ -99,7 +99,18 @@ services:
     environment: *webapp-environment
     command:
       - /bin/bash
-      - /app/deploy/containers/webapp/run_management.bash
+      - -ec
+      - |
+          /app/deploy/containers/webapp/run_management.bash
+          tail -f /dev/null
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f "$${DJANGO_PROVISIONING_FLAG}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     volumes:
       - runtime:/runtime
     networks:
@@ -110,11 +121,19 @@ services:
     restart: unless-stopped
     depends_on:
       management:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment: *webapp-environment
     command:
       - /bin/bash
       - /app/deploy/containers/webapp/run_webapp.bash
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5)"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     expose:
       - "8000"
     volumes:
@@ -127,16 +146,24 @@ services:
     restart: unless-stopped
     depends_on:
       webapp:
-        condition: service_started
+        condition: service_healthy
     command:
       - /bin/sh
       - -ec
       - |
           cp /runtime/nginx/default.conf /etc/nginx/conf.d/default.conf
           exec nginx -g 'daemon off;'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-check-certificate -q --spider https://127.0.0.1/
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
+      - "${NGINX_HTTP_PORT:-8080}:80"
+      - "${NGINX_HTTPS_PORT:-8443}:443"
     volumes:
       - runtime:/runtime:ro
     networks:

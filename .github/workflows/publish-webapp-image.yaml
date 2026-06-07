@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      IMAGE_REPOSITORY: hoelsner/ticket-system-mock
+      IMAGE_TAG: latest
+      BUILD_VERSION: latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -25,8 +29,14 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish latest multi-architecture image
-        env:
-          IMAGE_REPOSITORY: hoelsner/ticket-system-mock
-          IMAGE_TAG: latest
-          BUILD_VERSION: latest
         run: bash scripts/cicd/publish_webapp_image.bash
+
+      - name: Generate deployment bundle
+        run: bash deploy/build_scripts/create_build_bundle.bash "$BUILD_VERSION" "$IMAGE_REPOSITORY:$IMAGE_TAG" "$(git rev-parse --short=12 HEAD)"
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-bundle-${{ env.BUILD_VERSION }}
+          path: build/deploy/*.zip
+          if-no-files-found: error

@@ -48,15 +48,21 @@ full repository on the target host. The published Docker Hub image
 4. Set at least these values in `.env`:
 
 ```env
-WEBAPP_IMAGE=hoelsner/ticket-system-mock:latest
 DJANGO_SECRET_KEY=replace-this-with-a-secret-value
-DJANGO_ALLOWED_HOSTS=ticketing.example.com
+SERVICE_BASE_URL=https://localhost:8443
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 POSTGRES_PASSWORD=replace-this-with-a-secret-value
 CACHE_PASSWORD=replace-this-with-a-secret-value
-NGINX_SERVER_NAME=ticketing.example.com
-NGINX_HTTP_PORT=80
-NGINX_HTTPS_PORT=443
+NGINX_SERVER_NAME=localhost
+NGINX_HTTP_PORT=8080
+NGINX_HTTPS_PORT=8443
 ```
+
+The compose template already defaults `WEBAPP_IMAGE` to
+`hoelsner/ticket-system-mock:latest`, so the `.env` file does not need to set
+it. These defaults are aimed at a local production-style test setup. For an actual
+hosted deployment, replace `SERVICE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`,
+`NGINX_SERVER_NAME`, and the published ports as needed for the target hostname.
 
 5. Pull the referenced images:
 
@@ -103,8 +109,8 @@ This command:
 2. Copy the generated compose files from the bundle into the deployment working
 	directory, or copy the templates from `deploy/docker-compose/` into the
 	repository root as `docker-compose.yaml` and `docker-compose.override.yaml`.
-3. Create `.env` next to `docker-compose.yaml` and set `WEBAPP_IMAGE` to the
-	image tag produced by the build script together with the required secrets.
+3. Create `.env` next to `docker-compose.yaml` with the required secrets and
+	host-specific runtime settings.
 4. Start the production stack from the repository root:
 
 ```bash
