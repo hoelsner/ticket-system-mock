@@ -48,7 +48,7 @@ RUN groupadd -g "${GID}" appuser \
     && useradd -l -u "${UID}" -g appuser -ms /bin/bash appuser
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash openssl \
+    && apt-get install -y --no-install-recommends bash curl openssl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -59,12 +59,15 @@ RUN python -m pip install --upgrade pip uv \
     && uv pip install --system --no-cache -r "/tmp/pip/${REQUIREMENTS_FILE}"
 
 COPY --chown=appuser:appuser deploy/containers/webapp/*.bash /app/deploy/containers/webapp/
+COPY scripts/fetch_static_files.bash /tmp/fetch_static_files.bash
 COPY --chown=appuser:appuser src/webapp /app/src/webapp
 COPY --chown=appuser:appuser docs/user /app/docs/user
 
-RUN mkdir -p /app/build /runtime/static /runtime/media /runtime/certificates /runtime/provisioning /runtime/nginx \
+RUN REPO_ROOT=/app bash /tmp/fetch_static_files.bash \
+    && mkdir -p /app/build /runtime/static /runtime/media /runtime/certificates /runtime/provisioning /runtime/nginx \
     && printf '%s\n' "$BUILD_VERSION" > /app/build/image-version.txt \
     && printf '%s\n' "$COMMIT_ID" > /app/build/image-commit.txt \
+    && rm -f /tmp/fetch_static_files.bash \
     && chown -R appuser:appuser /app /runtime
 
 LABEL org.opencontainers.image.title="Ticket System Mock" \

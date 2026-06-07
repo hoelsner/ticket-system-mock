@@ -4,4 +4,6 @@
 /src/webapp/.tmp
 /src/webapp/.coverage
 /src/webapp/.coveragerc
+/runtime
+/src/webapp/static/lib
 AGENTS.md

@@ -3,8 +3,8 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
-target_root="$repo_root/src/webapp/static/lib"
+repo_root="${REPO_ROOT:-$(cd "$script_dir/.." && pwd)}"
+target_root="${TARGET_ROOT:-$repo_root/src/webapp/static/lib}"
 
 htmx_version="2.0.10"
 htmx_sse_version="2.2.4"
