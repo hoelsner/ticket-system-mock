@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "django_cotton",
     "djangoapp.branding",
     "djangoapp.core",
+    "djangoapp.healthchecks",
     "djangoapp.rest_api",
     "djangoapp.user_interface",
 ]

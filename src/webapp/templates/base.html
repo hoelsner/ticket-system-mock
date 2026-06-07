@@ -75,6 +75,9 @@
                     <a href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="administration" %}<span>Administration</span></a>
                   </li>
                   <li class="side-navigation__item">
+                    <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" %}<span>Healthcheck</span></a>
+                  </li>
+                  <li class="side-navigation__item">
                     <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="api" %}<span>API Docs</span></a>
                   </li>
                   <li class="side-navigation__item">

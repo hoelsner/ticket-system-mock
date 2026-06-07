@@ -3,6 +3,8 @@ from django.utils import timezone
 
 from djangoapp.core.models import Issue, IssueStateTransition, WorkflowState
 
+from .webhook_controller import WebhookController
+
 
 class IssueController:
     @staticmethod
@@ -65,6 +67,12 @@ class IssueController:
             changed_by_user=changed_by_user,
             reason=reason,
         )
+        if to_state == WorkflowState.CLOSED:
+            WebhookController.create_issue_closed_event(
+                issue,
+                actor=changed_by_user,
+                transition=transition,
+            )
         return issue, transition
 
     @staticmethod

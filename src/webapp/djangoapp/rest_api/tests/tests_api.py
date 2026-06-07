@@ -109,15 +109,6 @@ class RestApiTests(TestCase):
             schema["paths"]["/api/board"]["get"]["parameters"][0]["description"],
             "Free-text filter applied to issue number, title, and description content.",
         )
-        board_parameters = {
-            parameter["name"]: parameter for parameter in schema["paths"]["/api/board"]["get"]["parameters"]
-        }
-        self.assertIn("updated_start", board_parameters)
-        self.assertIn("updated_end", board_parameters)
-        self.assertEqual(
-            board_parameters["updated_start"]["schema"]["anyOf"][0]["format"],
-            "date-time",
-        )
         self.assertEqual(
             schema["paths"]["/api/issues"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"][
                 "required"
@@ -148,10 +139,6 @@ class RestApiTests(TestCase):
         self.assertEqual(
             schema["components"]["schemas"]["AuthenticatedUserSchema"]["properties"]["display_name"]["description"],
             "Preferred display name shown for the authenticated user.",
-        )
-        self.assertIn(
-            "comments, attachments, workflow transitions, board moves, or archive actions",
-            schema["components"]["schemas"]["IssueSummarySchema"]["properties"]["updated_at"]["description"],
         )
 
     def test_basic_auth_backend_returns_active_user(self):
@@ -569,59 +556,6 @@ class RestApiTests(TestCase):
         self.assertEqual(payload["selected_priority"], IssuePriority.CRITICAL)
         self.assertEqual(payload["board_columns"][1]["issues"][0]["issue_number"], matching_issue.issue_number)
 
-    def test_board_endpoint_filters_by_updated_timeframe(self):
-        matching_issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.CRITICAL,
-        )
-        stale_issue = Issue.objects.create(
-            title="Cooling alert",
-            description_markdown="Rack temperature exceeded threshold.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.observer,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        stale_timestamp = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk__in=[matching_issue.pk, stale_issue.pk]).update(updated_at=stale_timestamp)
-
-        comment_response = self.client.post(
-            f"/api/issues/{matching_issue.pk}/comments",
-            data={
-                "body": "Investigating now.",
-                "visibility": "INTERNAL",
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(comment_response.status_code, 201)
-        updated_start = (timezone.now() - timezone.timedelta(minutes=1)).isoformat()
-        updated_end = (timezone.now() + timezone.timedelta(minutes=1)).isoformat()
-
-        response = self.client.get(
-            "/api/board",
-            {
-                "updated_start": updated_start,
-                "updated_end": updated_end,
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(payload["board_issue_count"], 1)
-        self.assertEqual(payload["selected_updated_start"], updated_start)
-        self.assertEqual(payload["selected_updated_end"], updated_end)
-        self.assertEqual(payload["board_columns"][1]["issues"][0]["issue_number"], matching_issue.issue_number)
-
     def test_issue_list_endpoint_applies_filter_combinations(self):
         filtered_issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -661,76 +595,6 @@ class RestApiTests(TestCase):
         payload = response.json()
         self.assertEqual(len(payload), 1)
         self.assertEqual(payload[0]["issue_number"], filtered_issue.issue_number)
-
-    def test_issue_list_endpoint_filters_by_updated_timeframe(self):
-        matching_issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.CRITICAL,
-        )
-        stale_issue = Issue.objects.create(
-            title="Cooling alert",
-            description_markdown="Rack temperature exceeded threshold.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.observer,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        stale_timestamp = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk__in=[matching_issue.pk, stale_issue.pk]).update(updated_at=stale_timestamp)
-
-        attachment_response = self.client.post(
-            f"/api/issues/{matching_issue.pk}/attachments",
-            data={
-                "description": "Traceroute output",
-                "file": SimpleUploadedFile("trace.txt", b"hop1\nhop2", content_type="text/plain"),
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(attachment_response.status_code, 201)
-        updated_start = (timezone.now() - timezone.timedelta(minutes=1)).isoformat()
-        updated_end = (timezone.now() + timezone.timedelta(minutes=1)).isoformat()
-
-        response = self.client.get(
-            "/api/issues",
-            {
-                "updated_start": updated_start,
-                "updated_end": updated_end,
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(len(payload), 1)
-        self.assertEqual(payload[0]["issue_number"], matching_issue.issue_number)
-
-    def test_issue_list_endpoint_rejects_inverted_updated_timeframe(self):
-        updated_start = timezone.now().isoformat()
-        updated_end = (timezone.now() - timezone.timedelta(minutes=5)).isoformat()
-
-        response = self.client.get(
-            "/api/issues",
-            {
-                "updated_start": updated_start,
-                "updated_end": updated_end,
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            response.json(),
-            {"error": "updated_start must be earlier than or equal to updated_end."},
-        )
 
     def test_issue_detail_endpoint_includes_related_records(self):
         issue = Issue.objects.create(
@@ -904,127 +768,6 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.attachments.count(), 1)
         self.assertEqual(issue.attachments.get().original_filename, "trace.txt")
         self.assertEqual(response.json()["issue"]["attachments"][0]["original_filename"], "trace.txt")
-
-    def test_comment_activity_advances_issue_updated_at(self):
-        issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        original_updated_at = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk=issue.pk).update(updated_at=original_updated_at)
-
-        response = self.client.post(
-            f"/api/issues/{issue.pk}/comments",
-            data={
-                "body": "Investigating now.",
-                "visibility": "INTERNAL",
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 201)
-        issue.refresh_from_db()
-        self.assertGreater(issue.updated_at, original_updated_at)
-
-    def test_attachment_activity_advances_issue_updated_at(self):
-        issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        original_updated_at = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk=issue.pk).update(updated_at=original_updated_at)
-
-        response = self.client.post(
-            f"/api/issues/{issue.pk}/attachments",
-            data={
-                "description": "Traceroute output",
-                "file": SimpleUploadedFile("trace.txt", b"hop1\nhop2", content_type="text/plain"),
-            },
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 201)
-        issue.refresh_from_db()
-        self.assertGreater(issue.updated_at, original_updated_at)
-
-    def test_comment_update_activity_advances_issue_updated_at(self):
-        issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        comment = IssueComment.objects.create(
-            issue=issue,
-            author_user=self.user,
-            body="Investigating now.",
-            visibility="INTERNAL",
-        )
-        original_updated_at = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk=issue.pk).update(updated_at=original_updated_at)
-
-        response = self.client.put(
-            f"/api/issues/{issue.pk}/comments/{comment.pk}",
-            data=json.dumps({
-                "body": "Escalating now.",
-                "visibility": "INTERNAL",
-            }),
-            content_type="application/json",
-            headers=self.basic_auth_header(),
-        )
-
-        self.assertEqual(response.status_code, 200)
-        issue.refresh_from_db()
-        self.assertGreater(issue.updated_at, original_updated_at)
-
-    def test_attachment_update_activity_advances_issue_updated_at(self):
-        issue = Issue.objects.create(
-            title="Primary uplink outage",
-            description_markdown="Core switch unreachable from branch office.",
-            collection=self.collection,
-            category=self.category,
-            group=self.support_group,
-            user=self.user,
-            workflow_state=WorkflowState.NEW,
-            priority=IssuePriority.HIGH,
-        )
-        attachment = issue.attachments.create(
-            file=SimpleUploadedFile("trace.txt", b"hop1\nhop2", content_type="text/plain"),
-            original_filename="trace.txt",
-            content_type="text/plain",
-            file_size=9,
-            description="Traceroute output",
-            uploaded_by_user=self.user,
-        )
-        original_updated_at = timezone.now() - timezone.timedelta(days=2)
-        Issue.objects.filter(pk=issue.pk).update(updated_at=original_updated_at)
-
-        response = self.multipart_put(
-            f"/api/issues/{issue.pk}/attachments/{attachment.pk}",
-            {
-                "description": "Updated traceroute output",
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        issue.refresh_from_db()
-        self.assertGreater(issue.updated_at, original_updated_at)
 
     def test_comment_move_and_archive_endpoints_mutate_issue(self):
         issue = Issue.objects.create(

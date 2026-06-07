@@ -1,0 +1,12 @@
+<section id="healthcheck-check-{{ check_name }}" aria-live="polite">
+  <article class="app-surface healthcheck-card healthcheck-card--{{ result.status }}">
+    <header>
+      <p class="healthcheck-card__eyebrow"><strong>{{ check_label }}</strong></p>
+      <h2 class="healthcheck-card__title">{{ result.status|title }}</h2>
+    </header>
+    <p class="healthcheck-card__meta">Duration: {{ result.duration_ms }} ms</p>
+    {% if result.message %}
+      <p class="healthcheck-card__message">{{ result.message }}</p>
+    {% endif %}
+  </article>
+</section>

@@ -32,7 +32,7 @@ def _parse_issue_move_payload(request):
 
     try:
         position_index = int(payload.get("position_index", 0))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None, JsonResponse({"error": "Invalid target position."}, status=400)
 
     return {
@@ -278,7 +278,7 @@ class IssueDescriptionUpdateView(IssueContextMixin, AuthenticatedFormView):
         return kwargs
 
     def form_valid(self, form):
-        issue = controllers.update_issue_description(self.get_issue(), form.cleaned_data)
+        issue = controllers.update_issue_description(self.get_issue(), form.cleaned_data, self.request.user)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
         messages.success(self.request, f"Issue {issue.issue_number} description was updated.")
         return redirect("issue-detail", pk=issue.pk)

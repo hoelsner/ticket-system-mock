@@ -2235,6 +2235,48 @@ body.side-navigation-open .app-main::before {
   padding: 1rem;
 }
 
+.healthcheck-card {
+  border-left: 0.35rem solid var(--pico-muted-border-color);
+}
+
+.healthcheck-card--checking {
+  border-left-color: #b45309;
+  background: color-mix(in srgb, #b45309 10%, var(--pico-card-background-color) 90%);
+}
+
+.healthcheck-card--warning {
+  border-left-color: #b45309;
+  background: color-mix(in srgb, #b45309 10%, var(--pico-card-background-color) 90%);
+}
+
+.healthcheck-card--healthy {
+  border-left-color: #15803d;
+  background: color-mix(in srgb, #15803d 10%, var(--pico-card-background-color) 90%);
+}
+
+.healthcheck-card--unhealthy {
+  border-left-color: #b91c1c;
+  background: color-mix(in srgb, #b91c1c 10%, var(--pico-card-background-color) 90%);
+}
+
+.healthcheck-card__eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--pico-muted-color);
+}
+
+.healthcheck-card__title {
+  margin-bottom: 0.35rem;
+}
+
+.healthcheck-card__meta {
+  margin-bottom: 0;
+}
+
+.healthcheck-card__message {
+  margin-top: 0.75rem;
+  font-weight: 600;
+}
+
 .board-filters-panel {
   display: grid;
   gap: 1rem;

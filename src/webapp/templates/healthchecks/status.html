@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Service Health | {{ app_branding.display_name }}{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'lib/htmx/htmx.min.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <section class="app-surface">
+    <header>
+      <h1>Service Health</h1>
+      <p>Review the current database, migration, and cache status as each check loads independently.</p>
+    </header>
+  </section>
+
+  <section
+    id="healthcheck-summary"
+    hx-get="{% url 'healthcheck-status-summary' %}"
+    hx-trigger="healthcheck:run-summary from:body"
+    hx-swap="outerHTML"
+    aria-live="polite"
+  >
+    <article class="app-surface healthcheck-card healthcheck-card--checking">
+      <header>
+        <p class="healthcheck-card__eyebrow"><strong>Overall status</strong></p>
+        <h2 class="healthcheck-card__title">Checking</h2>
+      </header>
+      <p class="healthcheck-card__meta">Each healthcheck runs one-by-one so one failure does not block the remaining checks.</p>
+    </article>
+  </section>
+
+  <section class="grid">
+    {% for check_name in check_names %}
+      {% if forloop.first %}
+        {% with trigger="load" %}
+          <section
+            id="healthcheck-check-{{ check_name }}"
+            hx-get="{% url 'healthcheck-status-check' check_name=check_name %}"
+            hx-trigger="{{ trigger }}"
+            hx-swap="outerHTML"
+            aria-live="polite"
+          >
+            <article class="app-surface healthcheck-card healthcheck-card--checking">
+              <header>
+                <p class="healthcheck-card__eyebrow"><strong>{{ check_name|title }}</strong></p>
+                <h2 class="healthcheck-card__title">Checking</h2>
+              </header>
+              <p class="healthcheck-card__meta">Waiting for the latest check result.</p>
+            </article>
+          </section>
+        {% endwith %}
+      {% else %}
+      <section
+        id="healthcheck-check-{{ check_name }}"
+        hx-get="{% url 'healthcheck-status-check' check_name=check_name %}"
+        hx-trigger="healthcheck:run-{{ check_name }} from:body"
+        hx-swap="outerHTML"
+        aria-live="polite"
+      >
+        <article class="app-surface healthcheck-card healthcheck-card--checking">
+          <header>
+            <p class="healthcheck-card__eyebrow"><strong>{{ check_name|title }}</strong></p>
+            <h2 class="healthcheck-card__title">Checking</h2>
+          </header>
+          <p class="healthcheck-card__meta">Waiting for the latest check result.</p>
+        </article>
+      </section>
+      {% endif %}
+    {% endfor %}
+  </section>
+{% endblock %}

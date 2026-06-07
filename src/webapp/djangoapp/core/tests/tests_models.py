@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
@@ -13,9 +15,13 @@ from djangoapp.core.models import (
     IssueCommentMention,
     IssuePriority,
     IssueStateTransition,
+    WebhookEndpoint,
+    WebhookEvent,
+    WebhookEventType,
     WorkflowState,
     issue_attachment_upload_to,
 )
+from djangoapp.user_interface import controllers as user_interface_controllers
 
 
 class CoreModelTests(TestCase):
@@ -167,6 +173,116 @@ class CoreModelTests(TestCase):
         self.assertEqual(updated_issue.workflow_state, WorkflowState.CLOSED)
         self.assertIsNotNone(updated_issue.closed_at)
         self.assertIsNotNone(transition)
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
+    def test_create_issue_emits_webhook_created_event(self, _dispatch_event_async):
+        endpoint = WebhookEndpoint.objects.create(
+            name="Lifecycle sink",
+            target_url="https://example.com/webhooks/issues",
+            subscribed_event_types=[WebhookEventType.ISSUE_CREATED],
+        )
+
+        issue = user_interface_controllers.create_issue(
+            {
+                "title": "Webhook issue",
+                "description_markdown": "Created through controller.",
+                "collection": self.collection,
+                "category": self.category,
+                "priority": IssuePriority.MEDIUM,
+                "group": None,
+                "user": None,
+                "is_escalated": False,
+            },
+            self.assigned_user,
+        )
+
+        webhook_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_CREATED)
+
+        self.assertEqual(webhook_event.issue, issue)
+        self.assertEqual(webhook_event.target_endpoint_ids, [endpoint.pk])
+        self.assertEqual(webhook_event.payload["issue"]["key"], issue.issue_number)
+        self.assertEqual(webhook_event.payload["actor"]["id"], self.assigned_user.pk)
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
+    def test_update_issue_emits_update_and_queue_assignment_events(self, _dispatch_event_async):
+        WebhookEndpoint.objects.create(
+            name="Update sink",
+            target_url="https://example.com/webhooks/updates",
+            subscribed_event_types=[
+                WebhookEventType.ISSUE_UPDATED,
+                WebhookEventType.ISSUE_QUEUE_ASSIGNED,
+            ],
+        )
+        issue = self.create_issue()
+
+        user_interface_controllers.update_issue(
+            issue,
+            {
+                "title": "Updated switch outage",
+                "description_markdown": "Updated description.",
+                "collection": self.collection,
+                "category": self.category,
+                "priority": IssuePriority.HIGH,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "group": self.group,
+                "user": self.assigned_user,
+                "is_escalated": True,
+                "transition_reason": "Assigned to the network group",
+            },
+            self.assigned_user,
+        )
+
+        update_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_UPDATED)
+        queue_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_QUEUE_ASSIGNED)
+
+        self.assertIn("workflow_state", update_event.payload["changes"])
+        self.assertIn("queue", update_event.payload["changes"])
+        self.assertEqual(queue_event.payload["transition"]["to_queue"]["id"], self.group.pk)
+        self.assertIsNone(queue_event.payload["transition"]["from_queue"])
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
+    def test_issue_comment_signal_emits_comment_event(self, _dispatch_event_async):
+        WebhookEndpoint.objects.create(
+            name="Comment sink",
+            target_url="https://example.com/webhooks/comments",
+            subscribed_event_types=[WebhookEventType.ISSUE_COMMENTED],
+        )
+        issue = self.create_issue()
+
+        comment = user_interface_controllers.add_issue_comment(
+            issue,
+            {
+                "body": "Need network logs.",
+                "visibility": "INTERNAL",
+            },
+            self.assigned_user,
+        )
+
+        webhook_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_COMMENTED)
+
+        self.assertEqual(webhook_event.issue, issue)
+        self.assertEqual(webhook_event.payload["comment"]["id"], comment.pk)
+        self.assertEqual(webhook_event.payload["comment"]["visibility"], "INTERNAL")
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
+    def test_closing_issue_emits_closed_event(self, _dispatch_event_async):
+        WebhookEndpoint.objects.create(
+            name="Closed sink",
+            target_url="https://example.com/webhooks/closed",
+            subscribed_event_types=[WebhookEventType.ISSUE_CLOSED],
+        )
+        issue = self.create_issue(group=self.group, user=self.assigned_user)
+
+        IssueController.update_workflow_state(
+            issue,
+            WorkflowState.CLOSED,
+            changed_by_user=self.assigned_user,
+        )
+
+        webhook_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_CLOSED)
+
+        self.assertEqual(webhook_event.payload["issue"]["workflow_state"], WorkflowState.CLOSED)
+        self.assertEqual(webhook_event.payload["actor"]["id"], self.assigned_user.pk)
 
     def test_update_workflow_state_is_noop_when_state_does_not_change(self):
         issue = self.create_issue()

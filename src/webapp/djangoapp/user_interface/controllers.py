@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from djangoapp.core.controllers import IssueController
+from djangoapp.core.controllers import IssueController, WebhookController
 from djangoapp.core.models import (
     Collection,
     DraftIssueAttachment,
@@ -112,11 +112,13 @@ def create_issue(cleaned_data, created_by_user):
                 draft_token_mapping,
             )
             issue.save(update_fields=["description_markdown", "updated_at"])
+        WebhookController.create_issue_created_event(issue, actor=created_by_user)
     return issue
 
 
 def update_issue(issue, cleaned_data, changed_by_user):
-    original_issue = Issue.objects.only("workflow_state", "priority").get(pk=issue.pk)
+    original_issue = Issue.objects.select_related("collection", "category", "group", "user").get(pk=issue.pk)
+    original_snapshot = WebhookController.capture_issue_snapshot(original_issue)
     original_state = original_issue.workflow_state
     original_priority = original_issue.priority
     target_state = cleaned_data["workflow_state"]
@@ -136,12 +138,16 @@ def update_issue(issue, cleaned_data, changed_by_user):
     IssueController.sync_board_position(issue, original_state, original_priority)
 
     _sync_attachments(issue, cleaned_data, changed_by_user)
+    WebhookController.create_issue_updated_event(issue, original_snapshot, actor=changed_by_user)
+    WebhookController.create_issue_queue_assigned_event(issue, original_snapshot, actor=changed_by_user)
     return issue
 
 
-def update_issue_description(issue, cleaned_data):
+def update_issue_description(issue, cleaned_data, changed_by_user):
+    original_snapshot = WebhookController.capture_issue_snapshot(issue)
     issue.description_markdown = cleaned_data["description_markdown"]
     issue.save(update_fields=["description_markdown", "updated_at"])
+    WebhookController.create_issue_updated_event(issue, original_snapshot, actor=changed_by_user)
     return issue
 
 
@@ -219,6 +225,7 @@ def search_draft_attachments(draft_token, uploaded_by_user, search_query, limit=
 
 
 def move_issue(issue, target_state, position_index, changed_by_user):
+    original_snapshot = WebhookController.capture_issue_snapshot(issue)
     moved_issue, _transition = IssueController.move_on_board(
         issue,
         target_state,
@@ -226,6 +233,7 @@ def move_issue(issue, target_state, position_index, changed_by_user):
         position_index=position_index,
         reason="Moved on the kanban board.",
     )
+    WebhookController.create_issue_updated_event(moved_issue, original_snapshot, actor=changed_by_user)
     return moved_issue
 
 

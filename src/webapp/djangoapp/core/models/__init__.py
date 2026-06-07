@@ -9,6 +9,11 @@ from .issue_comment_mention import IssueCommentMention
 from .issue_comment_visibility import IssueCommentVisibility
 from .issue_priority import IssuePriority
 from .issue_state_transition import IssueStateTransition
+from .webhook_delivery_attempt import WebhookDeliveryAttempt
+from .webhook_delivery_status import WebhookDeliveryStatus
+from .webhook_endpoint import WebhookEndpoint
+from .webhook_event import WebhookEvent
+from .webhook_event_type import WebhookEventType
 from .workflow_state import WorkflowState
 
 __all__ = [
@@ -22,6 +27,11 @@ __all__ = [
     "IssueCommentVisibility",
     "IssuePriority",
     "IssueStateTransition",
+    "WebhookDeliveryAttempt",
+    "WebhookDeliveryStatus",
+    "WebhookEndpoint",
+    "WebhookEvent",
+    "WebhookEventType",
     "WorkflowState",
     "draft_issue_attachment_upload_to",
     "issue_attachment_upload_to",

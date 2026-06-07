@@ -11,7 +11,7 @@ the default value applied when a variable is not provided.
 | --- | --- | --- |
 | `DJANGO_DEBUG` | `True` | Enables or disables Django debug mode. Accepted true values are `1`, `true`, `yes`, and `on` in any letter case. |
 | `DJANGO_SECRET_KEY` | `django-insecure-^d!g3oga6mmxg&&6)if8+2s-^6u7_etn-(3&3g4h3-z+yo*iwu` | Sets Django's secret key. |
-| `SERVICE_BASE_URL` | `http://localhost` | Defines the canonical externally exposed base URL that API consumers can prepend to relative REST API URLs such as attachment download paths. |
+| `SERVICE_BASE_URL` | `http://localhost` | Defines the canonical externally exposed base URL used in webhook payload links and as the prefix for relative REST API URLs such as attachment download paths. |
 | `DJANGO_ALLOWED_HOSTS` | `*` | Sets the allowed hosts list as a comma-separated value. |
 | `DJANGO_TIME_ZONE` | `UTC` | Sets the Django application time zone. |
 | `DJANGO_LOG_LEVEL` | `DEBUG` when `DJANGO_DEBUG=True`, otherwise `INFO` | Sets the Django logging level used by the basic stdout logging configuration. |
@@ -34,6 +34,40 @@ in the table above.
 REST API URL fields remain relative by design. Attachment payloads expose
 `file_url` as a relative download path. Integration systems should prepend
 `SERVICE_BASE_URL` when they need to construct a full external URL.
+
+Webhook payloads use `SERVICE_BASE_URL` directly when rendering the issue
+detail link and REST API link included in each event snapshot. Administrators
+configure webhook endpoints in Django Admin under the Core app. Endpoint
+configuration, subscribed event types, and delivery history are stored in the
+application database.
+
+Webhook delivery uses a persistence-first flow. When the application emits a
+webhook event, it stores the event payload, target endpoint snapshot, and
+initial delivery status in the database first. The outbound HTTP delivery
+starts only after the surrounding database transaction commits successfully.
+Initial delivery runs asynchronously in a background thread inside the Web
+Application process, so the originating user-facing request does not wait for
+the remote endpoint to respond.
+
+If webhook delivery attempts fail and need to be retried outside the request
+path, operators can run the following management command from `src/webapp`:
+
+```bash
+python3 manage.py process_webhook_deliveries
+```
+
+The command processes pending or retryable webhook deliveries based on the
+endpoint configuration stored in Django Admin.
+
+Each delivery attempt is stored in the application database with request
+metadata, response details, success state, duration, and retry timing.
+Endpoint retry behavior is controlled in Django Admin through the configured
+timeout, maximum retry count, and retry backoff values.
+
+Because the initial asynchronous delivery runs inside the Web Application
+process, a process restart or crash can interrupt an in-flight delivery.
+Persisted webhook events remain available for later retry through the
+management command above.
 
 When `DJANGO_DEBUG` is enabled, Django password validators are disabled to keep
 local development simpler. In non-debug mode, the standard Django password

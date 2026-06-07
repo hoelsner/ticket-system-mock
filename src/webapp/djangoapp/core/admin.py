@@ -1,6 +1,7 @@
+from django import forms
 from django.contrib import admin
 
-from .controllers import IssueController
+from .controllers import IssueController, WebhookController
 from .models import (
     Collection,
     Issue,
@@ -9,7 +10,56 @@ from .models import (
     IssueComment,
     IssueCommentMention,
     IssueStateTransition,
+    WebhookDeliveryAttempt,
+    WebhookEndpoint,
+    WebhookEvent,
+    WebhookEventType,
 )
+
+
+class WebhookEndpointEventTypeFilter(admin.SimpleListFilter):
+    title = "subscribed event type"
+    parameter_name = "subscribed_event_type"
+
+    def lookups(self, request, model_admin):
+        return WebhookEventType.choices
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+
+        matching_ids = [endpoint.pk for endpoint in queryset if value in endpoint.subscribed_event_types]
+        return queryset.filter(pk__in=matching_ids)
+
+
+class WebhookEndpointAdminForm(forms.ModelForm):
+    subscribed_event_types = forms.MultipleChoiceField(
+        choices=WebhookEventType.choices,
+        required=False,
+    )
+    secret = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Leave blank to keep the existing signing secret.",
+    )
+
+    class Meta:
+        model = WebhookEndpoint
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["subscribed_event_types"].initial = self.instance.subscribed_event_types
+
+    def clean_secret(self):
+        secret = self.cleaned_data.get("secret", "")
+        if secret:
+            return secret
+        if self.instance.pk:
+            return self.instance.secret
+        return ""
 
 
 class IssueAttachmentInline(admin.TabularInline):
@@ -86,9 +136,11 @@ class IssueAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             super().save_model(request, obj, form, change)
+            WebhookController.create_issue_created_event(obj, actor=request.user)
             return
 
         original = Issue.objects.get(pk=obj.pk)
+        original_snapshot = WebhookController.capture_issue_snapshot(original)
         if original.workflow_state != obj.workflow_state:
             original.title = obj.title
             original.description_markdown = obj.description_markdown
@@ -104,9 +156,13 @@ class IssueAdmin(admin.ModelAdmin):
                 obj.workflow_state,
                 changed_by_user=request.user,
             )
+            WebhookController.create_issue_updated_event(original, original_snapshot, actor=request.user)
+            WebhookController.create_issue_queue_assigned_event(original, original_snapshot, actor=request.user)
             return
 
         super().save_model(request, obj, form, change)
+        WebhookController.create_issue_updated_event(obj, original_snapshot, actor=request.user)
+        WebhookController.create_issue_queue_assigned_event(obj, original_snapshot, actor=request.user)
 
 
 @admin.register(IssueComment)
@@ -142,3 +198,86 @@ class IssueAttachmentAdmin(admin.ModelAdmin):
     list_filter = ("uploaded_at",)
     search_fields = ("original_filename", "issue__issue_number", "uploaded_by_user__username")
     readonly_fields = ("uploaded_at",)
+
+
+@admin.register(WebhookEndpoint)
+class WebhookEndpointAdmin(admin.ModelAdmin):
+    form = WebhookEndpointAdminForm
+    list_display = (
+        "name",
+        "target_url",
+        "enabled",
+        "subscribed_event_types_summary",
+        "last_delivery_status",
+        "last_delivery_attempt_at",
+        "created_at",
+    )
+    list_filter = ("enabled", WebhookEndpointEventTypeFilter, "last_delivery_status")
+    search_fields = ("name", "target_url", "description")
+    readonly_fields = ("last_delivery_status", "last_delivery_attempt_at", "created_at", "updated_at")
+
+    def subscribed_event_types_summary(self, obj):
+        return obj.subscribed_event_types_display
+
+    subscribed_event_types_summary.short_description = "subscribed event types"
+
+
+@admin.register(WebhookEvent)
+class WebhookEventAdmin(admin.ModelAdmin):
+    list_display = ("id", "event_type", "issue", "occurred_at", "delivery_status")
+    list_filter = ("event_type", "occurred_at", "delivery_status")
+    search_fields = ("issue__issue_number",)
+    readonly_fields = (
+        "id",
+        "event_type",
+        "issue",
+        "target_endpoint_ids",
+        "payload",
+        "occurred_at",
+        "created_at",
+        "delivery_status",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(WebhookDeliveryAttempt)
+class WebhookDeliveryAttemptAdmin(admin.ModelAdmin):
+    list_display = (
+        "webhook_endpoint",
+        "event_type",
+        "issue_reference",
+        "attempt_number",
+        "response_status_code",
+        "success",
+        "attempted_at",
+        "duration_ms",
+    )
+    list_filter = ("success", "response_status_code", "attempted_at", "webhook_endpoint")
+    search_fields = ("webhook_event__issue__issue_number", "webhook_endpoint__name")
+    readonly_fields = (
+        "webhook_endpoint",
+        "webhook_event",
+        "attempt_number",
+        "request_headers",
+        "request_body",
+        "response_status_code",
+        "response_body",
+        "error_message",
+        "success",
+        "duration_ms",
+        "attempted_at",
+    )
+
+    def event_type(self, obj):
+        return obj.webhook_event.event_type
+
+    def issue_reference(self, obj):
+        return obj.webhook_event.issue.issue_number
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

@@ -1,0 +1,9 @@
+<section id="healthcheck-summary" aria-live="polite">
+  <article class="app-surface healthcheck-card healthcheck-card--{{ summary.status }}">
+    <header>
+      <p class="healthcheck-card__eyebrow"><strong>Overall status</strong></p>
+      <h2 class="healthcheck-card__title">{{ summary.status|title }}</h2>
+    </header>
+    <p class="healthcheck-card__meta">Total duration: {{ summary.duration_ms }} ms</p>
+  </article>
+</section>

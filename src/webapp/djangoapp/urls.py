@@ -27,6 +27,7 @@ admin.site.site_header = admin_title
 admin.site.site_title = admin_title
 
 urlpatterns = [
+    path("healthcheck/", include("djangoapp.healthchecks.urls")),
     path("", include("djangoapp.user_interface.urls")),
     path("accounts/login/", SessionLoginView.as_view(), name="login"),
     path("accounts/logout/", SessionLogoutView.as_view(), name="logout"),

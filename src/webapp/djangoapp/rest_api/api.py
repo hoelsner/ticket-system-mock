@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from io import BytesIO
 
 from django.contrib.auth import authenticate, get_user_model
@@ -119,12 +118,7 @@ class IssueSummarySchema(Schema):
     )
     is_escalated: bool = Field(description="Whether the issue is marked for elevated handling.")
     created_at: str = Field(description="Timestamp when the issue was created, encoded as ISO 8601.")
-    updated_at: str = Field(
-        description=(
-            "Timestamp when the issue last changed through issue edits, comments, attachments, "
-            "workflow transitions, board moves, or archive actions, encoded as ISO 8601."
-        )
-    )
+    updated_at: str = Field(description="Timestamp when the issue was last updated, encoded as ISO 8601.")
     resolved_at: str | None = Field(description="Timestamp when the issue reached a resolved state, if available.")
     closed_at: str | None = Field(description="Timestamp when the issue was closed, if available.")
     archived_at: str | None = Field(description="Timestamp when the issue was archived, if available.")
@@ -154,12 +148,6 @@ class BoardResponseSchema(Schema):
     selected_priority: str = Field(description="Current priority filter value.")
     selected_collection: str = Field(description="Current collection filter value.")
     selected_category: str = Field(description="Current issue category filter value.")
-    selected_updated_start: str = Field(
-        description="Current inclusive lower bound for the issue last-activity timestamp filter."
-    )
-    selected_updated_end: str = Field(
-        description="Current inclusive upper bound for the issue last-activity timestamp filter."
-    )
     assignee_options: list[UserSummarySchema] = Field(description="Available assignee filter options.")
     priority_options: list[ChoiceSchema] = Field(description="Available priority filter options.")
     collection_options: list[CollectionSchema] = Field(description="Available collection filter options.")
@@ -657,8 +645,6 @@ def _serialize_board_context(context):
         "selected_priority": context["selected_priority"],
         "selected_collection": context["selected_collection"],
         "selected_category": context["selected_category"],
-        "selected_updated_start": context["selected_updated_start"],
-        "selected_updated_end": context["selected_updated_end"],
         "assignee_options": [_serialize_user(user) for user in context["assignee_options"]],
         "priority_options": [_serialize_choice(choice) for choice in context["priority_options"]],
         "collection_options": [_serialize_collection(collection) for collection in context["collection_options"]],
@@ -752,12 +738,6 @@ def _move_payload(request):
         "target_state": target_state,
         "position_index": max(0, position_index),
     }, None
-
-
-def _updated_range_error(updated_start, updated_end):
-    if updated_start is not None and updated_end is not None and updated_start > updated_end:
-        return 400, {"error": "updated_start must be earlier than or equal to updated_end."}
-    return None
 
 
 def _is_json_request(content_type):
@@ -950,13 +930,9 @@ def update_category(request, category_id: int):
 
 @api.get(
     "/board",
-    response={200: BoardResponseSchema, 400: dict},
+    response=BoardResponseSchema,
     summary="Get board projection",
-    description=(
-        "Return the workflow board projection together with the available filter options. "
-        "The updated timeframe filters use the issue last-activity timestamp, which includes issue edits, "
-        "comments, attachments, workflow transitions, board moves, and archive actions."
-    ),
+    description="Return the workflow board projection together with the available filter options.",
     tags=["Boards"],
 )
 def board(
@@ -966,35 +942,15 @@ def board(
     priority: str = Query("", description="Optional priority code used to limit the board projection."),
     collection: str = Query("", description="Optional collection identifier used to limit the board projection."),
     category: str = Query("", description="Optional issue category identifier used to limit the board projection."),
-    updated_start: datetime | None = Query(
-        None,
-        description=(
-            "Inclusive lower bound for the issue last-activity timestamp in ISO 8601 format. "
-            "Issue activity includes issue edits, comments, attachments, workflow transitions, board moves, and archive actions."
-        ),
-    ),
-    updated_end: datetime | None = Query(
-        None,
-        description=(
-            "Inclusive upper bound for the issue last-activity timestamp in ISO 8601 format. "
-            "Issue activity includes issue edits, comments, attachments, workflow transitions, board moves, and archive actions."
-        ),
-    ),
 ):
-    error = _updated_range_error(updated_start, updated_end)
-    if error is not None:
-        return error
-
     context = controllers.build_board_context({
         "search": search,
         "assignee": assignee,
         "priority": priority,
         "collection": collection,
         "category": category,
-        "updated_start": updated_start,
-        "updated_end": updated_end,
     })
-    return 200, _serialize_board_context(context)
+    return _serialize_board_context(context)
 
 
 @api.get(
@@ -1010,13 +966,9 @@ def dashboard(request):
 
 @api.get(
     "/issues",
-    response={200: list[IssueSummarySchema], 400: dict},
+    response=list[IssueSummarySchema],
     summary="List issues",
-    description=(
-        "Return issues that match the supplied board-style filters as a flat collection. "
-        "The updated timeframe filters use the issue last-activity timestamp, which includes issue edits, "
-        "comments, attachments, workflow transitions, board moves, and archive actions."
-    ),
+    description="Return issues that match the supplied board-style filters as a flat collection.",
     tags=["Issues"],
 )
 def issue_list(
@@ -1028,38 +980,18 @@ def issue_list(
     priority: str = Query("", description="Optional priority code used to limit the returned issues."),
     collection: str = Query("", description="Optional collection identifier used to limit the returned issues."),
     category: str = Query("", description="Optional issue category identifier used to limit the returned issues."),
-    updated_start: datetime | None = Query(
-        None,
-        description=(
-            "Inclusive lower bound for the issue last-activity timestamp in ISO 8601 format. "
-            "Issue activity includes issue edits, comments, attachments, workflow transitions, board moves, and archive actions."
-        ),
-    ),
-    updated_end: datetime | None = Query(
-        None,
-        description=(
-            "Inclusive upper bound for the issue last-activity timestamp in ISO 8601 format. "
-            "Issue activity includes issue edits, comments, attachments, workflow transitions, board moves, and archive actions."
-        ),
-    ),
 ):
-    error = _updated_range_error(updated_start, updated_end)
-    if error is not None:
-        return error
-
     board_context = controllers.build_board_context({
         "search": search,
         "assignee": assignee,
         "priority": priority,
         "collection": collection,
         "category": category,
-        "updated_start": updated_start,
-        "updated_end": updated_end,
     })
     issues = []
     for column in board_context["board_columns"]:
         issues.extend(column["issues"])
-    return 200, [_serialize_issue(issue) for issue in issues]
+    return [_serialize_issue(issue) for issue in issues]
 
 
 @api.get(
