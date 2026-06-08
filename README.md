@@ -96,13 +96,13 @@ published Docker Hub image.
 1. Build a versioned image and generate a deployment bundle:
 
 ```bash
-IMAGE_REPOSITORY=itoperation-ticketing-demo-service \
+IMAGE_REPOSITORY=localhost.local/ticket-system-mock \
 deploy/build_scripts/build_environment.bash 20260605-1
 ```
 
 This command:
 
-- builds the image `itoperation-ticketing-demo-service:20260605-1`
+- builds the image `localhost.local/ticket-system-mock:20260605-1`
 - stores the build metadata in the image
 - creates a ZIP deployment bundle under `build/deploy/`
 

@@ -97,8 +97,6 @@ def _render_preview_html(body, **kwargs):
 
 class AppLoginRequiredMixin(LoginRequiredMixin):
     def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            messages.info(self.request, "Sign in to continue in the user frontend.")
         return super().handle_no_permission()
 
 

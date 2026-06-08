@@ -52,8 +52,7 @@ class UserInterfaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse("login"))
-        self.assertContains(response, "Sign in to continue in the user frontend.")
-        self.assertContains(response, "message-panel__item--info")
+        self.assertNotContains(response, "Sign in to continue in the user frontend.")
 
     def test_login_page_shows_top_navigation_for_guests(self):
         response = self.client.get(reverse("login"))

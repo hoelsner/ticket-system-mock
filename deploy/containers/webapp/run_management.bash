@@ -16,6 +16,7 @@ provisioning_dir="${DJANGO_PROVISIONING_DIR:-$runtime_root/provisioning}"
 provisioning_flag="${DJANGO_PROVISIONING_FLAG:-$provisioning_dir/fixtures-loaded.flag}"
 bootstrap_fixtures="${DJANGO_BOOTSTRAP_FIXTURES:-initial_data}"
 static_fixtures="${DJANGO_STATIC_FIXTURES:-static_data}"
+fixture_root="$webapp_dir/fixtures"
 python_bin="${PYTHON_BIN:-$webapp_dir/.venv/bin/python3}"
 nginx_server_name="${NGINX_SERVER_NAME:-_}"
 nginx_client_max_body_size="${NGINX_CLIENT_MAX_BODY_SIZE:-10m}"
@@ -49,12 +50,13 @@ trim_whitespace() {
 	printf '%s\n' "$value"
 }
 
-fixture_label_exists() {
+fixture_path_for_label() {
 	local label="$1"
 	local extension
 
 	for extension in "${fixture_extensions[@]}"; do
-		if [[ -f "$webapp_dir/fixtures/$label.$extension" ]]; then
+		if [[ -f "$fixture_root/$label.$extension" ]]; then
+			printf '%s\n' "$fixture_root/$label.$extension"
 			return 0
 		fi
 	done
@@ -62,12 +64,13 @@ fixture_label_exists() {
 	return 1
 }
 
-collect_existing_fixture_labels() {
+collect_existing_fixture_paths() {
 	local labels_csv="$1"
 	local raw_labels=()
-	local existing_labels=()
+	local existing_paths=()
 	local raw_label
 	local label
+	local path
 
 	IFS=',' read -r -a raw_labels <<< "$labels_csv"
 
@@ -78,14 +81,16 @@ collect_existing_fixture_labels() {
 			continue
 		fi
 
-		if fixture_label_exists "$label"; then
-			existing_labels+=("$label")
+		path="$(fixture_path_for_label "$label" || true)"
+
+		if [[ -n "$path" ]]; then
+			existing_paths+=("$path")
 		else
-			echo "fixture '$label' not found in $webapp_dir/fixtures, skipping" >&2
+			echo "fixture '$label' not found in $fixture_root, skipping" >&2
 		fi
 	done
 
-	printf '%s\n' "${existing_labels[@]}"
+	printf '%s\n' "${existing_paths[@]}"
 }
 
 load_fixture_labels() {
@@ -100,6 +105,14 @@ load_fixture_labels() {
 
 	echo "loading $scope fixtures: ${labels[*]}"
 	run_manage loaddata "${labels[@]}"
+}
+
+provision_default_branding_assets() {
+	local source_root="$webapp_dir/static/img"
+
+	mkdir -p "$media_root/branding/logo" "$media_root/branding/login-background"
+	cp "$source_root/favicon.png" "$media_root/branding/logo/favicon.png"
+	cp "$source_root/default_app_hero_image.png" "$media_root/branding/login-background/default_app_hero_image.png"
 }
 
 generate_self_signed_certificate() {
@@ -169,6 +182,7 @@ server {
 		proxy_pass http://django_upstream;
 		proxy_http_version 1.1;
 		proxy_set_header Host \$host;
+		proxy_set_header Origin "";
 		proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 		proxy_set_header X-Forwarded-Proto https;
 		proxy_set_header X-Real-IP \$remote_addr;
@@ -186,8 +200,10 @@ generate_nginx_configuration
 
 if [[ ! -f "$provisioning_flag" ]]; then
 	echo "provisioning flag not found, loading bootstrap fixtures"
-	mapfile -t bootstrap_fixture_labels < <(collect_existing_fixture_labels "$bootstrap_fixtures")
-	load_fixture_labels "bootstrap" "${bootstrap_fixture_labels[@]}"
+	mapfile -t bootstrap_fixture_paths < <(collect_existing_fixture_paths "$bootstrap_fixtures")
+	load_fixture_labels "bootstrap" "${bootstrap_fixture_paths[@]}"
+	echo "copying default branding assets into $media_root"
+	provision_default_branding_assets
 
 	touch "$provisioning_flag"
 	echo "wrote provisioning flag to $provisioning_flag"
@@ -195,8 +211,8 @@ else
 	echo "provisioning flag found, skipping bootstrap fixtures"
 fi
 
-mapfile -t static_fixture_labels < <(collect_existing_fixture_labels "$static_fixtures")
-load_fixture_labels "static" "${static_fixture_labels[@]}"
+mapfile -t static_fixture_paths < <(collect_existing_fixture_paths "$static_fixtures")
+load_fixture_labels "static" "${static_fixture_paths[@]}"
 
 echo "collecting static files into $static_root"
 run_manage collectstatic --noinput

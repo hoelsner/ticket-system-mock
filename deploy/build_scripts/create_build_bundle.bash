@@ -119,7 +119,7 @@ workflow simulations, and integration scenarios. It provides:
 ## Bundle Contents
 
 - docker-compose.yaml starts the production-style stack
-- docker-compose.override.yaml is an optional override file
+- docker-compose.override.yaml is optional and can stay empty by default
 - .env.example contains the main runtime variables to copy into .env
 - docs/user/ contains the bundled user documentation used as the source for this guide
 

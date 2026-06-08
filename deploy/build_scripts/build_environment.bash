@@ -15,7 +15,7 @@ fi
 
 build_version="${1:-${BUILD_VERSION:-}}"
 commit_id="${COMMIT_ID:-$default_commit_id}"
-image_repository="${IMAGE_REPOSITORY:-itoperation-ticketing-demo-service}"
+image_repository="${IMAGE_REPOSITORY:-localhost.local/ticket-system-mock-webapp}"
 image_tag="${IMAGE_TAG:-}"
 skip_docker_build="${SKIP_DOCKER_BUILD:-0}"
 

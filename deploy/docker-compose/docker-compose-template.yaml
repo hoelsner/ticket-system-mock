@@ -8,6 +8,7 @@ x-webapp-environment: &webapp-environment
   DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-UTC}"
   DJANGO_LOG_LEVEL: "${DJANGO_LOG_LEVEL:-INFO}"
   SERVICE_BASE_URL: "${SERVICE_BASE_URL:-https://localhost:8443}"
+  DJANGO_CSRF_TRUSTED_ORIGINS: "${DJANGO_CSRF_TRUSTED_ORIGINS:-https://localhost:8443}"
   DJANGO_RUNTIME_ROOT: "/runtime"
   DJANGO_STATIC_ROOT: "/runtime/static"
   DJANGO_MEDIA_ROOT: "/runtime/media"
@@ -28,10 +29,16 @@ x-webapp-environment: &webapp-environment
   NGINX_SERVER_NAME: "${NGINX_SERVER_NAME:-localhost}"
   NGINX_CLIENT_MAX_BODY_SIZE: "${NGINX_CLIENT_MAX_BODY_SIZE:-10m}"
 
+x-service-logging: &service-logging
+  driver: json-file
+  options:
+    max-size: "100m"
+
 services:
   database:
-    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    image: ${POSTGRES_IMAGE:-postgres:18}
     restart: unless-stopped
+    logging: *service-logging
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-itoticketing}"
       POSTGRES_USER: "${POSTGRES_USER:-itoticketing}"
@@ -45,13 +52,14 @@ services:
       retries: 10
       start_period: 10s
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     networks:
       - application
 
   cache:
-    image: ${REDIS_IMAGE:-redis:7-alpine}
+    image: ${REDIS_IMAGE:-redis:8}
     restart: unless-stopped
+    logging: *service-logging
     command:
       - redis-server
       - --save
@@ -91,6 +99,7 @@ services:
   management:
     image: ${WEBAPP_IMAGE:-hoelsner/ticket-system-mock:latest}
     restart: "no"
+    logging: *service-logging
     depends_on:
       database:
         condition: service_healthy
@@ -101,7 +110,7 @@ services:
       - /bin/bash
       - -ec
       - |
-          /app/deploy/containers/webapp/run_management.bash
+          /bin/bash /app/deploy/containers/webapp/run_management.bash
           tail -f /dev/null
     healthcheck:
       test:
@@ -119,6 +128,7 @@ services:
   webapp:
     image: ${WEBAPP_IMAGE:-hoelsner/ticket-system-mock:latest}
     restart: unless-stopped
+    logging: *service-logging
     depends_on:
       management:
         condition: service_healthy
@@ -142,8 +152,9 @@ services:
       - application
 
   nginx:
-    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    image: ${NGINX_IMAGE:-nginx:1.31}
     restart: unless-stopped
+    logging: *service-logging
     depends_on:
       webapp:
         condition: service_healthy

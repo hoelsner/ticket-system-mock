@@ -295,3 +295,4 @@ _TODO.md
 /runtime
 /runtime/*
 .tms-prod-test
+.playwright-mcp

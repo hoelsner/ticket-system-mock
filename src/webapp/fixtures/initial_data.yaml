@@ -21,6 +21,8 @@
     display_name_override: ''
     logo_image: branding/logo/favicon.png
     login_background_image: branding/login-background/default_app_hero_image.png
+    created_at: '2026-01-01T00:00:00Z'
+    updated_at: '2026-01-01T00:00:00Z'
     light_primary_color: '#0172ad'
     light_primary_hover_color: '#015887'
     dark_primary_color: '#01aaff'
