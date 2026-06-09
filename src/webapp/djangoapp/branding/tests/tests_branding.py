@@ -20,6 +20,8 @@ class BrandingTests(TestCase):
         self.assertEqual(snapshot.display_name, "Ticket System Mock")
         self.assertTrue(snapshot.logo_url.endswith("/static/img/default_app_logo.png"))
         self.assertTrue(snapshot.login_background_url.endswith("/static/img/default_app_hero_image.png"))
+        self.assertEqual(snapshot.login_message_text, "")
+        self.assertEqual(snapshot.login_message_level, "info")
         self.assertEqual(snapshot.light_primary_color, "#0172ad")
         self.assertEqual(snapshot.light_primary_hover_color, "#015887")
         self.assertEqual(snapshot.dark_primary_color, "#01aaff")
@@ -38,6 +40,8 @@ class BrandingTests(TestCase):
                 b"placeholder-background",
                 content_type="image/png",
             ),
+            login_message_text="Planned maintenance starts at 18:00 UTC.",
+            login_message_level="warning",
             light_primary_color="#1357aa",
             light_primary_hover_color="#0f4b92",
             dark_primary_color="#4db6ff",
@@ -49,10 +53,28 @@ class BrandingTests(TestCase):
         self.assertContains(response, "Operations Control")
         self.assertContains(response, branding.logo_image.url)
         self.assertContains(response, branding.login_background_image.url)
+        self.assertContains(response, "Planned maintenance starts at 18:00 UTC.")
+        self.assertContains(response, "message-panel__item--warning")
         self.assertContains(response, "--pico-primary: #1357aa;")
         self.assertContains(response, "--pico-primary-hover: #0f4b92;")
         self.assertContains(response, "--pico-primary: #4db6ff;")
         self.assertContains(response, "--pico-primary-hover: #93d3ff;")
+
+    def test_branding_admin_exposes_login_message_fields(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="admin-password-123",
+        )
+        branding = AppBranding.objects.create()
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse("admin:branding_appbranding_change", args=[branding.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Login screen")
+        self.assertContains(response, "Login screen message")
+        self.assertContains(response, "Login message style")
 
     def test_branding_snapshot_uses_runtime_theme_colors(self):
         AppBranding.objects.create(

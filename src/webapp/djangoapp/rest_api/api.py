@@ -18,7 +18,13 @@ from djangoapp.core.controllers import (
 from djangoapp.core.models import Collection, IssueAttachment, IssueCategory, IssueComment
 from djangoapp.rest_api.forms import CollectionForm, IssueAttachmentForm, IssueCategoryForm, IssueCommentUpdateForm
 from djangoapp.user_interface import controllers
-from djangoapp.user_interface.forms import IssueArchiveForm, IssueCommentForm, IssueCreateForm, IssueUpdateForm
+from djangoapp.user_interface.forms import (
+    IssueArchiveForm,
+    IssueCommentForm,
+    IssueCreateForm,
+    IssueUpdateForm,
+    UserProfileForm,
+)
 
 
 class DjangoBasicAuth(HttpBasicAuth):
@@ -65,6 +71,27 @@ class UserSummarySchema(Schema):
     id: int = Field(description="Unique identifier of the user.")
     username: str = Field(description="Login name of the user.")
     display_name: str = Field(description="Preferred display name shown in issue and comment payloads.")
+    avatar_type: str = Field(description="Stored avatar type for the profile.")
+    is_system_user: bool = Field(description="Whether the profile is flagged as a system user.")
+    avatar_text: str = Field(description="Short fallback text rendered when no avatar image is used.")
+    avatar_image_url: str | None = Field(
+        description="Resolved URL of the configured or default avatar image, when present."
+    )
+
+
+class UserProfileSchema(Schema):
+    user: UserSummarySchema = Field(description="User who owns the profile.")
+    language_preference: str = Field(description="Stored language preference code for the profile.")
+    language_preference_label: str = Field(description="Human-readable label for the configured language preference.")
+    avatar_type: str = Field(description="Stored avatar type for the profile.")
+    avatar_type_label: str = Field(description="Human-readable label for the configured avatar type.")
+    is_system_user: bool = Field(description="Whether the profile is flagged as a system user.")
+    avatar_text: str = Field(description="Resolved avatar text rendered when no avatar image is used.")
+    avatar_image_url: str | None = Field(
+        description="Resolved URL of the configured or default avatar image, when present."
+    )
+    assigned_issue_count: int = Field(description="Number of active issues currently assigned to the profile owner.")
+    can_edit: bool = Field(description="Whether the authenticated API caller may edit this profile.")
 
 
 class IssueAttachmentSchema(Schema):
@@ -225,6 +252,11 @@ class IssueCommentMutationSchema(Schema):
 class IssueAttachmentMutationSchema(Schema):
     status: str = Field(description="Mutation result code for the attachment operation.")
     attachment: IssueAttachmentSchema = Field(description="Attachment payload after the mutation completed.")
+
+
+class UserProfileMutationSchema(Schema):
+    status: str = Field(description="Mutation result code for the profile operation.")
+    profile: UserProfileSchema = Field(description="User profile payload after the mutation completed.")
 
 
 def _request_body(description, content_type, properties, required_fields=None):
@@ -476,6 +508,38 @@ MOVE_REQUEST_BODY = _request_body(
 )
 
 
+PROFILE_UPDATE_REQUEST_BODY = _request_body(
+    "Multipart payload used to update the authenticated user's profile settings.",
+    "multipart/form-data",
+    {
+        "language_preference": {
+            "type": "string",
+            "description": "Language preference code.",
+            "enum": ["en", "de"],
+        },
+        "avatar_type": {
+            "type": "string",
+            "description": "Avatar type used when no new image upload overrides it.",
+            "enum": ["initials", "image"],
+        },
+        "is_system_user": {
+            "type": "boolean",
+            "description": "Whether the profile should use the default agent avatar when no custom avatar image is uploaded.",
+        },
+        "avatar_image": {
+            "type": "string",
+            "format": "binary",
+            "description": "Optional custom avatar image upload.",
+        },
+        "clear_avatar_image": {
+            "type": "boolean",
+            "description": "Whether the currently stored avatar image should be removed.",
+        },
+    },
+    required_fields=["language_preference", "avatar_type"],
+)
+
+
 INVALID_PAYLOAD_ERROR = (400, {"error": "Invalid request payload."})
 
 
@@ -517,11 +581,63 @@ def current_user(request):
     }
 
 
+@api.get(
+    "/profile/me",
+    response=UserProfileSchema,
+    summary="Get authenticated user profile",
+    description="Return the authenticated user's editable profile settings and resolved avatar state.",
+    tags=["Profiles"],
+)
+def current_user_profile(request):
+    return _serialize_user_profile(controllers.get_user_profile(request.auth), can_edit=True)
+
+
+@api.put(
+    "/profile/me",
+    response={200: UserProfileMutationSchema, 400: dict},
+    summary="Update authenticated user profile",
+    description="Update the authenticated user's language preference and avatar configuration.",
+    tags=["Profiles"],
+    openapi_extra=PROFILE_UPDATE_REQUEST_BODY,
+)
+def update_current_user_profile(request):
+    payload, files, error = _request_form_payload(request)
+    if error is not None:
+        return error
+
+    form = UserProfileForm(payload, files, instance=controllers.get_user_profile(request.auth))
+    if not form.is_valid():
+        return _form_error_response(form)
+
+    profile = controllers.update_user_profile(form.instance, form.cleaned_data)
+    return {"status": "updated", "profile": _serialize_user_profile(profile, can_edit=True)}
+
+
 def _serialize_user(user):
+    profile = controllers.get_user_profile(user)
     return {
         "id": user.pk,
         "username": user.get_username(),
         "display_name": user.get_full_name() or user.get_username(),
+        "avatar_type": profile.avatar_type,
+        "is_system_user": profile.is_system_user,
+        "avatar_text": profile.avatar_text,
+        "avatar_image_url": profile.avatar_image_url,
+    }
+
+
+def _serialize_user_profile(profile, *, can_edit):
+    return {
+        "user": _serialize_user(profile.user),
+        "language_preference": profile.language_preference,
+        "language_preference_label": str(profile.get_language_preference_display()),
+        "avatar_type": profile.avatar_type,
+        "avatar_type_label": str(profile.get_avatar_type_display()),
+        "is_system_user": profile.is_system_user,
+        "avatar_text": profile.avatar_text,
+        "avatar_image_url": profile.avatar_image_url,
+        "assigned_issue_count": controllers.build_user_profile_context(profile, profile.user)["assigned_issue_count"],
+        "can_edit": can_edit,
     }
 
 
@@ -844,6 +960,18 @@ def users(
     if group_id is not None:
         queryset = queryset.filter(groups__id=group_id).distinct()
     return [_serialize_user(user) for user in queryset]
+
+
+@api.get(
+    "/users/{username}/profile",
+    response=UserProfileSchema,
+    summary="Get public user profile",
+    description="Return the public profile information for a user together with resolved avatar data.",
+    tags=["Profiles"],
+)
+def user_profile(request, username: str):
+    profile = controllers.get_user_profile_by_username(username)
+    return _serialize_user_profile(profile, can_edit=request.auth.pk == profile.user_id)
 
 
 @api.get(

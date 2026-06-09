@@ -126,7 +126,7 @@ Optional browser verification:
 
 1. Open `https://localhost:8443/`.
 2. Sign in with username `admin` and password `admin1234`.
-3. Confirm that the home page loads after login.
+3. Confirm that the dashboard loads after login.
 
 ## 5. Clean Up The Production Test Stack
 
@@ -156,14 +156,14 @@ If the management container does not finish successfully:
 
 ```bash
 cd /workspaces/itoperation-ticketing-demo-service/.tms-prod-test/ticket-system-mock-test-bundle
-docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color management
+COMPOSE_PROJECT_NAME=ticket-system-mock-test-bundle docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color management
 ```
 
 If the web application does not respond after bootstrap:
 
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color webapp
-docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color nginx
+COMPOSE_PROJECT_NAME=ticket-system-mock-test-bundle docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color webapp
+COMPOSE_PROJECT_NAME=ticket-system-mock-test-bundle docker compose -f docker-compose.yaml -f docker-compose.override.yaml logs --no-color nginx
 ```
 
 If you want to rerun the full verification flow, go back to the repository root

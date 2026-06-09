@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
 {% block title %}{{ form_title }}{% endblock %}
 
@@ -10,15 +10,15 @@
 {% block content %}
   <nav class="issue-detail-nav">
     {% if issue %}
-      <a href="{% url 'issue-detail' issue.pk %}">Back to issue</a>
+      <a href="{% url 'issue-detail' issue.pk %}">{% translate "Back to issue" %}</a>
     {% else %}
-      <a href="{% url 'home' %}">Back to board</a>
+      <a href="{% url 'home' %}">{% translate "Back to board" %}</a>
     {% endif %}
   </nav>
 
   <header class="app-page-header app-page-header--stacked">
     <div>
-      <p class="app-page-header__eyebrow">Issue workflow</p>
+      <p class="app-page-header__eyebrow">{% translate "Issue workflow" %}</p>
       <h1>{{ form_title }}</h1>
       {% if issue %}
         <p>{{ issue.issue_number }}: {{ issue.title }}</p>
@@ -27,15 +27,20 @@
   </header>
 
   <article class="app-surface app-form-shell">
-    <form method="post" enctype="multipart/form-data" class="app-form-layout">
+    <form method="post" enctype="multipart/form-data" class="app-form-layout app-form-layout--issue-compose">
       {% csrf_token %}
       {% for hidden_field in form.hidden_fields %}{{ hidden_field }}{% endfor %}
       {{ form.non_field_errors }}
 
+      <div class="app-form-compose__primary">
+
       <section class="app-form-section">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Core details</p>
-          <h2>Issue definition</h2>
+          <p class="app-page-header__eyebrow">{% translate "Core details" %}</p>
+          <h2>{% translate "Issue definition" %}</h2>
+          {% if not issue %}
+            <p class="app-form-section__summary">{% translate "Capture the key issue details first. Routing and attachments stay available alongside the description while you write." %}</p>
+          {% endif %}
         </div>
         <div class="app-form-fields">
           <label class="app-form-field app-form-field--wide">
@@ -67,8 +72,11 @@
 
       <section class="app-form-section app-form-section--full">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Description</p>
-          <h2>Describe the issue</h2>
+          <p class="app-page-header__eyebrow">{% translate "Description" %}</p>
+          <h2>{% translate "Describe the issue" %}</h2>
+          {% if not issue %}
+            <p class="app-form-section__summary">{% translate "Use the description as the primary record of what changed, what was observed, and what support teams should act on next." %}</p>
+          {% endif %}
         </div>
           {% url 'user-suggestions' as user_suggestions_url %}
           {% url 'issue-suggestions' as issue_suggestions_url %}
@@ -80,27 +88,34 @@
             {% url 'markdown-preview' as preview_url %}
             {% url 'draft-attachment-suggestions' as attachment_suggestions_url %}
             {% url 'draft-attachment-upload' as attachment_upload_url %}
-            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url=attachment_upload_url attachment_hint="Drop files here to upload immediately or use the upload tool in the toolbar. Multi-file selection on submit is still available below." preview_collapsible="1" preview_open="1" only %}
+            {% translate "Upload from the editor when a file should appear inside the issue description. Use the attachments panel for files that should be added when you submit the issue." as draft_attachment_hint %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url=attachment_upload_url attachment_hint=draft_attachment_hint preview_collapsible="1" preview_open="1" only %}
           {% endif %}
           {% if form.description_markdown.help_text %}<small>{{ form.description_markdown.help_text }}</small>{% endif %}
           <small class="markdown-editor__help-text">
-            Use standard markdown plus
+            {% translate "Use standard markdown plus" %}
             <code>{% templatetag openvariable %}user:username{% templatetag closevariable %}</code>
-            to mention a user,
+            {% translate "to mention a user," %}
             <code>{% templatetag openvariable %}issue:ISS-000001{% templatetag closevariable %}</code>
-            to reference another issue, and
+            {% translate "to reference another issue, and" %}
             <code>{% templatetag openvariable %}attachment:...{% templatetag closevariable %}</code>
-            to embed uploaded attachments.
+            {% translate "to embed uploaded attachments." %}
           </small>
       </section>
 
+      </div>
+      <aside class="app-form-compose__secondary">
+
       <section class="app-form-section">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Routing</p>
-          <h2>Assignment and escalation</h2>
+          <p class="app-page-header__eyebrow">{% translate "Routing" %}</p>
+          <h2>{% translate "Assignment and escalation" %}</h2>
+          {% if not issue %}
+            <p class="app-form-section__summary">{% translate "Assign a group first if you want to assign a user. Leave both blank when the issue only needs to be captured for triage." %}</p>
+          {% endif %}
         </div>
         <div class="app-form-fields">
-          {% if form.workflow_state %}
+          {% if form.workflow_state and not form.workflow_state.is_hidden %}
             <label class="app-form-field">
               {{ form.workflow_state.label }}
               {{ form.workflow_state }}
@@ -138,8 +153,11 @@
 
       <section class="app-form-section">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Supporting material</p>
-          <h2>{% if issue %}Initial attachment{% else %}Initial attachments{% endif %}</h2>
+          <p class="app-page-header__eyebrow">{% translate "Supporting material" %}</p>
+          <h2>{% translate "Attachments" %}</h2>
+          {% if not issue %}
+            <p class="app-form-section__summary">{% translate "Add files here when they should be included with the issue on submit. Use the editor upload tool when a file also needs to be linked in the description." %}</p>
+          {% endif %}
         </div>
         <div class="app-form-fields">
           <label class="app-form-field">
@@ -157,12 +175,13 @@
         </div>
       </section>
 
-      <div class="form-actions-row">
+      </aside>
+      <div class="form-actions-row form-actions-row--stacked">
         <button type="submit">{{ submit_label }}</button>
         {% if issue %}
-          <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Cancel</a>
+          <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">{% translate "Cancel" %}</a>
         {% else %}
-          <a href="{% url 'home' %}" role="button" class="secondary">Cancel</a>
+        <a href="{% url 'home' %}" role="button" class="secondary">{% translate "Cancel" %}</a>
         {% endif %}
       </div>
     </form>

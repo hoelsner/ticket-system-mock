@@ -24,11 +24,31 @@ def branding_login_background_upload_to(instance, filename):
     return f"branding/login-background/{filename}"
 
 
+LOGIN_MESSAGE_LEVEL_CHOICES = (
+    ("info", "Info"),
+    ("success", "Success"),
+    ("warning", "Warning"),
+    ("error", "Error"),
+)
+
+
 class AppBranding(models.Model):
     singleton_enforcer = models.CharField(max_length=32, default="app-branding", unique=True, editable=False)
     display_name_override = models.CharField(max_length=255, blank=True)
     logo_image = models.FileField(upload_to=branding_logo_upload_to, blank=True)
     login_background_image = models.FileField(upload_to=branding_login_background_upload_to, blank=True)
+    login_message_text = models.TextField(
+        blank=True,
+        verbose_name="Login screen message",
+        help_text="Optional message shown above the sign-in form.",
+    )
+    login_message_level = models.CharField(
+        max_length=20,
+        choices=LOGIN_MESSAGE_LEVEL_CHOICES,
+        default="info",
+        verbose_name="Login message style",
+        help_text="Visual style for the login screen message.",
+    )
     light_primary_color = theme_color_field(
         default="#0172ad",
         help_text="Primary accent color for light mode.",

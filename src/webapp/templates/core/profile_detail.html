@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ profile.display_name }}{% endblock %}
+
+{% block content %}
+  <section class="profile-page">
+    <header class="app-page-header profile-page__header">
+      <div>
+        <p class="app-page-header__eyebrow">{% translate "User profile" %}</p>
+        <h1>{{ profile.display_name }}</h1>
+        <p>@{{ profile.user.username }}</p>
+      </div>
+
+      <div class="app-page-header__actions">
+        {% if is_current_user %}
+          <a href="{% url 'profile-settings' %}" role="button">{% translate "Edit settings" %}</a>
+        {% endif %}
+        <a href="{% url 'dashboard' %}" role="button" class="secondary">{% translate "Back to dashboard" %}</a>
+      </div>
+    </header>
+
+    <section class="profile-page__grid">
+      <article class="app-surface profile-page__card">
+        <div class="profile-page__identity">
+          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" only %}
+          <div>
+            <h2>{{ profile.display_name }}</h2>
+            <p class="profile-page__username">@{{ profile.user.username }}</p>
+          </div>
+        </div>
+        <dl class="detail-definition-list">
+          <dt>{% translate "Language" %}</dt>
+          <dd>{{ profile.get_language_preference_display }}</dd>
+          <dt>{% translate "System user" %}</dt>
+          <dd>{% if profile.is_system_user %}{% translate "Yes" %}{% else %}{% translate "No" %}{% endif %}</dd>
+          <dt>{% translate "Assigned active issues" %}</dt>
+          <dd>{{ assigned_issue_count }}</dd>
+        </dl>
+      </article>
+
+      <article class="app-surface profile-page__card">
+        <h2>{% translate "Group memberships" %}</h2>
+        {% if profile_group_memberships %}
+          <ul class="detail-list profile-page__groups">
+            {% for group in profile_group_memberships %}
+              <li>{{ group.name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>{% translate "This user does not belong to any group." %}</p>
+        {% endif %}
+      </article>
+    </section>
+  </section>
+{% endblock %}

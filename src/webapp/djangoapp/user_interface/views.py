@@ -8,12 +8,23 @@ from django.contrib.auth.views import LoginView
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
+from djangoapp.core.models import WorkflowState
+
 from . import controllers
 from .board_events import board_event_broker
-from .forms import IssueArchiveForm, IssueCommentForm, IssueCreateForm, IssueDescriptionForm, IssueUpdateForm
+from .forms import (
+    IssueArchiveForm,
+    IssueCommentForm,
+    IssueCreateForm,
+    IssueDescriptionForm,
+    IssueUpdateForm,
+    UserProfileForm,
+)
 from .templatetags.issue_markdown import render_issue_markdown
 
 BOARD_COLUMN_STATES_SESSION_KEY = "user_interface.board_column_states"
@@ -24,16 +35,16 @@ def _parse_issue_move_payload(request):
     try:
         payload = json.loads(request.body or "{}")
     except json.JSONDecodeError:
-        return None, JsonResponse({"error": "Invalid request payload."}, status=400)
+        return None, JsonResponse({"error": _("Invalid request payload.")}, status=400)
 
     target_state = str(payload.get("target_state", "")).strip().upper()
     if not controllers.is_board_state(target_state):
-        return None, JsonResponse({"error": "Invalid workflow state."}, status=400)
+        return None, JsonResponse({"error": _("Invalid workflow state.")}, status=400)
 
     try:
         position_index = int(payload.get("position_index", 0))
     except TypeError, ValueError:
-        return None, JsonResponse({"error": "Invalid target position."}, status=400)
+        return None, JsonResponse({"error": _("Invalid target position.")}, status=400)
 
     return {
         "target_state": target_state,
@@ -104,13 +115,20 @@ class SessionLoginView(LoginView):
     template_name = "registration/login.html"
     redirect_authenticated_user = True
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.setdefault("active_nav", "")
+        context.setdefault("board_fullscreen_mode", False)
+        context.setdefault("board_fullscreen_querystring", "?fullscreen=1")
+        return context
+
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, "Signed in successfully.")
+        messages.success(self.request, _("Signed in successfully."))
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Username and password did not match. Please try again.")
+        messages.error(self.request, _("Username and password did not match. Please try again."))
         return super().form_invalid(form)
 
 
@@ -119,16 +137,28 @@ class SessionLogoutView(View):
 
     def post(self, request, *args, **kwargs):
         auth_logout(request)
-        messages.info(request, "Signed out successfully.")
+        messages.info(request, _("Signed out successfully."))
         return redirect("login")
 
 
 class AuthenticatedTemplateView(AppLoginRequiredMixin, TemplateView):
-    pass
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.setdefault("active_nav", "")
+        context.setdefault("board_fullscreen_mode", False)
+        context.setdefault("board_fullscreen_querystring", "?fullscreen=1")
+        return context
 
 
 class AuthenticatedFormView(AppLoginRequiredMixin, FormView):
-    invalid_message = "Review the highlighted fields and try again."
+    invalid_message = gettext_lazy("Review the highlighted fields and try again.")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.setdefault("active_nav", "")
+        context.setdefault("board_fullscreen_mode", False)
+        context.setdefault("board_fullscreen_querystring", "?fullscreen=1")
+        return context
 
     def form_invalid(self, form):
         messages.error(self.request, self.invalid_message)
@@ -184,6 +214,40 @@ class DashboardView(AuthenticatedTemplateView):
         return context
 
 
+class UserProfileDetailView(AuthenticatedTemplateView):
+    template_name = "core/profile_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profile = controllers.get_user_profile_by_username(self.kwargs["username"])
+        context.update(controllers.build_user_profile_context(profile, self.request.user))
+        return context
+
+
+class UserProfileSettingsView(AuthenticatedFormView):
+    template_name = "core/profile_settings.html"
+    form_class = UserProfileForm
+    success_message = gettext_lazy("Your profile settings were updated.")
+
+    def get_profile(self):
+        return controllers.get_user_profile(self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self.get_profile()
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(controllers.build_user_profile_context(self.get_profile(), self.request.user))
+        return context
+
+    def form_valid(self, form):
+        controllers.update_user_profile(self.get_profile(), form.cleaned_data)
+        messages.success(self.request, self.success_message)
+        return redirect("profile-settings")
+
+
 class IssueDetailView(IssueContextMixin, AuthenticatedTemplateView):
     template_name = "core/issue_detail.html"
 
@@ -216,10 +280,25 @@ class IssueCreateView(AuthenticatedFormView):
     template_name = "core/issue_form.html"
     form_class = IssueCreateForm
 
+    def _get_requested_workflow_state(self):
+        requested_state = self.request.GET.get("workflow_state")
+        valid_states = {state.value for state in WorkflowState}
+        if requested_state in valid_states:
+            return requested_state
+        return None
+
     def get_initial(self):
         initial = super().get_initial()
+        requested_state = self._get_requested_workflow_state()
+        if requested_state:
+            initial["workflow_state"] = requested_state
         initial["attachment_draft_token"] = _get_issue_create_draft_token(self.request)
         return initial
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["show_workflow_state"] = self._get_requested_workflow_state() is not None
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -227,8 +306,8 @@ class IssueCreateView(AuthenticatedFormView):
             "active_nav": "create-issue",
             "issue": None,
             "issue_create_draft_token": _get_issue_create_draft_token(self.request),
-            "form_title": "Create New Issue",
-            "submit_label": "Create issue",
+            "form_title": _("Create New Issue"),
+            "submit_label": _("Create issue"),
         })
         return context
 
@@ -236,7 +315,7 @@ class IssueCreateView(AuthenticatedFormView):
         issue = controllers.create_issue(form.cleaned_data, self.request.user)
         _clear_issue_create_draft_token(self.request)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(self.request, f"Issue {issue.issue_number} was created.")
+        messages.success(self.request, _("Issue %(issue_number)s was created.") % {"issue_number": issue.issue_number})
         return redirect("issue-detail", pk=issue.pk)
 
 
@@ -254,15 +333,15 @@ class IssueUpdateView(IssueContextMixin, AuthenticatedFormView):
         context.update({
             "active_nav": "board",
             "issue": self.get_issue(),
-            "form_title": "Update Existing Issue",
-            "submit_label": "Save changes",
+            "form_title": _("Update Existing Issue"),
+            "submit_label": _("Save changes"),
         })
         return context
 
     def form_valid(self, form):
         issue = controllers.update_issue(self.get_issue(), form.cleaned_data, self.request.user)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(self.request, f"Issue {issue.issue_number} was updated.")
+        messages.success(self.request, _("Issue %(issue_number)s was updated.") % {"issue_number": issue.issue_number})
         return redirect("issue-detail", pk=issue.pk)
 
 
@@ -278,7 +357,9 @@ class IssueDescriptionUpdateView(IssueContextMixin, AuthenticatedFormView):
     def form_valid(self, form):
         issue = controllers.update_issue_description(self.get_issue(), form.cleaned_data, self.request.user)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(self.request, f"Issue {issue.issue_number} description was updated.")
+        messages.success(
+            self.request, _("Issue %(issue_number)s description was updated.") % {"issue_number": issue.issue_number}
+        )
         return redirect("issue-detail", pk=issue.pk)
 
     def form_invalid(self, form):
@@ -309,7 +390,7 @@ class IssueArchiveView(IssueContextMixin, AuthenticatedFormView):
     def form_valid(self, form):
         issue = controllers.archive_issue(self.get_issue(), self.request.user)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(self.request, f"Issue {issue.issue_number} was archived.")
+        messages.success(self.request, _("Issue %(issue_number)s was archived.") % {"issue_number": issue.issue_number})
         return redirect("dashboard")
 
 
@@ -327,7 +408,9 @@ class IssueCommentCreateView(IssueContextMixin, AuthenticatedFormView):
         issue = self.get_issue()
         controllers.add_issue_comment(issue, form.cleaned_data, self.request.user)
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(self.request, f"A new issue comment was added to {issue.issue_number}.")
+        messages.success(
+            self.request, _("A new issue comment was added to %(issue_number)s.") % {"issue_number": issue.issue_number}
+        )
         return redirect("issue-detail", pk=issue.pk)
 
     def form_invalid(self, form):
@@ -349,7 +432,11 @@ class IssueAttachmentDeleteView(IssueContextMixin, AppLoginRequiredMixin, View):
             request.user,
         )
         board_event_broker.publish("kanban.board.updated", {"scope": "board"})
-        messages.success(request, f"Attachment {attachment_name} was removed from {issue.issue_number}.")
+        messages.success(
+            request,
+            _("Attachment %(attachment_name)s was removed from %(issue_number)s.")
+            % {"attachment_name": attachment_name, "issue_number": issue.issue_number},
+        )
         return redirect("issue-detail", pk=issue.pk)
 
 

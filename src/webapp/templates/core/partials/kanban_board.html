@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if board_issue_count %}
   <div
     class="kanban-board-shell"
@@ -6,12 +7,19 @@
     data-kanban-stream-url="{% url 'board-events' %}"
     data-kanban-column-state-url="{% url 'board-column-state' %}"
   >
-    <section class="kanban-board" aria-label="{% if board_fullscreen_mode %}Kanban Board{% else %}Instance Kanban Board{% endif %}">
+    <section class="kanban-board" aria-label="{% if board_fullscreen_mode %}{% translate 'Kanban Board' %}{% else %}{% translate 'Instance Kanban Board' %}{% endif %}">
       {% for column in board_columns %}
         <details class="kanban-column"{% if column.is_open %} open{% endif %} data-kanban-column data-workflow-state="{{ column.value }}" data-issue-count="{{ column.issue_count }}">
           <summary>
-            <span class="kanban-column__label">{{ column.label }}</span>
-            <small class="kanban-column__count">{{ column.issue_count }} issue{{ column.issue_count|pluralize }}</small>
+            <span class="kanban-column__heading">
+              <span class="kanban-column__label">{{ column.label }}</span>
+              <a
+                href="{% url 'issue-create' %}?workflow_state={{ column.value }}"
+                class="kanban-column__create"
+                aria-label="{% blocktranslate trimmed with column_label=column.label %}Create issue in {{ column_label }}{% endblocktranslate %}"
+              >+</a>
+            </span>
+            <small class="kanban-column__count">{% blocktranslate count issue_count=column.issue_count %}{{ issue_count }} issue{% plural %}{{ issue_count }} issues{% endblocktranslate %}</small>
           </summary>
 
           <div class="kanban-column__body" data-kanban-column-body data-workflow-state="{{ column.value }}">
@@ -28,7 +36,7 @@
                 <c-issue.card :issue="issue" />
               </div>
             {% empty %}
-              <p class="kanban-column__empty">No issues in {{ column.label|lower }}.</p>
+              <p class="kanban-column__empty">{% blocktranslate trimmed with column_label=column.label|lower %}No issues in {{ column_label }}.{% endblocktranslate %}</p>
             {% endfor %}
           </div>
         </details>
@@ -37,7 +45,7 @@
   </div>
 {% else %}
   <article class="board-empty-state" data-kanban-board-shell data-kanban-fragment-url="{% url 'board-fragment' %}" data-kanban-stream-url="{% url 'board-events' %}" data-kanban-column-state-url="{% url 'board-column-state' %}">
-    <h2>No matching issues</h2>
-    <p>Adjust the search or filters to widen the board results, or create a new issue.</p>
+    <h2>{% translate "No matching issues" %}</h2>
+    <p>{% translate "Adjust the search or filters to widen the board results, or create a new issue." %}</p>
   </article>
 {% endif %}

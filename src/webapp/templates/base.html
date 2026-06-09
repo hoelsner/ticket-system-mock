@@ -1,6 +1,7 @@
-{% load static %}
+{% load i18n static %}
+{% get_current_language as LANGUAGE_CODE %}
 <!doctype html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -49,50 +50,53 @@
   <body{% if board_fullscreen_mode %} class="board-fullscreen-mode"{% endif %}>
     {% if not board_fullscreen_mode %}
     <header class="top-navigation-shell">
-      <nav class="top-navigation" aria-label="Primary navigation">
+      <nav class="top-navigation" aria-label="{% translate 'Primary navigation' %}">
         <div class="top-navigation__start">
           {% if user.is_authenticated %}
             <details class="side-navigation" data-side-navigation>
-              <summary class="side-navigation__toggle" aria-label="Toggle detailed navigation">{% include "includes/icon.html" with name="menu" class_name="" %}</summary>
-              <nav class="side-navigation__panel" aria-label="Detailed navigation">
+              <summary class="side-navigation__toggle" aria-label="{% translate 'Toggle detailed navigation' %}">{% include "includes/icon.html" with name="menu" class_name="" %}</summary>
+              <nav class="side-navigation__panel" aria-label="{% translate 'Detailed navigation' %}">
                 <div class="side-navigation__header">
-                  <button type="button" class="side-navigation__header-action" aria-label="Close detailed navigation" data-side-navigation-dismiss>{% include "includes/icon.html" with name="menu" class_name="" %}</button>
+                  <button type="button" class="side-navigation__header-action" aria-label="{% translate 'Close detailed navigation' %}" data-side-navigation-dismiss>{% include "includes/icon.html" with name="menu" class_name="" %}</button>
                 </div>
                 <ul class="side-navigation__list side-navigation__list--primary">
                   <li class="side-navigation__item">
-                    <a href="{% url 'dashboard' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>Dashboard</span></a>
+                    <a href="{% url 'dashboard' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>{% translate "Dashboard" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'home' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>Board</span></a>
+                    <a href="{% url 'home' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>{% translate "Board" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'issue-create' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>Create Issue</span></a>
+                    <a href="{% url 'issue-create' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>{% translate "Create Issue" %}</span></a>
                   </li>
                 </ul>
                 <div class="side-navigation__spacer" aria-hidden="true"></div>
                 <ul class="side-navigation__list side-navigation__list--secondary">
                   <li class="side-navigation__item">
-                    <a href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="administration" class_name="" %}<span>Administration</span></a>
+                    <a href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close target="_blank" rel="noopener noreferrer">{% include "includes/icon.html" with name="administration" class_name="" %}<span>{% translate "Administration" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" class_name="" %}<span>Healthcheck</span></a>
+                    <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" class_name="" %}<span>{% translate "Healthcheck" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
-                    <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="api" class_name="" %}<span>API Docs</span></a>
+                    <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close target="_blank" rel="noopener noreferrer">{% include "includes/icon.html" with name="api" class_name="" %}<span>{% translate "API Docs" %}</span></a>
+                  </li>
+                  <li class="side-navigation__item">
+                    {% include "includes/language_switcher.html" with language_switcher_id="side-navigation-language" language_switcher_class="language-switcher language-switcher--side-navigation" %}
                   </li>
                   <li class="side-navigation__item">
                     <form action="{% url 'logout' %}" method="post" class="side-navigation__form">
                       {% csrf_token %}
-                      <button type="submit" class="side-navigation__action contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="logout" class_name="" %}<span>Sign out</span></button>
+                      <button type="submit" class="side-navigation__action contrast app-inline-icon-link" data-side-navigation-close>{% include "includes/icon.html" with name="logout" class_name="" %}<span>{% translate "Sign out" %}</span></button>
                     </form>
                   </li>
                 </ul>
-                <p class="side-navigation__session">Logged in as <strong>{{ user.get_full_name|default:user.username }}</strong></p>
+                <p class="side-navigation__session">{% translate "Logged in as" %} <a href="{% url 'profile-settings' %}"><strong>{{ user.get_full_name|default:user.username }}</strong></a></p>
               </nav>
             </details>
           {% endif %}
 
-          <a href="{% url 'home' %}" class="top-navigation__brand contrast">
+          <a href="{% url 'dashboard' %}" class="top-navigation__brand contrast">
             <img src="{{ app_branding.logo_url }}" alt="{{ app_branding.display_name }} logo" class="top-navigation__logo">
             <span class="top-navigation__brand-copy">{{ app_branding.display_name }}</span>
           </a>
@@ -100,9 +104,9 @@
 
         {% if user.is_authenticated %}
           <div class="top-navigation__links">
-            <a href="{% url 'dashboard' %}" class="contrast app-inline-icon-link"{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>Dashboard</span></a>
-            <a href="{% url 'home' %}" class="contrast app-inline-icon-link"{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>Board</span></a>
-            <a href="{% url 'issue-create' %}" class="contrast app-inline-icon-link"{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>Create Issue</span></a>
+            <a href="{% url 'dashboard' %}" class="contrast app-inline-icon-link"{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="dashboard" class_name="" %}<span>{% translate "Dashboard" %}</span></a>
+            <a href="{% url 'home' %}" class="contrast app-inline-icon-link"{% if active_nav == 'board' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="kanban" class_name="" %}<span>{% translate "Board" %}</span></a>
+            <a href="{% url 'issue-create' %}" class="contrast app-inline-icon-link"{% if active_nav == 'create-issue' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="plus" class_name="" %}<span>{% translate "Create Issue" %}</span></a>
           </div>
         {% endif %}
 
@@ -112,27 +116,31 @@
               href="{% url 'home' %}{{ board_fullscreen_querystring|default:'?fullscreen=1' }}"
               role="button"
               class="secondary contrast top-navigation__icon-action"
-              aria-label="Open board fullscreen"
-              title="Open board fullscreen"
+              aria-label="{% translate 'Open board fullscreen' %}"
+              title="{% translate 'Open board fullscreen' %}"
             >{% include "includes/icon.html" with name="fullscreen" class_name="top-navigation__icon" %}</a>
-            <span class="top-navigation__user">{{ user.get_full_name|default:user.username }}</span>
+            <a href="{% url 'profile-settings' %}" class="top-navigation__user">
+              {% include "includes/user_avatar.html" with user=user class_name="issue-card__avatar" only %}
+              <span class="top-navigation__user-label">{{ user.get_full_name|default:user.username }}</span>
+            </a>
+            {% include "includes/language_switcher.html" with language_switcher_id="top-navigation-language" language_switcher_class="language-switcher" show_language_label=False %}
             <form action="{% url 'logout' %}" method="post">
               {% csrf_token %}
-              <button type="submit" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="logout" class_name="" %}<span>Sign out</span></button>
+              <button type="submit" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="logout" class_name="" %}<span>{% translate "Sign out" %}</span></button>
             </form>
           {% else %}
-            <a href="{% url 'login' %}" role="button" class="secondary contrast app-inline-icon-link">{% include "includes/icon.html" with name="login" class_name="" %}<span>Sign in</span></a>
+            <a href="{% url 'login' %}" role="button" class="secondary contrast app-inline-icon-link">{% include "includes/icon.html" with name="login" class_name="" %}<span>{% translate "Sign in" %}</span></a>
           {% endif %}
         </div>
       </nav>
     </header>
     {% endif %}
-    <main class="container app-main{% if board_fullscreen_mode %} app-main--fullscreen{% endif %}" data-app-content>
+    <main class="container app-main{% block app_main_class %} app-main--paged{% endblock %}{% if board_fullscreen_mode %} app-main--fullscreen{% endif %}" data-app-content>
       {% if messages %}
-        <section class="message-panel" aria-label="System messages">
+        <section class="message-panel" aria-label="{% translate 'System messages' %}">
           {% for message in messages %}
             <article class="message-panel__item message-panel__item--{{ message.level_tag }}" {% if message.level_tag == 'error' %}role="alert"{% else %}role="status"{% endif %}>
-              <p class="message-panel__eyebrow">{{ message.level_tag|title }}</p>
+              <p class="message-panel__eyebrow">{% if message.level_tag == 'error' %}{% translate "Error" %}{% elif message.level_tag == 'warning' %}{% translate "Warning" %}{% elif message.level_tag == 'success' %}{% translate "Success" %}{% else %}{% translate "Info" %}{% endif %}</p>
               <p>{{ message }}</p>
             </article>
           {% endfor %}

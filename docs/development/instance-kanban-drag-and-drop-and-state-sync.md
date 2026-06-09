@@ -186,27 +186,20 @@ event stream under the user frontend.
 Each event should include:
 
 - an event name
-- enough target metadata to replace the correct board region
-- a backend-rendered HTML fragment representing authoritative state
+- enough metadata to tell clients what changed
 
-Suggested event types:
+Current event type:
 
 - `kanban.board.updated`
-- `kanban.column.updated`
-- `kanban.issue.updated`
-- `kanban.issue.moved`
-- `kanban.issue.editing.started`
-- `kanban.issue.editing.heartbeat`
-- `kanban.issue.editing.ended`
-- `kanban.issue.locked`
-- `kanban.issue.unlocked`
-- `kanban.issue.stale`
 
-Prefer the narrowest replacement that still keeps the board correct:
+Current reconciliation behavior:
 
-- replace the full board for coarse updates
-- replace one column for movement updates
-- replace one Issue Card for metadata, lock, or edit-state updates
+- replace the full board when `kanban.board.updated` is received
+- preserve the viewer's scroll position and expanded column state during the
+  refresh
+
+Narrower column-level or issue-level events are optional future optimization.
+They are not required for the current board synchronization flow.
 
 ## Synchronization Rules
 

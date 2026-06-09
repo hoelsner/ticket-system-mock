@@ -1,8 +1,10 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils.translation import gettext_lazy as _
 
 from djangoapp.core.models import Collection, Issue, IssueCategory, IssueComment, WorkflowState
+from djangoapp.user_interface.models import UserProfile
 
 
 def _get_user_queryset(group_id=None):
@@ -85,20 +87,26 @@ class IssueBaseForm(forms.ModelForm):
 
     def _add_assignment_errors(self, group, user):
         if _missing_group_for_user(group, user):
-            self.add_error("group", "A group is required when a user is assigned.")
+            self.add_error("group", _("A group is required when a user is assigned."))
             return
 
         if _user_not_in_group(group, user):
-            self.add_error("user", "The assigned user must belong to the assigned group.")
+            self.add_error("user", _("The assigned user must belong to the assigned group."))
 
     def _add_attachment_errors(self, attachment_file, attachment_description):
         if attachment_description and not attachment_file:
-            self.add_error("attachment_file", "Select a file when providing an attachment description.")
+            self.add_error("attachment_file", _("Select a file when providing an attachment description."))
 
 
 class IssueCreateForm(IssueBaseForm):
     attachment_file = MultipleFileField(required=False)
     attachment_draft_token = forms.CharField(required=False, widget=forms.HiddenInput)
+    workflow_state = forms.ChoiceField(choices=WorkflowState.choices, initial=WorkflowState.BACKLOG, required=False)
+
+    def __init__(self, *args, show_workflow_state=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not show_workflow_state:
+            self.fields["workflow_state"].widget = forms.HiddenInput()
 
 
 class IssueUpdateForm(IssueBaseForm):
@@ -136,4 +144,18 @@ class IssueCommentForm(forms.ModelForm):
 
 
 class IssueArchiveForm(forms.Form):
-    confirm_archive = forms.BooleanField(label="I understand this issue will be archived.")
+    confirm_archive = forms.BooleanField(label=_("I understand this issue will be archived."))
+
+
+class UserProfileForm(forms.ModelForm):
+    clear_avatar_image = forms.BooleanField(required=False, label=_("Remove current avatar image"))
+
+    class Meta:
+        model = UserProfile
+        fields = ["language_preference", "avatar_type", "is_system_user", "avatar_image"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["language_preference"].choices = [
+            (code, code.upper()) for code, _label in UserProfile.LANGUAGE_PREFERENCE_CHOICES
+        ]

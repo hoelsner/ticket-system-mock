@@ -1,0 +1,9 @@
+{% with profile=user.profile %}
+  <span class="user-avatar {{ class_name|default:'' }}{% if profile.avatar_uses_image %} user-avatar--image{% endif %}" aria-hidden="true">
+    {% if profile.avatar_uses_image %}
+      <img src="{{ profile.avatar_image_url }}" alt="" class="user-avatar__image">
+    {% else %}
+      {{ profile.avatar_text }}
+    {% endif %}
+  </span>
+{% endwith %}

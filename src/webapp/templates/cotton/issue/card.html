@@ -1,4 +1,4 @@
-{% load issue_markdown tz %}
+{% load i18n issue_markdown tz %}
 
 <article
   class="issue-card"
@@ -8,7 +8,7 @@
   data-board-position="{{ issue.board_position }}"
 >
   {% if issue.user %}
-    {% with assignee_name=issue.user.get_full_name|default:issue.user.username assignee_initial=issue.user.get_full_name|default:issue.user.username|slice:":1"|upper %}
+    {% with assignee_name=issue.user.get_full_name|default:issue.user.username %}
   <header class="issue-card__header">
     <div class="issue-card__title-block">
       <div class="issue-card__eyebrow">
@@ -16,12 +16,12 @@
         <div class="issue-card__labels">
           <span class="issue-card__tag issue-card__tag--priority issue-card__tag--priority-{{ issue.priority|lower }}">{{ issue.get_priority_display }}</span>
           {% if issue.is_escalated %}
-            <span class="issue-card__tag issue-card__tag--escalated">Escalated</span>
+            <span class="issue-card__tag issue-card__tag--escalated">{% translate "Escalated" %}</span>
           {% endif %}
         </div>
       </div>
       <div class="issue-card__title-row">
-        <span class="issue-card__avatar issue-card__avatar--title" aria-hidden="true">{{ assignee_initial }}</span>
+        {% include "includes/user_avatar.html" with user=issue.user class_name="issue-card__avatar issue-card__avatar--title" only %}
         <h3 class="issue-card__title">
           <a
             href="{% url 'issue-detail' issue.pk %}"
@@ -31,12 +31,12 @@
           >{{ issue.title }}</a>
         </h3>
       </div>
-      <div class="issue-card__actions" aria-label="Issue actions">
-        <a href="{% url 'issue-detail' issue.pk %}" class="issue-card__icon-action" data-tooltip="Open issue details" aria-label="Open issue details">{% include "includes/icon.html" with name="eye" class_name="" %}</a>
-        <a href="{% url 'issue-detail' issue.pk %}" target="_blank" rel="noopener noreferrer" class="issue-card__icon-action" data-tooltip="Open in New Window" aria-label="Open in New Window">{% include "includes/icon.html" with name="external-link" class_name="" %}</a>
-        <a href="{% url 'issue-update' issue.pk %}" class="issue-card__icon-action" data-tooltip="Edit issue" aria-label="Edit issue">{% include "includes/icon.html" with name="edit" class_name="" %}</a>
-        <a href="{% url 'issue-comment-create' issue.pk %}" class="issue-card__icon-action" data-tooltip="Add comment" aria-label="Add comment">{% include "includes/icon.html" with name="comment" class_name="" %}</a>
-        <a href="{% url 'issue-archive' issue.pk %}" class="issue-card__icon-action" data-tooltip="Archive issue" aria-label="Archive issue">{% include "includes/icon.html" with name="archive" class_name="" %}</a>
+      <div class="issue-card__actions" aria-label="{% translate 'Issue actions' %}">
+        <a href="{% url 'issue-detail' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Open issue details' %}" aria-label="{% translate 'Open issue details' %}">{% include "includes/icon.html" with name="eye" class_name="" %}</a>
+        <a href="{% url 'issue-detail' issue.pk %}" target="_blank" rel="noopener noreferrer" class="issue-card__icon-action" data-tooltip="{% translate 'Open in New Window' %}" aria-label="{% translate 'Open in New Window' %}">{% include "includes/icon.html" with name="external-link" class_name="" %}</a>
+        <a href="{% url 'issue-update' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Edit issue' %}" aria-label="{% translate 'Edit issue' %}">{% include "includes/icon.html" with name="edit" class_name="" %}</a>
+        <a href="{% url 'issue-comment-create' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Add comment' %}" aria-label="{% translate 'Add comment' %}">{% include "includes/icon.html" with name="comment" class_name="" %}</a>
+        <a href="{% url 'issue-archive' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Archive issue' %}" aria-label="{% translate 'Archive issue' %}">{% include "includes/icon.html" with name="archive" class_name="" %}</a>
       </div>
     </div>
   </header>
@@ -45,51 +45,54 @@
     <summary>
       <span class="issue-card__details-trigger">
         <span class="issue-card__details-chevron" aria-hidden="true">▾</span>
-        <span>Details and activity</span>
+        <span>{% translate "Details and activity" %}</span>
       </span>
-      <span class="issue-card__details-counts">{{ comment_count }} comments · {{ attachment_count }} attachments · {{ transition_count }} transitions</span>
+      <span class="issue-card__details-counts">{{ comment_count }} {% translate "comments" %} · {{ attachment_count }} {% translate "attachments" %} · {{ transition_count }} {% translate "transitions" %}</span>
     </summary>
     <div class="issue-card__details-body">
-      <section class="issue-card__meta-grid" aria-label="Issue metadata">
+      <section class="issue-card__meta-grid" aria-label="{% translate 'Issue metadata' %}">
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Last change</span>
+          <span class="issue-card__meta-label">{% translate "Last change" %}</span>
           <time datetime="{{ issue.updated_at|localtime|date:'c' }}">{{ issue.updated_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</time>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Created</span>
+          <span class="issue-card__meta-label">{% translate "Created" %}</span>
           <time datetime="{{ issue.created_at|localtime|date:'c' }}">{{ issue.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</time>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Category</span>
+          <span class="issue-card__meta-label">{% translate "Category" %}</span>
           <span>{{ issue.category.name }}</span>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Associated team</span>
-          <span>{% if issue.group %}{{ issue.group.name }}{% else %}Unassigned{% endif %}</span>
+          <span class="issue-card__meta-label">{% translate "Associated team" %}</span>
+          <span>{% if issue.group %}{{ issue.group.name }}{% else %}{% translate "Unassigned" %}{% endif %}</span>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Assignee</span>
-          <span>{{ assignee_name }}</span>
+          <span class="issue-card__meta-label">{% translate "Assignee" %}</span>
+          <a href="{% url 'user-profile-detail' issue.user.username %}">{{ assignee_name }}</a>
         </div>
       </section>
 
-      <details class="issue-card__description" aria-label="Issue description">
-        <summary>Description</summary>
+      <details class="issue-card__description" aria-label="{% translate 'Issue description' %}">
+        <summary>{% translate "Description" %}</summary>
         {% if issue.description_markdown %}
           <div class="issue-card__description-body">{{ issue.description_markdown|render_markdown }}</div>
         {% else %}
-          <p class="issue-card__description-empty">No description provided.</p>
+          <p class="issue-card__description-empty">{% translate "No description provided." %}</p>
         {% endif %}
       </details>
 
-      <details class="issue-card__comments" aria-label="Issue comments">
-        <summary>Comments ({{ comment_count }})</summary>
+      <details class="issue-card__comments" aria-label="{% translate 'Issue comments' %}">
+        <summary>{% blocktranslate trimmed with comment_count=comment_count %}Comments ({{ comment_count }}){% endblocktranslate %}</summary>
         {% if comment_count %}
           <ul class="issue-card__comment-list">
             {% for comment in issue.comments.all %}
               <li class="issue-card__comment-item">
                 <header class="issue-card__comment-meta">
-                  <strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong>
+                  <span class="issue-card__comment-author">
+                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" only %}
+                    <a href="{% url 'user-profile-detail' comment.author_user.username %}"><strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong></a>
+                  </span>
                   <span>{{ comment.get_visibility_display }} · {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
                 </header>
                 <p class="issue-card__comment-body">{{ comment.body|linebreaksbr }}</p>
@@ -97,7 +100,7 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="issue-card__comments-empty">No comments yet.</p>
+          <p class="issue-card__comments-empty">{% translate "No comments yet." %}</p>
         {% endif %}
       </details>
     </div>
@@ -112,7 +115,7 @@
         <div class="issue-card__labels">
           <span class="issue-card__tag issue-card__tag--priority issue-card__tag--priority-{{ issue.priority|lower }}">{{ issue.get_priority_display }}</span>
           {% if issue.is_escalated %}
-            <span class="issue-card__tag issue-card__tag--escalated">Escalated</span>
+            <span class="issue-card__tag issue-card__tag--escalated">{% translate "Escalated" %}</span>
           {% endif %}
         </div>
       </div>
@@ -127,12 +130,12 @@
           >{{ issue.title }}</a>
         </h3>
       </div>
-      <div class="issue-card__actions" aria-label="Issue actions">
-        <a href="{% url 'issue-detail' issue.pk %}" class="issue-card__icon-action" data-tooltip="Open issue details" aria-label="Open issue details">{% include "includes/icon.html" with name="eye" class_name="" %}</a>
-        <a href="{% url 'issue-detail' issue.pk %}" target="_blank" rel="noopener noreferrer" class="issue-card__icon-action" data-tooltip="Open in New Window" aria-label="Open in New Window">{% include "includes/icon.html" with name="external-link" class_name="" %}</a>
-        <a href="{% url 'issue-update' issue.pk %}" class="issue-card__icon-action" data-tooltip="Edit issue" aria-label="Edit issue">{% include "includes/icon.html" with name="edit" class_name="" %}</a>
-        <a href="{% url 'issue-comment-create' issue.pk %}" class="issue-card__icon-action" data-tooltip="Add comment" aria-label="Add comment">{% include "includes/icon.html" with name="comment" class_name="" %}</a>
-        <a href="{% url 'issue-archive' issue.pk %}" class="issue-card__icon-action" data-tooltip="Archive issue" aria-label="Archive issue">{% include "includes/icon.html" with name="archive" class_name="" %}</a>
+      <div class="issue-card__actions" aria-label="{% translate 'Issue actions' %}">
+        <a href="{% url 'issue-detail' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Open issue details' %}" aria-label="{% translate 'Open issue details' %}">{% include "includes/icon.html" with name="eye" class_name="" %}</a>
+        <a href="{% url 'issue-detail' issue.pk %}" target="_blank" rel="noopener noreferrer" class="issue-card__icon-action" data-tooltip="{% translate 'Open in New Window' %}" aria-label="{% translate 'Open in New Window' %}">{% include "includes/icon.html" with name="external-link" class_name="" %}</a>
+        <a href="{% url 'issue-update' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Edit issue' %}" aria-label="{% translate 'Edit issue' %}">{% include "includes/icon.html" with name="edit" class_name="" %}</a>
+        <a href="{% url 'issue-comment-create' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Add comment' %}" aria-label="{% translate 'Add comment' %}">{% include "includes/icon.html" with name="comment" class_name="" %}</a>
+        <a href="{% url 'issue-archive' issue.pk %}" class="issue-card__icon-action" data-tooltip="{% translate 'Archive issue' %}" aria-label="{% translate 'Archive issue' %}">{% include "includes/icon.html" with name="archive" class_name="" %}</a>
       </div>
     </div>
   </header>
@@ -141,51 +144,54 @@
     <summary>
       <span class="issue-card__details-trigger">
         <span class="issue-card__details-chevron" aria-hidden="true">▾</span>
-        <span>Details and activity</span>
+        <span>{% translate "Details and activity" %}</span>
       </span>
-      <span class="issue-card__details-counts">{{ comment_count }} comments · {{ attachment_count }} attachments · {{ transition_count }} transitions</span>
+      <span class="issue-card__details-counts">{{ comment_count }} {% translate "comments" %} · {{ attachment_count }} {% translate "attachments" %} · {{ transition_count }} {% translate "transitions" %}</span>
     </summary>
     <div class="issue-card__details-body">
-      <section class="issue-card__meta-grid" aria-label="Issue metadata">
+      <section class="issue-card__meta-grid" aria-label="{% translate 'Issue metadata' %}">
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Last change</span>
+          <span class="issue-card__meta-label">{% translate "Last change" %}</span>
           <time datetime="{{ issue.updated_at|localtime|date:'c' }}">{{ issue.updated_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</time>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Created</span>
+          <span class="issue-card__meta-label">{% translate "Created" %}</span>
           <time datetime="{{ issue.created_at|localtime|date:'c' }}">{{ issue.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</time>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Category</span>
+          <span class="issue-card__meta-label">{% translate "Category" %}</span>
           <span>{{ issue.category.name }}</span>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Associated team</span>
-          <span>{% if issue.group %}{{ issue.group.name }}{% else %}Unassigned{% endif %}</span>
+          <span class="issue-card__meta-label">{% translate "Associated team" %}</span>
+          <span>{% if issue.group %}{{ issue.group.name }}{% else %}{% translate "Unassigned" %}{% endif %}</span>
         </div>
         <div class="issue-card__meta-item">
-          <span class="issue-card__meta-label">Assignee</span>
-          <span>Unassigned</span>
+          <span class="issue-card__meta-label">{% translate "Assignee" %}</span>
+          <span>{% translate "Unassigned" %}</span>
         </div>
       </section>
 
-      <details class="issue-card__description" aria-label="Issue description">
-        <summary>Description</summary>
+      <details class="issue-card__description" aria-label="{% translate 'Issue description' %}">
+        <summary>{% translate "Description" %}</summary>
         {% if issue.description_markdown %}
           <div class="issue-card__description-body">{{ issue.description_markdown|render_markdown }}</div>
         {% else %}
-          <p class="issue-card__description-empty">No description provided.</p>
+          <p class="issue-card__description-empty">{% translate "No description provided." %}</p>
         {% endif %}
       </details>
 
-      <details class="issue-card__comments" aria-label="Issue comments">
-        <summary>Comments ({{ comment_count }})</summary>
+      <details class="issue-card__comments" aria-label="{% translate 'Issue comments' %}">
+        <summary>{% blocktranslate trimmed with comment_count=comment_count %}Comments ({{ comment_count }}){% endblocktranslate %}</summary>
         {% if comment_count %}
           <ul class="issue-card__comment-list">
             {% for comment in issue.comments.all %}
               <li class="issue-card__comment-item">
                 <header class="issue-card__comment-meta">
-                  <strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong>
+                  <span class="issue-card__comment-author">
+                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" only %}
+                    <a href="{% url 'user-profile-detail' comment.author_user.username %}"><strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong></a>
+                  </span>
                   <span>{{ comment.get_visibility_display }} · {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
                 </header>
                 <p class="issue-card__comment-body">{{ comment.body|linebreaksbr }}</p>
@@ -193,7 +199,7 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="issue-card__comments-empty">No comments yet.</p>
+          <p class="issue-card__comments-empty">{% translate "No comments yet." %}</p>
         {% endif %}
       </details>
     </div>

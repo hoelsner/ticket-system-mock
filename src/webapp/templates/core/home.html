@@ -1,25 +1,33 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
-{% block title %}{% if board_fullscreen_mode %}Kanban Board Fullscreen{% else %}Instance Kanban Board{% endif %}{% endblock %}
+{% block title %}{% if board_fullscreen_mode %}{% translate "Kanban Board Fullscreen" %}{% else %}{% translate "Instance Kanban Board" %}{% endif %}{% endblock %}
 
 {% block extra_head %}
   <script src="{% static 'js/kanban-dnd.js' %}" defer></script>
 {% endblock %}
 
+{% block app_main_class %}{% endblock %}
+
 {% block content %}
   <section class="board-page">
     {% if board_fullscreen_mode %}
     <div class="board-fullscreen-bar">
-        <a href="{% url 'home' %}{{ board_standard_querystring }}" role="button" class="secondary board-fullscreen-bar__action">Exit fullscreen</a>
+        <a
+          href="{% url 'home' %}{{ board_standard_querystring }}"
+          role="button"
+          class="secondary board-fullscreen-bar__action"
+          aria-label="{% translate 'Exit fullscreen' %}"
+          title="{% translate 'Exit fullscreen' %}"
+        >{% include "includes/icon.html" with name="close" class_name="top-navigation__icon" %}</a>
     </div>
     {% endif %}
 
     {% if not board_fullscreen_mode %}
     <details class="app-surface app-surface--filters board-filters-panel">
       <summary class="board-filters-panel__summary">
-        <p class="app-page-header__eyebrow">Board filters</p>
-        <span class="board-filters-panel__toggle-label">Toggle filters</span>
+        <p class="app-page-header__eyebrow">{% translate "Board filters" %}</p>
+        <span class="board-filters-panel__toggle-label">{% translate "Toggle filters" %}</span>
       </summary>
       <form method="get" class="board-filters">
         <div class="app-form-field app-form-field--wide">
@@ -27,15 +35,15 @@
             type="search"
             name="search"
             value="{{ search_query }}"
-            placeholder="Search issues by title or description"
-            aria-label="Search issues"
+            placeholder="{% translate 'Search issues by title or description' %}"
+            aria-label="{% translate 'Search issues' %}"
           >
         </div>
 
         <label class="app-form-field">
-          Filter by assignee
+          {% translate "Filter by assignee" %}
           <select name="assignee">
-            <option value="">All assignees</option>
+            <option value="">{% translate "All assignees" %}</option>
             {% for assignee in assignee_options %}
               <option value="{{ assignee.pk }}"{% if selected_assignee == assignee.pk|stringformat:"s" %} selected{% endif %}>
                 {{ assignee.get_full_name|default:assignee.username }}
@@ -45,9 +53,9 @@
         </label>
 
         <label class="app-form-field">
-          Filter by priority
+          {% translate "Filter by priority" %}
           <select name="priority">
-            <option value="">All priorities</option>
+            <option value="">{% translate "All priorities" %}</option>
             {% for priority in priority_options %}
               <option value="{{ priority.value }}"{% if selected_priority == priority.value %} selected{% endif %}>
                 {{ priority.label }}
@@ -57,9 +65,9 @@
         </label>
 
         <label class="app-form-field">
-          Filter by collection
+          {% translate "Filter by collection" %}
           <select name="collection">
-            <option value="">All collections</option>
+            <option value="">{% translate "All collections" %}</option>
             {% for collection in collection_options %}
               <option value="{{ collection.pk }}"{% if selected_collection == collection.pk|stringformat:"s" %} selected{% endif %}>
                 {{ collection.name }}
@@ -69,9 +77,9 @@
         </label>
 
         <label class="app-form-field">
-          Filter by category
+          {% translate "Filter by category" %}
           <select name="category">
-            <option value="">All categories</option>
+            <option value="">{% translate "All categories" %}</option>
             {% for category in category_options %}
               <option value="{{ category.pk }}"{% if selected_category == category.pk|stringformat:"s" %} selected{% endif %}>
                 {{ category.name }}
@@ -81,8 +89,8 @@
         </label>
 
         <div class="board-filters__actions">
-          <button type="submit">Apply</button>
-          <a href="{% url 'home' %}" role="button" class="secondary">Reset</a>
+          <button type="submit">{% translate "Apply" %}</button>
+          <a href="{% url 'home' %}" role="button" class="secondary">{% translate "Reset" %}</a>
         </div>
       </form>
     </details>

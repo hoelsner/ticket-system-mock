@@ -1,0 +1,1071 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-08 23:17+0000\n"
+"PO-Revision-Date: 2026-06-08 23:25+0000\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: djangoapp/core/models/collection.py:14
+msgid "Use uppercase letters and digits only, starting with a letter."
+msgstr "Nur Großbuchstaben und Ziffern verwenden, beginnend mit einem Buchstaben."
+
+#: djangoapp/core/models/collection.py:17
+msgid "Prefix used for issue identifiers, for example TASK."
+msgstr "Präfix für Ticketkennungen, zum Beispiel TASK."
+
+#: djangoapp/core/models/issue.py:95 djangoapp/user_interface/forms.py:89
+msgid "A group is required when a user is assigned."
+msgstr "Eine Gruppe ist erforderlich, wenn eine Person zugewiesen wird."
+
+#: djangoapp/core/models/issue.py:98 djangoapp/user_interface/forms.py:93
+msgid "The assigned user must belong to the assigned group."
+msgstr "Die zugewiesene Person muss zur zugewiesenen Gruppe gehören."
+
+#: djangoapp/core/models/issue.py:102
+msgid "Archived timestamp is required when archived by user is set."
+msgstr "Ein Archivierungszeitpunkt ist erforderlich, wenn "
+"\"archiviert von\" gesetzt ist."
+
+#: djangoapp/core/models/issue_category.py:13
+msgid "Issue category"
+msgstr "Ticketkategorie"
+
+#: djangoapp/core/models/issue_category.py:14
+msgid "Issue categories"
+msgstr "Ticketkategorien"
+
+#: djangoapp/core/models/issue_comment_visibility.py:6
+msgid "Internal"
+msgstr "Intern"
+
+#: djangoapp/core/models/issue_comment_visibility.py:7
+msgid "Customer visible"
+msgstr "Für Kunden sichtbar"
+
+#: djangoapp/core/models/issue_priority.py:6
+msgid "Low"
+msgstr "Niedrig"
+
+#: djangoapp/core/models/issue_priority.py:7
+msgid "Medium"
+msgstr "Mittel"
+
+#: djangoapp/core/models/issue_priority.py:8
+msgid "High"
+msgstr "Hoch"
+
+#: djangoapp/core/models/issue_priority.py:9
+msgid "Critical"
+msgstr "Kritisch"
+
+#: djangoapp/core/models/webhook_delivery_status.py:6
+msgid "Pending"
+msgstr "Ausstehend"
+
+#: djangoapp/core/models/webhook_delivery_status.py:7 templates/base.html:140
+#: templates/registration/login.html:15
+msgid "Success"
+msgstr "Erfolg"
+
+#: djangoapp/core/models/webhook_delivery_status.py:8
+msgid "Partial failure"
+msgstr "Teilweise fehlgeschlagen"
+
+#: djangoapp/core/models/webhook_delivery_status.py:9
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+#: djangoapp/core/models/webhook_endpoint.py:42
+msgid "Subscribed event types must be a list."
+msgstr "Abonnierte Ereignistypen müssen eine Liste sein."
+
+#: djangoapp/core/models/webhook_endpoint.py:47
+#, python-format
+msgid "Unsupported event types: %(event_types)s"
+msgstr "Nicht unterstützte Ereignistypen: %(event_types)s"
+
+#: djangoapp/core/models/webhook_event_type.py:6
+msgid "Issue created"
+msgstr "Ticket erstellt"
+
+#: djangoapp/core/models/webhook_event_type.py:7
+msgid "Issue updated"
+msgstr "Ticket aktualisiert"
+
+#: djangoapp/core/models/webhook_event_type.py:8
+msgid "Issue queue assigned"
+msgstr "Ticket einer Queue zugewiesen"
+
+#: djangoapp/core/models/webhook_event_type.py:9
+msgid "Issue commented"
+msgstr "Ticket kommentiert"
+
+#: djangoapp/core/models/webhook_event_type.py:10
+msgid "Issue closed"
+msgstr "Ticket geschlossen"
+
+#: djangoapp/core/models/workflow_state.py:6
+msgid "Backlog"
+msgstr "Backlog"
+
+#: djangoapp/core/models/workflow_state.py:7
+msgid "New"
+msgstr "Neu"
+
+#: djangoapp/core/models/workflow_state.py:8
+msgid "Triage"
+msgstr "Triage"
+
+#: djangoapp/core/models/workflow_state.py:9
+msgid "Assigned"
+msgstr "Zugewiesen"
+
+#: djangoapp/core/models/workflow_state.py:10
+msgid "In Progress"
+msgstr "In Bearbeitung"
+
+#: djangoapp/core/models/workflow_state.py:11
+msgid "Waiting"
+msgstr "Wartend"
+
+#: djangoapp/core/models/workflow_state.py:12
+msgid "Resolved"
+msgstr "Gelöst"
+
+#: djangoapp/core/models/workflow_state.py:13
+msgid "Closed"
+msgstr "Geschlossen"
+
+#: djangoapp/core/models/workflow_state.py:14
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+#: djangoapp/core/models/workflow_state.py:15
+msgid "Duplicate"
+msgstr "Duplikat"
+
+#: djangoapp/healthchecks/checks.py:79
+msgid "Database connectivity check failed."
+msgstr "Die Überprüfung der Datenbankverbindung ist fehlgeschlagen."
+
+#: djangoapp/healthchecks/checks.py:94
+msgid "Migration status check failed."
+msgstr "Die Überprüfung des Migrationsstatus ist fehlgeschlagen."
+
+#: djangoapp/healthchecks/checks.py:102
+msgid "Pending migrations detected."
+msgstr "Ausstehende Migrationen erkannt."
+
+#: djangoapp/healthchecks/checks.py:121
+msgid "Cache connectivity check failed."
+msgstr "Die Überprüfung der Cache-Verbindung ist fehlgeschlagen."
+
+#: djangoapp/healthchecks/checks.py:134
+msgid "Cache read/write verification failed."
+msgstr "Die Überprüfung von Cache-Lese- und Schreibzugriffen ist fehlgeschlagen."
+
+#: djangoapp/healthchecks/checks.py:149
+msgid "No enabled webhook endpoints are configured."
+msgstr "Es sind keine aktivierten Webhook-Endpunkte konfiguriert."
+
+#: djangoapp/healthchecks/checks.py:162
+#, python-format
+msgid "Webhook endpoints unreachable: %(endpoint_names)s."
+msgstr "Webhook-Endpunkte nicht erreichbar: %(endpoint_names)s."
+
+#: djangoapp/healthchecks/checks.py:169
+#, python-format
+msgid "%(endpoint_count)s enabled webhook endpoint reachable."
+msgstr "%(endpoint_count)s aktivierter Webhook-Endpunkt ist erreichbar."
+
+#: djangoapp/healthchecks/checks.py:169
+#, python-format
+msgid "%(endpoint_count)s enabled webhook endpoints reachable."
+msgstr "%(endpoint_count)s aktivierte Webhook-Endpunkte sind erreichbar."
+
+#: djangoapp/healthchecks/views.py:15
+msgid "Database"
+msgstr "Datenbank"
+
+#: djangoapp/healthchecks/views.py:16
+msgid "Migrations"
+msgstr "Migrationen"
+
+#: djangoapp/healthchecks/views.py:17
+msgid "Cache"
+msgstr "Cache"
+
+#: djangoapp/healthchecks/views.py:18
+msgid "Webhook endpoints"
+msgstr "Webhook-Endpunkte"
+
+#: djangoapp/healthchecks/views.py:88
+msgid "Unknown healthcheck."
+msgstr "Unbekannter Healthcheck."
+
+#: djangoapp/settings.py:163
+msgid "English"
+msgstr "Englisch"
+
+#: djangoapp/settings.py:164
+msgid "German"
+msgstr "Deutsch"
+
+#: djangoapp/user_interface/forms.py:97
+msgid "Select a file when providing an attachment description."
+msgstr "Wählen Sie eine Datei aus, wenn Sie eine Anhangsbeschreibung angeben."
+
+#: djangoapp/user_interface/forms.py:140
+msgid "I understand this issue will be archived."
+msgstr "Ich verstehe, dass dieses Ticket archiviert wird."
+
+#: djangoapp/user_interface/views.py:29
+msgid "Invalid request payload."
+msgstr "Ungültige Anfragedaten."
+
+#: djangoapp/user_interface/views.py:33
+msgid "Invalid workflow state."
+msgstr "Ungültiger Workflow-Status."
+
+#: djangoapp/user_interface/views.py:38
+msgid "Invalid target position."
+msgstr "Ungültige Zielposition."
+
+#: djangoapp/user_interface/views.py:111
+msgid "Signed in successfully."
+msgstr "Erfolgreich angemeldet."
+
+#: djangoapp/user_interface/views.py:115
+msgid "Username and password did not match. Please try again."
+msgstr "Benutzername und Passwort stimmen nicht überein. Bitte versuchen Sie es erneut."
+
+#: djangoapp/user_interface/views.py:124
+msgid "Signed out successfully."
+msgstr "Erfolgreich abgemeldet."
+
+#: djangoapp/user_interface/views.py:133
+msgid "Review the highlighted fields and try again."
+msgstr "Prüfen Sie die hervorgehobenen Felder und versuchen Sie es erneut."
+
+#: djangoapp/user_interface/views.py:232 templates/core/dashboard.html:17
+msgid "Create New Issue"
+msgstr "Neues Ticket erstellen"
+
+#: djangoapp/user_interface/views.py:233
+msgid "Create issue"
+msgstr "Ticket erstellen"
+
+#: djangoapp/user_interface/views.py:241
+#, python-format
+msgid "Issue %(issue_number)s was created."
+msgstr "Ticket %(issue_number)s wurde erstellt."
+
+#: djangoapp/user_interface/views.py:259
+#: templates/core/partials/issue_detail_content.html:27
+msgid "Update Existing Issue"
+msgstr "Bestehendes Ticket aktualisieren"
+
+#: djangoapp/user_interface/views.py:260
+msgid "Save changes"
+msgstr "Änderungen speichern"
+
+#: djangoapp/user_interface/views.py:267
+#, python-format
+msgid "Issue %(issue_number)s was updated."
+msgstr "Ticket %(issue_number)s wurde aktualisiert."
+
+#: djangoapp/user_interface/views.py:283
+#, python-format
+msgid "Issue %(issue_number)s description was updated."
+msgstr "Die Beschreibung von Ticket %(issue_number)s wurde aktualisiert."
+
+#: djangoapp/user_interface/views.py:314
+#, python-format
+msgid "Issue %(issue_number)s was archived."
+msgstr "Ticket %(issue_number)s wurde archiviert."
+
+#: djangoapp/user_interface/views.py:332
+#, python-format
+msgid "A new issue comment was added to %(issue_number)s."
+msgstr "Ein neuer Ticketkommentar wurde zu %(issue_number)s hinzugefügt."
+
+#: djangoapp/user_interface/views.py:354
+#, python-format
+msgid "Attachment %(attachment_name)s was removed from %(issue_number)s."
+msgstr "Anhang %(attachment_name)s wurde aus %(issue_number)s entfernt."
+
+#: templates/base.html:53
+msgid "Primary navigation"
+msgstr "Primäre Navigation"
+
+#: templates/base.html:57
+msgid "Toggle detailed navigation"
+msgstr "Detaillierte Navigation umschalten"
+
+#: templates/base.html:58
+msgid "Detailed navigation"
+msgstr "Detaillierte Navigation"
+
+#: templates/base.html:60
+msgid "Close detailed navigation"
+msgstr "Detaillierte Navigation schließen"
+
+#: templates/base.html:64 templates/base.html:107
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: templates/base.html:67 templates/base.html:108
+msgid "Board"
+msgstr "Board"
+
+#: templates/base.html:70 templates/base.html:109
+msgid "Create Issue"
+msgstr "Ticket erstellen"
+
+#: templates/base.html:76
+msgid "Administration"
+msgstr "Administration"
+
+#: templates/base.html:79
+msgid "Healthcheck"
+msgstr "Healthcheck"
+
+#: templates/base.html:82
+msgid "API Docs"
+msgstr "API-Dokumentation"
+
+#: templates/base.html:90 templates/base.html:126
+msgid "Sign out"
+msgstr "Abmelden"
+
+#: templates/base.html:94
+#, python-format
+msgid "Logged in as <strong>%(username)s</strong>"
+msgstr "Angemeldet als <strong>%(username)s</strong>"
+
+#: templates/base.html:120 templates/base.html:121
+msgid "Open board fullscreen"
+msgstr "Board im Vollbild öffnen"
+
+#: templates/base.html:129 templates/registration/login.html:7
+#: templates/registration/login.html:34
+msgid "Sign in"
+msgstr "Anmelden"
+
+#: templates/base.html:137
+msgid "System messages"
+msgstr "Systemmeldungen"
+
+#: templates/base.html:140 templates/registration/login.html:15
+msgid "Error"
+msgstr "Fehler"
+
+#: templates/base.html:140 templates/healthchecks/partials/check_card.html:6
+#: templates/healthchecks/partials/summary.html:6
+#: templates/registration/login.html:15
+msgid "Warning"
+msgstr "Warnung"
+
+#: templates/base.html:140 templates/registration/login.html:15
+msgid "Info"
+msgstr "Info"
+
+#: templates/core/dashboard.html:4 templates/core/dashboard.html:11
+msgid "Personal Dashboard"
+msgstr "Persönliches Dashboard"
+
+#: templates/core/dashboard.html:10
+msgid "User workspace"
+msgstr "Arbeitsbereich"
+
+#: templates/core/dashboard.html:12
+msgid "Issues assigned to you and comments that mention you."
+msgstr "Ihnen zugewiesene Tickets und Kommentare, in denen Sie erwähnt werden."
+
+#: templates/core/dashboard.html:16
+msgid "Open board"
+msgstr "Board öffnen"
+
+#: templates/core/dashboard.html:23
+msgid "Assigned Issues"
+msgstr "Zugewiesene Tickets"
+
+#: templates/core/dashboard.html:31
+msgid "No issues are currently assigned to you."
+msgstr "Ihnen sind derzeit keine Tickets zugewiesen."
+
+#: templates/core/dashboard.html:36
+msgid "Mentioned Comments"
+msgstr "Erwähnte Kommentare"
+
+#: templates/core/dashboard.html:42
+#, python-format
+msgid "%(username)s mentioned you at %(created_at)s"
+msgstr "%(username)s hat Sie um %(created_at)s erwähnt"
+
+#: templates/core/dashboard.html:48
+msgid "No comment mentions currently target you."
+msgstr "Derzeit gibt es keine Kommentarerwähnungen für Sie."
+
+#: templates/core/home.html:4
+msgid "Kanban Board Fullscreen"
+msgstr "Kanban-Board im Vollbild"
+
+#: templates/core/home.html:4 templates/core/partials/kanban_board.html:10
+msgid "Instance Kanban Board"
+msgstr "Instanz-Kanban-Board"
+
+#: templates/core/home.html:20 templates/core/home.html:21
+msgid "Exit fullscreen"
+msgstr "Vollbild beenden"
+
+#: templates/core/home.html:29
+msgid "Board filters"
+msgstr "Board-Filter"
+
+#: templates/core/home.html:30
+msgid "Toggle filters"
+msgstr "Filter umschalten"
+
+#: templates/core/home.html:38
+msgid "Search issues by title or description"
+msgstr "Tickets nach Titel oder Beschreibung durchsuchen"
+
+#: templates/core/home.html:39
+msgid "Search issues"
+msgstr "Tickets durchsuchen"
+
+#: templates/core/home.html:44
+msgid "Filter by assignee"
+msgstr "Nach zugewiesener Person filtern"
+
+#: templates/core/home.html:46
+msgid "All assignees"
+msgstr "Alle zugewiesenen Personen"
+
+#: templates/core/home.html:56
+msgid "Filter by priority"
+msgstr "Nach Priorität filtern"
+
+#: templates/core/home.html:58
+msgid "All priorities"
+msgstr "Alle Prioritäten"
+
+#: templates/core/home.html:68
+msgid "Filter by collection"
+msgstr "Nach Sammlung filtern"
+
+#: templates/core/home.html:70
+msgid "All collections"
+msgstr "Alle Sammlungen"
+
+#: templates/core/home.html:80
+msgid "Filter by category"
+msgstr "Nach Kategorie filtern"
+
+#: templates/core/home.html:82
+msgid "All categories"
+msgstr "Alle Kategorien"
+
+#: templates/core/home.html:92 templates/includes/language_switcher.html:15
+msgid "Apply"
+msgstr "Anwenden"
+
+#: templates/core/home.html:93
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+#: templates/core/issue_archive_confirm.html:4
+#: templates/core/issue_archive_confirm.html:14
+msgid "Archive Issue"
+msgstr "Ticket archivieren"
+
+#: templates/core/issue_archive_confirm.html:8
+#: templates/core/issue_comment_form.html:12 templates/core/issue_form.html:13
+msgid "Back to issue"
+msgstr "Zurück zum Ticket"
+
+#: templates/core/issue_archive_confirm.html:13
+#: templates/core/issue_comment_form.html:17 templates/core/issue_form.html:21
+msgid "Issue workflow"
+msgstr "Ticket-Workflow"
+
+#: templates/core/issue_archive_confirm.html:22
+msgid ""
+"Archiving removes the issue from the active board and dashboard while "
+"keeping the data for audit and reporting."
+msgstr ""
+"Durch das Archivieren wird das Ticket aus dem aktiven Board und Dashboard "
+"entfernt, während die Daten für Audit und Berichte erhalten bleiben."
+
+#: templates/core/issue_archive_confirm.html:33
+#: templates/cotton/issue/card.html:39 templates/cotton/issue/card.html:135
+msgid "Archive issue"
+msgstr "Ticket archivieren"
+
+#: templates/core/issue_archive_confirm.html:34
+#: templates/core/issue_comment_form.html:67 templates/core/issue_form.html:180
+#: templates/core/issue_form.html:186
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: templates/core/issue_comment_form.html:4
+#: templates/core/issue_comment_form.html:18
+msgid "Add Comment"
+msgstr "Kommentar hinzufügen"
+
+#: templates/core/issue_comment_form.html:31
+msgid "Comment"
+msgstr "Kommentar"
+
+#: templates/core/issue_comment_form.html:32
+msgid "Write the update"
+msgstr "Aktualisierung verfassen"
+
+#: templates/core/issue_comment_form.html:43
+msgid "Visibility and files"
+msgstr "Sichtbarkeit und Dateien"
+
+#: templates/core/issue_comment_form.html:44
+msgid "Comment settings"
+msgstr "Kommentar-Einstellungen"
+
+#: templates/core/issue_comment_form.html:66
+#: templates/core/partials/issue_detail_content.html:142
+#: templates/cotton/issue/card.html:38 templates/cotton/issue/card.html:134
+msgid "Add comment"
+msgstr "Kommentar hinzufügen"
+
+#: templates/core/issue_form.html:15
+#: templates/core/partials/issue_detail_content.html:25
+msgid "Back to board"
+msgstr "Zurück zum Board"
+
+#: templates/core/issue_form.html:39
+msgid "Core details"
+msgstr "Kerndetails"
+
+#: templates/core/issue_form.html:40
+msgid "Issue definition"
+msgstr "Ticketdefinition"
+
+#: templates/core/issue_form.html:42
+msgid ""
+"Capture the key issue details first. Routing and attachments stay available "
+"alongside the description while you write."
+msgstr ""
+"Erfassen Sie zuerst die wichtigsten Ticketdetails. Routing und Anhänge "
+"bleiben beim Schreiben neben der Beschreibung verfügbar."
+
+#: templates/core/issue_form.html:75
+#: templates/core/partials/issue_detail_content.html:36
+#: templates/cotton/issue/card.html:77 templates/cotton/issue/card.html:173
+msgid "Description"
+msgstr "Beschreibung"
+
+#: templates/core/issue_form.html:76
+msgid "Describe the issue"
+msgstr "Ticket beschreiben"
+
+#: templates/core/issue_form.html:78
+msgid ""
+"Use the description as the primary record of what changed, what was "
+"observed, and what support teams should act on next."
+msgstr ""
+"Verwenden Sie die Beschreibung als zentrale Dokumentation dafür, was sich "
+"geändert hat, was beobachtet wurde und welche nächsten Schritte die "
+"Support-Teams ausführen sollen."
+
+#: templates/core/issue_form.html:91
+msgid ""
+"Upload from the editor when a file should appear inside the issue "
+"description. Use the attachments panel for files that should be added when "
+"you submit the issue."
+msgstr ""
+"Laden Sie Dateien im Editor hoch, wenn sie in der Ticketbeschreibung "
+"erscheinen sollen. Verwenden Sie das Anhangsfeld für Dateien, die beim "
+"Absenden des Tickets hinzugefügt werden sollen."
+
+#: templates/core/issue_form.html:96
+msgid "Use standard markdown plus"
+msgstr "Verwenden Sie Standard-Markdown sowie"
+
+#: templates/core/issue_form.html:98
+msgid "to mention a user,"
+msgstr "um eine Person zu erwähnen,"
+
+#: templates/core/issue_form.html:100
+msgid "to reference another issue, and"
+msgstr "um auf ein anderes Ticket zu verweisen, und"
+
+#: templates/core/issue_form.html:102
+msgid "to embed uploaded attachments."
+msgstr "um hochgeladene Anhänge einzubetten."
+
+#: templates/core/issue_form.html:110
+msgid "Routing"
+msgstr "Routing"
+
+#: templates/core/issue_form.html:111
+msgid "Assignment and escalation"
+msgstr "Zuweisung und Eskalation"
+
+#: templates/core/issue_form.html:113
+msgid ""
+"Assign a group first if you want to assign a user. Leave both blank when the "
+"issue only needs to be captured for triage."
+msgstr ""
+"Weisen Sie zuerst eine Gruppe zu, wenn Sie eine Person zuweisen möchten. "
+"Lassen Sie beides leer, wenn das Ticket nur für die Triage erfasst werden "
+"soll."
+
+#: templates/core/issue_form.html:155
+msgid "Supporting material"
+msgstr "Zusätzliche Materialien"
+
+#: templates/core/issue_form.html:156
+msgid "Initial attachment"
+msgstr "Erster Anhang"
+
+#: templates/core/issue_form.html:156
+#: templates/core/partials/issue_detail_content.html:200
+msgid "Attachments"
+msgstr "Anhänge"
+
+#: templates/core/issue_form.html:158
+msgid ""
+"Add files here when they should be included with the issue on submit. Use "
+"the editor upload tool when a file also needs to be linked in the "
+"description."
+msgstr ""
+"Fügen Sie hier Dateien hinzu, wenn sie beim Absenden mit dem Ticket "
+"gespeichert werden sollen. Verwenden Sie das Upload-Werkzeug im Editor, "
+"wenn eine Datei zusätzlich in der Beschreibung verlinkt werden soll."
+
+#: templates/core/partials/issue_detail_content.html:5
+msgid "Issue detail"
+msgstr "Ticketdetails"
+
+#: templates/core/partials/issue_detail_content.html:13
+msgid "Issue summary"
+msgstr "Ticketübersicht"
+
+#: templates/core/partials/issue_detail_content.html:22
+msgid "Open Full Page"
+msgstr "Vollständige Seite öffnen"
+
+#: templates/core/partials/issue_detail_content.html:24
+msgid "Back to dashboard"
+msgstr "Zurück zum Dashboard"
+
+#: templates/core/partials/issue_detail_content.html:37
+msgid "Issue Description"
+msgstr "Ticketbeschreibung"
+
+#: templates/core/partials/issue_detail_content.html:38
+msgid ""
+"Use this as the primary narrative for what changed, what was observed, and "
+"what follow-up the Issue needs."
+msgstr ""
+"Verwenden Sie dies als zentrale Beschreibung dafür, was sich geändert hat, "
+"was beobachtet wurde und welche weiteren Schritte das Ticket benötigt."
+
+#: templates/core/partials/issue_detail_content.html:46
+#: templates/cotton/issue/card.html:81 templates/cotton/issue/card.html:177
+msgid "No description provided."
+msgstr "Keine Beschreibung vorhanden."
+
+#: templates/core/partials/issue_detail_content.html:50
+msgid "Edit description"
+msgstr "Beschreibung bearbeiten"
+
+#: templates/core/partials/issue_detail_content.html:60
+msgid "Save description"
+msgstr "Beschreibung speichern"
+
+#: templates/core/partials/issue_detail_content.html:70
+msgid "Activity"
+msgstr "Aktivität"
+
+#: templates/core/partials/issue_detail_content.html:71
+msgid "Discussion and history"
+msgstr "Diskussion und Verlauf"
+
+#: templates/core/partials/issue_detail_content.html:72
+msgid ""
+"Comments and workflow history stay together here so the latest collaboration "
+"and state changes read as one timeline."
+msgstr ""
+"Kommentare und Workflow-Verlauf bleiben hier zusammen, damit sich die "
+"neueste Zusammenarbeit und die Statusänderungen als eine gemeinsame "
+"Zeitleiste lesen lassen."
+
+#: templates/core/partials/issue_detail_content.html:80
+msgid "Discussion"
+msgstr "Diskussion"
+
+#: templates/core/partials/issue_detail_content.html:81
+msgid "Comments"
+msgstr "Kommentare"
+
+#: templates/core/partials/issue_detail_content.html:82
+msgid ""
+"Add context, mention the right User, and keep new Issue decisions in one "
+"place."
+msgstr ""
+"Fügen Sie Kontext hinzu, erwähnen Sie die richtige Person und halten Sie "
+"neue Ticketentscheidungen an einem Ort fest."
+
+#: templates/core/partials/issue_detail_content.html:92
+#, python-format
+msgid "%(visibility)s at %(created_at)s"
+msgstr "%(visibility)s um %(created_at)s"
+
+#: templates/core/partials/issue_detail_content.html:99
+msgid "Mentions:"
+msgstr "Erwähnungen:"
+
+#: templates/core/partials/issue_detail_content.html:109
+#: templates/cotton/issue/card.html:100 templates/cotton/issue/card.html:196
+msgid "No comments yet."
+msgstr "Noch keine Kommentare."
+
+#: templates/core/partials/issue_detail_content.html:155
+msgid "Current state"
+msgstr "Aktueller Status"
+
+#: templates/core/partials/issue_detail_content.html:156
+msgid "Issue Details"
+msgstr "Ticketdetails"
+
+#: templates/core/partials/issue_detail_content.html:157
+msgid ""
+"The current Issue routing and timestamps stay visible beside the working "
+"narrative."
+msgstr ""
+"Das aktuelle Ticket-Routing und die Zeitangaben bleiben neben der laufenden "
+"Beschreibung sichtbar."
+
+#: templates/core/partials/issue_detail_content.html:162
+msgid "Workflow state"
+msgstr "Workflow-Status"
+
+#: templates/core/partials/issue_detail_content.html:166
+msgid "Priority"
+msgstr "Priorität"
+
+#: templates/core/partials/issue_detail_content.html:170
+#: templates/cotton/issue/card.html:63 templates/cotton/issue/card.html:159
+msgid "Category"
+msgstr "Kategorie"
+
+#: templates/core/partials/issue_detail_content.html:174
+#: templates/cotton/issue/card.html:67 templates/cotton/issue/card.html:163
+msgid "Associated team"
+msgstr "Zugeordnetes Team"
+
+#: templates/core/partials/issue_detail_content.html:175
+#: templates/core/partials/issue_detail_content.html:179
+msgid "Not assigned"
+msgstr "Nicht zugewiesen"
+
+#: templates/core/partials/issue_detail_content.html:178
+msgid "Assigned user"
+msgstr "Zugewiesene Person"
+
+#: templates/core/partials/issue_detail_content.html:182
+#: templates/cotton/issue/card.html:19 templates/cotton/issue/card.html:115
+msgid "Escalated"
+msgstr "Eskaliert"
+
+#: templates/core/partials/issue_detail_content.html:183
+msgid "Yes"
+msgstr "Ja"
+
+#: templates/core/partials/issue_detail_content.html:183
+msgid "No"
+msgstr "Nein"
+
+#: templates/core/partials/issue_detail_content.html:186
+#: templates/cotton/issue/card.html:59 templates/cotton/issue/card.html:155
+msgid "Created"
+msgstr "Erstellt"
+
+#: templates/core/partials/issue_detail_content.html:190
+#: templates/cotton/issue/card.html:55 templates/cotton/issue/card.html:151
+msgid "Last change"
+msgstr "Letzte Änderung"
+
+#: templates/core/partials/issue_detail_content.html:199
+msgid "Files"
+msgstr "Dateien"
+
+#: templates/core/partials/issue_detail_content.html:201
+msgid ""
+"Reference files stay separate from the discussion so the latest evidence is "
+"easier to scan."
+msgstr ""
+"Referenzdateien bleiben getrennt von der Diskussion, damit sich die neuesten "
+"Nachweise leichter erfassen lassen."
+
+#: templates/core/partials/issue_detail_content.html:212
+msgid "Remove"
+msgstr "Entfernen"
+
+#: templates/core/partials/issue_detail_content.html:218
+msgid "No attachments available."
+msgstr "Keine Anhänge vorhanden."
+
+#: templates/core/partials/issue_detail_content.html:227
+msgid "Timeline"
+msgstr "Zeitleiste"
+
+#: templates/core/partials/issue_detail_content.html:228
+msgid "Issue history"
+msgstr "Ticketverlauf"
+
+#: templates/core/partials/issue_detail_content.html:229
+msgid "Track state transitions and field changes in chronological order."
+msgstr "Verfolgen Sie Statuswechsel und Feldänderungen in chronologischer Reihenfolge."
+
+#: templates/core/partials/issue_detail_content.html:238
+#, python-format
+msgid "%(username)s at %(changed_at)s"
+msgstr "%(username)s um %(changed_at)s"
+
+#: templates/core/partials/issue_detail_content.html:240
+#, python-format
+msgid "From: %(from_value)s"
+msgstr "Von: %(from_value)s"
+
+#: templates/core/partials/issue_detail_content.html:241
+#, python-format
+msgid "To: %(to_value)s"
+msgstr "Zu: %(to_value)s"
+
+#: templates/core/partials/issue_detail_content.html:247
+msgid "No issue history recorded yet."
+msgstr "Es wurde noch kein Ticketverlauf aufgezeichnet."
+
+#: templates/core/partials/issue_detail_modal.html:8
+#: templates/core/partials/issue_detail_modal.html:9
+msgid "Close issue detail dialog"
+msgstr "Ticketdetail-Dialog schließen"
+
+#: templates/core/partials/kanban_board.html:10
+msgid "Kanban Board"
+msgstr "Kanban-Board"
+
+#: templates/core/partials/kanban_board.html:15
+#, python-format
+msgid "%(issue_count)s issue"
+msgid_plural "%(issue_count)s issues"
+msgstr[0] "%(issue_count)s Ticket"
+msgstr[1] "%(issue_count)s Tickets"
+
+#: templates/core/partials/kanban_board.html:32
+#, python-format
+msgid "No issues in %(column_label)s."
+msgstr "Keine Tickets in %(column_label)s."
+
+#: templates/core/partials/kanban_board.html:41
+msgid "No matching issues"
+msgstr "Keine passenden Tickets"
+
+#: templates/core/partials/kanban_board.html:42
+msgid ""
+"Adjust the search or filters to widen the board results, or create a new "
+"issue."
+msgstr ""
+"Passen Sie Suche oder Filter an, um die Board-Ergebnisse zu erweitern, oder "
+"erstellen Sie ein neues Ticket."
+
+#: templates/core/partials/markdown_editor.html:11
+msgid "Markdown tools"
+msgstr "Markdown-Werkzeuge"
+
+#: templates/core/partials/markdown_editor.html:13
+msgid "Mention user"
+msgstr "Person erwähnen"
+
+#: templates/core/partials/markdown_editor.html:14
+msgid "Reference issue"
+msgstr "Ticket referenzieren"
+
+#: templates/core/partials/markdown_editor.html:16
+msgid "Link attachment"
+msgstr "Anhang verknüpfen"
+
+#: templates/core/partials/markdown_editor.html:19
+msgid "Upload attachment"
+msgstr "Anhang hochladen"
+
+#: templates/core/partials/markdown_editor.html:37
+msgid "Insert reference"
+msgstr "Referenz einfügen"
+
+#: templates/core/partials/markdown_editor.html:38
+msgid "Close"
+msgstr "Schließen"
+
+#: templates/core/partials/markdown_editor.html:41
+msgid "Search"
+msgstr "Suchen"
+
+#: templates/core/partials/markdown_editor.html:54
+#: templates/core/partials/markdown_editor.html:61
+msgid "Preview"
+msgstr "Vorschau"
+
+#: templates/core/partials/markdown_editor.html:55
+msgid "Toggle preview"
+msgstr "Vorschau umschalten"
+
+#: templates/core/partials/markdown_editor.html:57
+#: templates/core/partials/markdown_editor.html:62
+msgid "Start typing to preview markdown output."
+msgstr "Beginnen Sie mit dem Tippen, um die Markdown-Ausgabe in der Vorschau zu sehen."
+
+#: templates/cotton/issue/card.html:34 templates/cotton/issue/card.html:130
+msgid "Issue actions"
+msgstr "Ticketaktionen"
+
+#: templates/cotton/issue/card.html:35 templates/cotton/issue/card.html:131
+msgid "Open issue details"
+msgstr "Ticketdetails öffnen"
+
+#: templates/cotton/issue/card.html:36 templates/cotton/issue/card.html:132
+msgid "Open in New Window"
+msgstr "In neuem Fenster öffnen"
+
+#: templates/cotton/issue/card.html:37 templates/cotton/issue/card.html:133
+msgid "Edit issue"
+msgstr "Ticket bearbeiten"
+
+#: templates/cotton/issue/card.html:48 templates/cotton/issue/card.html:144
+msgid "Details and activity"
+msgstr "Details und Aktivität"
+
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+msgid "comments"
+msgstr "Kommentare"
+
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+msgid "attachments"
+msgstr "Anhänge"
+
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+msgid "transitions"
+msgstr "Übergänge"
+
+#: templates/cotton/issue/card.html:53 templates/cotton/issue/card.html:149
+msgid "Issue metadata"
+msgstr "Ticketmetadaten"
+
+#: templates/cotton/issue/card.html:68 templates/cotton/issue/card.html:164
+#: templates/cotton/issue/card.html:168
+msgid "Unassigned"
+msgstr "Nicht zugewiesen"
+
+#: templates/cotton/issue/card.html:71 templates/cotton/issue/card.html:167
+msgid "Assignee"
+msgstr "Zugewiesen an"
+
+#: templates/cotton/issue/card.html:76 templates/cotton/issue/card.html:172
+msgid "Issue description"
+msgstr "Ticketbeschreibung"
+
+#: templates/cotton/issue/card.html:85 templates/cotton/issue/card.html:181
+msgid "Issue comments"
+msgstr "Ticketkommentare"
+
+#: templates/cotton/issue/card.html:86 templates/cotton/issue/card.html:182
+#, python-format
+msgid "Comments (%(comment_count)s)"
+msgstr "Kommentare (%(comment_count)s)"
+
+#: templates/healthchecks/partials/check_card.html:6
+#: templates/healthchecks/partials/summary.html:6
+msgid "Healthy"
+msgstr "OK"
+
+#: templates/healthchecks/partials/check_card.html:6
+#: templates/healthchecks/partials/summary.html:6
+msgid "Unhealthy"
+msgstr "Fehlerhaft"
+
+#: templates/healthchecks/partials/check_card.html:8
+#, python-format
+msgid "Duration: %(duration_ms)s ms"
+msgstr "Dauer: %(duration_ms)s ms"
+
+#: templates/healthchecks/partials/summary.html:5
+#: templates/healthchecks/status.html:27
+msgid "Overall status"
+msgstr "Gesamtstatus"
+
+#: templates/healthchecks/partials/summary.html:8
+#, python-format
+msgid "Total duration: %(duration_ms)s ms"
+msgstr "Gesamtdauer: %(duration_ms)s ms"
+
+#: templates/healthchecks/status.html:4 templates/healthchecks/status.html:13
+msgid "Service Health"
+msgstr "Servicezustand"
+
+#: templates/healthchecks/status.html:14
+msgid ""
+"Review the current database, migration, and cache status as each check loads "
+"independently."
+msgstr ""
+"Prüfen Sie den aktuellen Status von Datenbank, Migrationen und Cache, "
+"während jede Prüfung unabhängig geladen wird."
+
+#: templates/healthchecks/status.html:28 templates/healthchecks/status.html:48
+#: templates/healthchecks/status.html:65
+msgid "Checking"
+msgstr "Wird geprüft"
+
+#: templates/healthchecks/status.html:30
+msgid ""
+"Each healthcheck runs one-by-one so one failure does not block the remaining "
+"checks."
+msgstr ""
+"Jeder Healthcheck wird nacheinander ausgeführt, damit ein Fehler die übrigen "
+"Prüfungen nicht blockiert."
+
+#: templates/healthchecks/status.html:50 templates/healthchecks/status.html:67
+msgid "Waiting for the latest check result."
+msgstr "Warten auf das neueste Prüfergebnis."
+
+#: templates/includes/language_switcher.html:5
+msgid "Language"
+msgstr "Sprache"
+
+#: templates/registration/login.html:8
+msgid "Login using your credentials."
+msgstr "Melden Sie sich mit Ihren Zugangsdaten an."
+
+#: templates/registration/login.html:13
+msgid "Login screen message"
+msgstr "Nachricht auf dem Anmeldebildschirm"
+
+#: templates/registration/login.html:24
+msgid "Username"
+msgstr "Benutzername"
+
+#: templates/registration/login.html:29
+msgid "Password"
+msgstr "Passwort"

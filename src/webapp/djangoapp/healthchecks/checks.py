@@ -6,6 +6,7 @@ from urllib import error, request
 from django.core.cache import caches
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.utils.translation import gettext_lazy as _
 from djangoapp.core.models import WebhookEndpoint
 
 
@@ -75,7 +76,7 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "database",
                 started_at,
-                "Database connectivity check failed.",
+                _("Database connectivity check failed."),
                 exc,
             )
         return HealthcheckService._healthy_result("database", started_at)
@@ -90,7 +91,7 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "migrations",
                 started_at,
-                "Migration status check failed.",
+                _("Migration status check failed."),
                 exc,
             )
 
@@ -98,7 +99,7 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "migrations",
                 started_at,
-                "Pending migrations detected.",
+                _("Pending migrations detected."),
             )
 
         return HealthcheckService._healthy_result("migrations", started_at)
@@ -117,7 +118,7 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "cache",
                 started_at,
-                "Cache connectivity check failed.",
+                _("Cache connectivity check failed."),
                 exc,
             )
         finally:
@@ -130,7 +131,7 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "cache",
                 started_at,
-                "Cache read/write verification failed.",
+                _("Cache read/write verification failed."),
             )
 
         return HealthcheckService._healthy_result("cache", started_at)
@@ -145,7 +146,7 @@ class HealthcheckService:
             return HealthcheckService._warning_result(
                 "webhooks",
                 started_at,
-                "No enabled webhook endpoints are configured.",
+                _("No enabled webhook endpoints are configured."),
             )
 
         unreachable_endpoint_names = [
@@ -158,15 +159,19 @@ class HealthcheckService:
             return HealthcheckService._unhealthy_result(
                 "webhooks",
                 started_at,
-                "Webhook endpoints unreachable: %s." % ", ".join(unreachable_endpoint_names),
+                _("Webhook endpoints unreachable: %(endpoint_names)s.")
+                % {"endpoint_names": ", ".join(unreachable_endpoint_names)},
             )
 
-        noun = "endpoint" if enabled_endpoint_count == 1 else "endpoints"
         return HealthCheckResult(
             name="webhooks",
             status="healthy",
             duration_ms=HealthcheckService._duration_ms(started_at),
-            message=f"{enabled_endpoint_count} enabled webhook {noun} reachable.",
+            message=_("%(endpoint_count)s enabled webhook endpoint reachable.")
+            % {"endpoint_count": enabled_endpoint_count}
+            if enabled_endpoint_count == 1
+            else _("%(endpoint_count)s enabled webhook endpoints reachable.")
+            % {"endpoint_count": enabled_endpoint_count},
         )
 
     @staticmethod

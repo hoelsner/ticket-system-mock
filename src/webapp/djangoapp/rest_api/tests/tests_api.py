@@ -114,6 +114,7 @@ class RestApiTests(TestCase):
         )
         self.assertEqual(schema["paths"]["/api/health"]["get"]["summary"], "Check API health")
         self.assertEqual(schema["paths"]["/api/auth/me"]["get"]["tags"], ["Authentication"])
+        self.assertEqual(schema["paths"]["/api/profile/me"]["get"]["tags"], ["Profiles"])
         self.assertEqual(
             schema["paths"]["/api/board"]["get"]["parameters"][0]["description"],
             "Free-text filter applied to issue number, title, and description content.",
@@ -148,6 +149,20 @@ class RestApiTests(TestCase):
         self.assertEqual(
             schema["components"]["schemas"]["AuthenticatedUserSchema"]["properties"]["display_name"]["description"],
             "Preferred display name shown for the authenticated user.",
+        )
+        self.assertEqual(
+            schema["components"]["schemas"]["UserProfileSchema"]["properties"]["is_system_user"]["description"],
+            "Whether the profile is flagged as a system user.",
+        )
+        self.assertEqual(
+            schema["components"]["schemas"]["UserProfileSchema"]["properties"]["avatar_type"]["description"],
+            "Stored avatar type for the profile.",
+        )
+        self.assertEqual(
+            schema["paths"]["/api/profile/me"]["put"]["requestBody"]["content"]["multipart/form-data"]["schema"][
+                "properties"
+            ]["language_preference"]["enum"],
+            ["en", "de"],
         )
 
     def test_basic_auth_backend_returns_active_user(self):
@@ -280,11 +295,48 @@ class RestApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()[0]["username"], "demo")
+        self.assertEqual(response.json()[0]["avatar_type"], "initials")
+        self.assertFalse(response.json()[0]["is_system_user"])
+        self.assertEqual(response.json()[0]["avatar_text"], "DU")
 
         response = self.client.get("/api/users", headers=self.basic_auth_header())
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
+
+    def test_profile_endpoints_return_and_update_user_settings(self):
+        profile_response = self.client.get("/api/profile/me", headers=self.basic_auth_header())
+
+        self.assertEqual(profile_response.status_code, 200)
+        self.assertEqual(profile_response.json()["user"]["username"], "demo")
+        self.assertTrue(profile_response.json()["can_edit"])
+
+        update_response = self.multipart_put(
+            "/api/profile/me",
+            {
+                "language_preference": "de",
+                "avatar_type": "image",
+                "is_system_user": "true",
+            },
+        )
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(update_response.json()["profile"]["language_preference"], "de")
+        self.assertEqual(update_response.json()["profile"]["avatar_type"], "image")
+        self.assertTrue(update_response.json()["profile"]["is_system_user"])
+        self.assertTrue(self.user.profile.is_system_user)
+        self.assertEqual(self.user.profile.avatar_type, "image")
+        self.assertTrue(
+            update_response.json()["profile"]["avatar_image_url"].endswith("/static/img/default_avatar_agent.png")
+        )
+
+    def test_public_user_profile_endpoint_returns_public_profile_payload(self):
+        response = self.client.get(f"/api/users/{self.observer.username}/profile", headers=self.basic_auth_header())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], self.observer.username)
+        self.assertFalse(response.json()["can_edit"])
 
     def test_collection_endpoints_support_create_and_update(self):
         create_response = self.client.post(
@@ -516,11 +568,13 @@ class RestApiTests(TestCase):
         self.assertEqual(board_response.status_code, 200)
         self.assertEqual(board_response.json()["board_issue_count"], 1)
         self.assertEqual(board_response.json()["board_columns"][1]["issues"][0]["issue_number"], issue.issue_number)
+        self.assertEqual(board_response.json()["board_columns"][1]["issues"][0]["user"]["avatar_text"], "DU")
 
         dashboard_response = self.client.get("/api/dashboard", headers=self.basic_auth_header())
 
         self.assertEqual(dashboard_response.status_code, 200)
         self.assertEqual(dashboard_response.json()["assigned_issues"][0]["issue_number"], issue.issue_number)
+        self.assertEqual(dashboard_response.json()["mentioned_comments"][0]["author_user"]["avatar_text"], "OO")
 
     def test_board_endpoint_applies_filter_combinations(self):
         matching_issue = Issue.objects.create(

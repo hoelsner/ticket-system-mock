@@ -1,10 +1,11 @@
+{% load i18n %}
 <section id="healthcheck-check-{{ check_name }}" aria-live="polite">
   <article class="app-surface healthcheck-card healthcheck-card--{{ result.status }}">
     <header>
       <p class="healthcheck-card__eyebrow"><strong>{{ check_label }}</strong></p>
-      <h2 class="healthcheck-card__title">{{ result.status|title }}</h2>
+      <h2 class="healthcheck-card__title">{% if result.status == 'healthy' %}{% translate "Healthy" %}{% elif result.status == 'warning' %}{% translate "Warning" %}{% else %}{% translate "Unhealthy" %}{% endif %}</h2>
     </header>
-    <p class="healthcheck-card__meta">Duration: {{ result.duration_ms }} ms</p>
+    <p class="healthcheck-card__meta">{% blocktranslate trimmed with duration_ms=result.duration_ms %}Duration: {{ duration_ms }} ms{% endblocktranslate %}</p>
     {% if result.message %}
       <p class="healthcheck-card__message">{{ result.message }}</p>
     {% endif %}

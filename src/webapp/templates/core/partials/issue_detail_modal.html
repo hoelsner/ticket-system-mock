@@ -1,11 +1,12 @@
+{% load i18n %}
 <article class="issue-detail-modal__content" data-issue-detail-modal-content>
   <div class="issue-detail-modal__toolbar">
     <button
       type="button"
       class="secondary issue-detail-modal__close"
       data-issue-detail-modal-close
-      aria-label="Close issue detail dialog"
-      data-tooltip="Close issue detail dialog"
+      aria-label="{% translate 'Close issue detail dialog' %}"
+      data-tooltip="{% translate 'Close issue detail dialog' %}"
       data-placement="left"
     >
       {% include "includes/icon.html" with name="close" class_name="" %}

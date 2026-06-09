@@ -24,7 +24,8 @@ development.
 - `/admin/` is provided by Django Admin and serves the authenticated admin
   frontend.
 - `/admin/` also hosts the `App Branding` management surface used to override
-  the display name, navbar logo, and login background image.
+  the display name, navbar logo, login background image, login screen message,
+  and login message level.
 - `/api/` is owned by `djangoapp.rest_api` and exposes the machine-facing REST
   API protected by HTTP Basic Authentication.
 

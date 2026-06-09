@@ -283,6 +283,14 @@ starter set could be:
 Issue categories should be managed as admin-maintained reference data rather
 than a hard-coded enumeration.
 
+### UserProfileLanguagePreference
+
+User profile language preferences support the configured application
+languages:
+
+- `en`
+- `de`
+
 ### IssueCommentVisibility
 
 Issue comments should be separated by visibility:
@@ -303,6 +311,8 @@ Issue comments should be separated by visibility:
 - An `Issue` has zero or more `IssueStateTransition` records.
 - A `User` can belong to zero or more `Group` records through Django's built-in
   `User.groups` relationship.
+- A `User` has exactly one `UserProfile` record for per-user presentation and
+  localization settings.
 - A personal dashboard for one `User` is derived from directly assigned
   `Issue` records and `IssueCommentMention` records that point to that `User`.
 - Archived issues remain stored and auditable through soft-delete fields rather
@@ -367,6 +377,16 @@ erDiagram
         boolean is_superuser
     }
 
+    USER_PROFILE {
+      uuid id
+      uuid user_id
+      string language_preference
+      boolean is_system_user
+      string avatar_image
+      datetime created_at
+      datetime updated_at
+    }
+
     ISSUE_COMMENT {
         uuid id
         uuid issue_id
@@ -398,6 +418,7 @@ erDiagram
     ISSUE_CATEGORY ||--o{ ISSUE : classifies
     GROUP o|--o{ ISSUE : dispatches
     USER o|--o{ ISSUE : takes
+    USER ||--|| USER_PROFILE : customizes
     GROUP }o--o{ USER : includes
     ISSUE ||--o{ ISSUE_COMMENT : has
     ISSUE_COMMENT ||--o{ ISSUE_COMMENT_MENTION : creates
@@ -418,6 +439,8 @@ erDiagram
 - `@username` references in comments are persisted as explicit mention records.
 - A User is implemented as a Django `User` for authentication, permissions, and
   group membership.
+- `UserProfile` is implemented as a one-to-one extension of Django `User` for
+  per-user language and avatar settings.
 - A Group is implemented as a Django `Group`.
 - An Issue can be dispatched to at most one Group and taken by at most one User
   from that Group.
@@ -441,6 +464,8 @@ erDiagram
   persisted comment mentions.
 - Use Django `User` and `Group` as the foundation for user and group
   ownership.
+- Keep per-user presentation settings in `UserProfile` instead of extending the
+  issue model or relying on client-only preferences.
 - Model current dispatch directly on the Issue with optional Group and User
   associations instead of a separate assignment entity.
 - Store issue descriptions as markdown-capable text and keep issue titles short

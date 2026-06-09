@@ -1,6 +1,7 @@
 import re
 
 from django import template
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -19,7 +20,14 @@ CODE_RE = re.compile(r"`([^`]+)`")
 
 
 def _build_user_token(username):
-    return f'<span class="detail-token detail-token--user">@{escape(username)}</span>'
+    user = get_user_model().objects.filter(username=username, is_active=True).only("username").first()
+    if user is None:
+        return f'<span class="detail-token detail-token--user">@{escape(username)}</span>'
+
+    return (
+        f'<a href="{escape(reverse("user-profile-detail", args=[user.username]))}" '
+        f'class="detail-token detail-token--user">@{escape(username)}</a>'
+    )
 
 
 def _build_issue_token(issue_number):

@@ -1,26 +1,26 @@
 {% extends "base.html" %}
-{% load tz %}
+{% load i18n tz %}
 
-{% block title %}Personal Dashboard{% endblock %}
+{% block title %}{% translate "Personal Dashboard" %}{% endblock %}
 
 {% block content %}
   <section class="dashboard-page">
   <header class="app-page-header">
     <div>
-      <p class="app-page-header__eyebrow">User workspace</p>
-      <h1>Personal Dashboard</h1>
-      <p>Issues assigned to you and comments that mention you.</p>
+      <p class="app-page-header__eyebrow">{% translate "User workspace" %}</p>
+      <h1>{% translate "Personal Dashboard" %}</h1>
+      <p>{% translate "Issues assigned to you and comments that mention you." %}</p>
     </div>
 
     <div class="app-page-header__actions">
-      <a href="{% url 'home' %}" role="button" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="kanban" class_name="" %}<span>Open board</span></a>
-      <a href="{% url 'issue-create' %}" role="button" class="app-inline-icon-link">{% include "includes/icon.html" with name="plus" class_name="" %}<span>Create New Issue</span></a>
+      <a href="{% url 'home' %}" role="button" class="secondary app-inline-icon-link">{% include "includes/icon.html" with name="kanban" class_name="" %}<span>{% translate "Open board" %}</span></a>
+      <a href="{% url 'issue-create' %}" role="button" class="app-inline-icon-link">{% include "includes/icon.html" with name="plus" class_name="" %}<span>{% translate "Create New Issue" %}</span></a>
     </div>
   </header>
 
   <section class="detail-section-grid">
     <article class="app-surface">
-      <h2>Assigned Issues</h2>
+      <h2>{% translate "Assigned Issues" %}</h2>
       {% if assigned_issues %}
         <div class="dashboard-card-grid">
           {% for issue in assigned_issues %}
@@ -28,24 +28,24 @@
           {% endfor %}
         </div>
       {% else %}
-        <p>No issues are currently assigned to you.</p>
+        <p>{% translate "No issues are currently assigned to you." %}</p>
       {% endif %}
     </article>
 
     <article class="app-surface">
-      <h2>Mentioned Comments</h2>
+      <h2>{% translate "Mentioned Comments" %}</h2>
       {% if mentioned_comments %}
         <ul class="detail-list dashboard-mention-list">
           {% for comment in mentioned_comments %}
             <li>
               <a href="{% url 'issue-detail' comment.issue.pk %}">{{ comment.issue.issue_number }}: {{ comment.issue.title }}</a>
-              <span>{{ comment.author_user.get_full_name|default:comment.author_user.username }} mentioned you at {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
+              <span><a href="{% url 'user-profile-detail' comment.author_user.username %}">{{ comment.author_user.get_full_name|default:comment.author_user.username }}</a> {% blocktranslate trimmed with created_at=comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" %}mentioned you at {{ created_at }}{% endblocktranslate %}</span>
               <p>{{ comment.body|linebreaksbr }}</p>
             </li>
           {% endfor %}
         </ul>
       {% else %}
-        <p>No comment mentions currently target you.</p>
+        <p>{% translate "No comment mentions currently target you." %}</p>
       {% endif %}
     </article>
   </section>

@@ -1,4 +1,6 @@
 import json
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
@@ -8,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase
+from django.test.utils import override_settings
 from django.urls import resolve, reverse
 from django.utils import formats, timezone
 
@@ -61,11 +64,12 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Ticket System Mock")
         self.assertContains(response, "default_app_logo.png")
         self.assertContains(response, "default_app_hero_image.png")
-        self.assertContains(response, reverse("home"))
+        self.assertContains(response, 'href="/dashboard/" class="top-navigation__brand contrast"', html=False)
         self.assertContains(response, reverse("login"))
         self.assertContains(response, "Sign in")
         self.assertContains(response, "Login using your credentials.")
         self.assertContains(response, "auth-layout__illustration-panel")
+        self.assertNotContains(response, "Login screen message")
         self.assertNotContains(response, "Operational overview")
         self.assertNotContains(response, "Django")
         self.assertContains(response, "app-icon")
@@ -98,6 +102,17 @@ class UserInterfaceTests(TestCase):
         self.assertContains(login_response, "Signed in successfully.")
         self.assertContains(login_response, "message-panel__item--success")
 
+    def test_login_without_next_redirects_to_dashboard(self):
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": self.user.username,
+                "password": "demo-password-123",
+            },
+        )
+
+        self.assertRedirects(response, reverse("dashboard"), fetch_redirect_response=False)
+
         logout_response = self.client.post(reverse("logout"), follow=True)
 
         self.assertEqual(logout_response.status_code, 200)
@@ -128,14 +143,26 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Primary uplink outage")
         self.assertContains(response, reverse("issue-detail", args=[issue.pk]))
         self.assertContains(response, "Board")
-        self.assertContains(response, "/admin/")
-        self.assertContains(response, "/api/docs")
+        self.assertContains(response, 'href="/admin/"')
+        self.assertContains(
+            response,
+            'href="/admin/" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close target="_blank" rel="noopener noreferrer"',
+            html=False,
+        )
+        self.assertContains(response, 'href="/api/docs"')
+        self.assertContains(
+            response,
+            'href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close target="_blank" rel="noopener noreferrer"',
+            html=False,
+        )
         self.assertContains(response, "Demo User")
         self.assertContains(response, "Sign out")
         self.assertContains(response, "Ticket System Mock")
         self.assertContains(response, "default_app_logo.png")
         self.assertContains(response, reverse("dashboard"))
         self.assertContains(response, reverse("issue-create"))
+        self.assertContains(response, "kanban-column__create")
+        self.assertContains(response, f"{reverse('issue-create')}?workflow_state={WorkflowState.NEW}")
         self.assertContains(response, "kanban-board-shell")
         self.assertContains(response, "data-kanban-board-shell")
         self.assertContains(response, "data-kanban-card-wrapper")
@@ -145,19 +172,208 @@ class UserInterfaceTests(TestCase):
         self.assertNotContains(response, "kanban-priority-pane")
         self.assertContains(response, "side-navigation__panel")
         self.assertContains(response, "side-navigation__list")
-        self.assertContains(response, "side-navigation__item", count=7)
+        self.assertContains(response, "side-navigation__item", count=8)
         self.assertContains(response, "side-navigation__action")
+        self.assertContains(response, 'action="/i18n/setlang/"', html=False)
+        self.assertContains(response, "Language")
         self.assertContains(response, "data-side-navigation")
         self.assertContains(response, "data-side-navigation-close", count=7)
         self.assertContains(response, reverse("healthcheck-status"))
         self.assertContains(response, "data-app-content")
         self.assertContains(response, "app-shell.js")
+        self.assertNotContains(response, "app-main--paged")
+        self.assertContains(response, 'href="/dashboard/" class="top-navigation__brand contrast"', html=False)
         self.assertContains(response, 'class="top-navigation__brand contrast"')
         self.assertContains(response, 'class="contrast app-inline-icon-link"')
         self.assertContains(response, "app-inline-icon-link")
         self.assertNotContains(response, "Signed in as")
         self.assertNotContains(response, "Operations board")
         self.assertNotContains(response, "Track workload by Workflow State and adjust the active filters in one place.")
+
+    def test_home_renders_german_translations_when_language_cookie_is_set(self):
+        Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.CRITICAL,
+        )
+        self.client.force_login(self.user)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "de"
+
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["LANGUAGE_CODE"], "en")
+        self.assertContains(response, 'lang="en"', html=False)
+        self.assertContains(response, "Language")
+        self.assertContains(response, "Sign out")
+        self.assertContains(response, ">EN<", html=False)
+        self.assertContains(response, ">DE<", html=False)
+        self.assertNotContains(response, "Auto-detect browser language")
+
+    def test_home_uses_profile_language_preference_when_configured(self):
+        Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.CRITICAL,
+        )
+        profile = self.user.profile
+        profile.language_preference = "de"
+        profile.save(update_fields=["language_preference", "updated_at"])
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["LANGUAGE_CODE"], "de")
+        self.assertContains(response, "Sprache")
+
+    def test_profile_settings_link_is_available_from_the_shell(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("profile-settings"))
+        self.assertContains(response, 'class="top-navigation__user"', html=False)
+        self.assertContains(response, 'class="user-avatar issue-card__avatar', html=False)
+
+        content = response.content.decode("utf-8")
+        language_switcher_index = content.index('id="top-navigation-language"')
+        logout_index = content.index('action="/accounts/logout/" method="post"', language_switcher_index)
+        self.assertLess(language_switcher_index, logout_index)
+
+    def test_authenticated_users_can_view_other_public_profiles(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("user-profile-detail", args=[self.observer.username]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "User profile")
+        self.assertContains(response, self.observer.get_full_name())
+        self.assertContains(response, f"@{self.observer.username}")
+        self.assertContains(response, 'class="user-avatar issue-card__avatar profile-page__avatar', html=False)
+
+    def test_profile_settings_update_current_user_preferences(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("profile-settings"),
+            {
+                "language_preference": "de",
+                "avatar_type": "image",
+                "is_system_user": "on",
+            },
+            follow=True,
+        )
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.user.profile.language_preference, "de")
+        self.assertEqual(self.user.profile.avatar_type, "image")
+        self.assertTrue(self.user.profile.is_system_user)
+        self.assertNotContains(response, "Auto-detect browser language")
+        self.assertContains(response, "Your profile settings were updated.")
+        self.assertContains(response, 'class="profile-page__grid profile-page__grid--single-column"', html=False)
+        self.assertContains(response, 'class="user-avatar issue-card__avatar profile-page__avatar', html=False)
+        self.assertContains(response, "/static/img/default_avatar_agent.png")
+
+    def test_profile_settings_existing_avatar_respects_selected_avatar_type(self):
+        self.client.force_login(self.user)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with override_settings(MEDIA_ROOT=temp_dir):
+                initial_upload = SimpleUploadedFile("avatar-one.png", b"first-avatar", content_type="image/png")
+
+                self.client.post(
+                    reverse("profile-settings"),
+                    {"language_preference": "en", "avatar_type": "image", "avatar_image": initial_upload},
+                    follow=True,
+                )
+
+                response = self.client.post(
+                    reverse("profile-settings"),
+                    {"language_preference": "en", "avatar_type": "initials"},
+                    follow=True,
+                )
+
+                self.user.profile.refresh_from_db()
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(self.user.profile.avatar_type, "initials")
+                self.assertTrue(self.user.profile.avatar_image.name)
+                self.assertNotContains(
+                    response,
+                    'class="user-avatar issue-card__avatar profile-page__avatar user-avatar--image',
+                    html=False,
+                )
+
+    def test_profile_settings_new_avatar_upload_forces_image_avatar_type(self):
+        self.client.force_login(self.user)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with override_settings(MEDIA_ROOT=temp_dir):
+                response = self.client.post(
+                    reverse("profile-settings"),
+                    {
+                        "language_preference": "en",
+                        "avatar_type": "initials",
+                        "avatar_image": SimpleUploadedFile("avatar-one.png", b"first-avatar", content_type="image/png"),
+                    },
+                    follow=True,
+                )
+
+                self.user.profile.refresh_from_db()
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(self.user.profile.avatar_type, "image")
+                self.assertContains(
+                    response,
+                    'class="user-avatar issue-card__avatar profile-page__avatar user-avatar--image',
+                    html=False,
+                )
+
+    def test_profile_settings_replace_old_avatar_image(self):
+        self.client.force_login(self.user)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with override_settings(MEDIA_ROOT=temp_dir):
+                first_upload = SimpleUploadedFile("avatar-one.png", b"first-avatar", content_type="image/png")
+                second_upload = SimpleUploadedFile("avatar-two.png", b"second-avatar", content_type="image/png")
+
+                first_response = self.client.post(
+                    reverse("profile-settings"),
+                    {"language_preference": "en", "avatar_type": "image", "avatar_image": first_upload},
+                    follow=True,
+                )
+
+                self.user.profile.refresh_from_db()
+                first_avatar_path = Path(temp_dir, self.user.profile.avatar_image.name)
+
+                self.assertEqual(first_response.status_code, 200)
+                self.assertTrue(first_avatar_path.exists())
+
+                second_response = self.client.post(
+                    reverse("profile-settings"),
+                    {"language_preference": "en", "avatar_type": "image", "avatar_image": second_upload},
+                    follow=True,
+                )
+
+                self.user.profile.refresh_from_db()
+                second_avatar_path = Path(temp_dir, self.user.profile.avatar_image.name)
+
+                self.assertEqual(second_response.status_code, 200)
+                self.assertFalse(first_avatar_path.exists())
+                self.assertTrue(second_avatar_path.exists())
 
     def test_home_supports_fullscreen_board_mode(self):
         issue = Issue.objects.create(
@@ -179,7 +395,9 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, reverse("issue-detail", args=[issue.pk]))
         self.assertContains(response, "board-fullscreen-mode")
         self.assertContains(response, "app-main--fullscreen")
-        self.assertContains(response, "Exit fullscreen")
+        self.assertContains(response, 'aria-label="Exit fullscreen"')
+        self.assertContains(response, 'title="Exit fullscreen"')
+        self.assertContains(response, 'class="app-icon top-navigation__icon"', html=False)
         self.assertContains(response, "kanban-board-shell")
         self.assertNotContains(response, "<h1>Instance Kanban Board</h1>", html=True)
         self.assertNotContains(response, "Search issues by title or description")
@@ -229,6 +447,8 @@ class UserInterfaceTests(TestCase):
         self.assertIn(reverse("issue-comment-create", args=[issue.pk]), rendered)
         self.assertIn("Demo User", rendered)
         self.assertIn("Assignee", rendered)
+        self.assertIn("DU", rendered)
+        self.assertIn(reverse("user-profile-detail", args=[self.user.username]), rendered)
         self.assertIn("issue-card__avatar issue-card__avatar--title", rendered)
         self.assertIn("issue-card__labels", rendered)
         self.assertIn("issue-card__tag--priority-critical", rendered)
@@ -397,6 +617,11 @@ class UserInterfaceTests(TestCase):
             author_user=self.user,
             body="Working on switch replacement.",
         )
+        IssueComment.objects.create(
+            issue=issue,
+            author_user=self.observer,
+            body="Waiting for the next update.",
+        )
         IssueStateTransition.objects.create(
             issue=issue,
             from_state=WorkflowState.NEW,
@@ -421,6 +646,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, issue.title)
         self.assertContains(response, "Back to board")
         self.assertContains(response, "Working on switch replacement.")
+        self.assertContains(response, "Waiting for the next update.")
         self.assertContains(response, "network-log.txt")
         self.assertContains(response, reverse("issue-attachment-delete", args=[issue.pk, issue.attachments.get().pk]))
         self.assertContains(response, 'target="_blank"', html=False)
@@ -428,14 +654,46 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Issue history")
         self.assertContains(response, "Assigned to the network team.")
         self.assertContains(response, "data-issue-detail-refresh-url")
+        self.assertContains(response, "issue-detail-layout")
+        self.assertContains(response, "issue-detail-view__summary-strip")
+        self.assertContains(response, "Discussion and history")
         self.assertNotContains(response, 'class="issue-card"', html=False)
+        self.assertContains(response, 'class="user-avatar issue-card__avatar comment-thread__avatar', html=False)
+        self.assertContains(response, reverse("user-profile-detail", args=[self.user.username]))
 
         response_content = response.content.decode()
-        self.assertLess(response_content.index("Issue Details"), response_content.index("Issue Description"))
-        self.assertLess(response_content.index("Issue Description"), response_content.index("Related records"))
-        self.assertLess(response_content.index("Related records"), response_content.index("Comments"))
-        self.assertLess(response_content.index("Comments"), response_content.index("Attachments"))
+        self.assertEqual(response_content.count("comment-thread__item--self"), 1)
+        self.assertLess(response_content.index("Issue Description"), response_content.index("Discussion and history"))
+        self.assertLess(response_content.index("Discussion and history"), response_content.index("Comments"))
+        self.assertLess(response_content.index("Comments"), response_content.index("Issue history"))
+        self.assertLess(response_content.index("Issue Details"), response_content.index("Attachments"))
         self.assertLess(response_content.index("Attachments"), response_content.index("Issue history"))
+
+    def test_issue_detail_uses_default_agent_avatar_for_system_users(self):
+        self.user.profile.is_system_user = True
+        self.user.profile.avatar_type = "image"
+        self.user.profile.save(update_fields=["is_system_user", "avatar_type", "updated_at"])
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.IN_PROGRESS,
+            priority=IssuePriority.HIGH,
+        )
+        IssueComment.objects.create(
+            issue=issue,
+            author_user=self.user,
+            body="Watching the automated update.",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("issue-detail", args=[issue.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/static/img/default_avatar_agent.png")
 
     def test_issue_detail_renders_description_and_comment_tokens(self):
         referenced_issue = Issue.objects.create(
@@ -475,6 +733,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, reverse("issue-detail", args=[referenced_issue.pk]))
         self.assertContains(response, attachment.file.url)
         self.assertContains(response, "detail-token--user")
+        self.assertContains(response, reverse("user-profile-detail", args=[self.observer.username]))
 
     def test_issue_description_update_view_saves_inline_description_changes(self):
         referenced_issue = Issue.objects.create(
@@ -791,31 +1050,80 @@ class UserInterfaceTests(TestCase):
         archive_response = self.client.get(reverse("issue-archive", args=[issue.pk]))
         comment_response = self.client.get(reverse("issue-comment-create", args=[issue.pk]))
 
+        self.assertContains(create_response, "app-main--paged")
         self.assertContains(create_response, "Create New Issue")
         self.assertContains(create_response, "Create issue")
-        self.assertContains(create_response, "Initial attachments")
+        self.assertContains(create_response, 'name="workflow_state"', html=False)
+        self.assertNotContains(create_response, '<select name="workflow_state"', html=False)
+        self.assertContains(create_response, "app-form-layout--issue-compose")
+        self.assertContains(create_response, "Capture the key issue details first.")
+        self.assertContains(create_response, "Assign a group first if you want to assign a user.")
+        self.assertContains(create_response, "Attachments")
         self.assertContains(create_response, reverse("markdown-preview"))
         self.assertContains(create_response, "data-markdown-editor")
         self.assertContains(create_response, reverse("draft-attachment-suggestions"))
         self.assertContains(create_response, reverse("draft-attachment-upload"))
-        self.assertContains(create_response, "Drop files here to upload immediately")
+        self.assertContains(
+            create_response, "Upload from the editor when a file should appear inside the issue description."
+        )
         self.assertContains(create_response, "Upload attachment")
         self.assertContains(create_response, "{{user:username}}")
         self.assertContains(create_response, "data-markdown-preview-details")
         self.assertContains(create_response, "Toggle preview")
         self.assertContains(create_response, "data-markdown-preview-details open")
+        self.assertContains(
+            create_response, '</aside>\n      <div class="form-actions-row form-actions-row--stacked">', html=False
+        )
         self.assertContains(update_response, "Update Existing Issue")
         self.assertContains(update_response, issue.title)
+        self.assertContains(update_response, "app-form-layout--issue-compose")
         self.assertContains(update_response, reverse("issue-markdown-preview", args=[issue.pk]))
         self.assertContains(update_response, reverse("attachment-suggestions", args=[issue.pk]))
         self.assertContains(update_response, "data-markdown-preview-details")
         self.assertNotContains(update_response, "data-markdown-preview-details open")
+        self.assertContains(update_response, "Attachments")
+        self.assertNotContains(update_response, "Initial attachment")
+        self.assertContains(
+            update_response, '</aside>\n      <div class="form-actions-row form-actions-row--stacked">', html=False
+        )
         self.assertContains(archive_response, "Archive")
         self.assertContains(archive_response, issue.title)
         self.assertContains(comment_response, "Add comment")
         self.assertContains(comment_response, issue.title)
         self.assertContains(comment_response, reverse("issue-markdown-preview", args=[issue.pk]))
         self.assertContains(comment_response, reverse("attachment-suggestions", args=[issue.pk]))
+
+    def test_issue_create_view_prefills_queue_from_query_parameter(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"{reverse('issue-create')}?workflow_state={WorkflowState.ASSIGNED}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<select name="workflow_state"', html=False)
+        self.assertContains(response, f'value="{WorkflowState.ASSIGNED}"', html=False)
+
+    def test_issue_create_view_creates_issue_in_requested_queue(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-create"),
+            {
+                "title": "Assigned queue issue",
+                "description_markdown": "Created from the assigned queue.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+            },
+            follow=True,
+        )
+
+        issue = Issue.objects.get(title="Assigned queue issue")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
 
     def test_session_expires_when_browser_closes(self):
         self.assertTrue(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)

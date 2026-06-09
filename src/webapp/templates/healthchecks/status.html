@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
-{% block title %}Service Health | {{ app_branding.display_name }}{% endblock %}
+{% block title %}{% translate "Service Health" %} | {{ app_branding.display_name }}{% endblock %}
 
 {% block extra_head %}
   <script src="{% static 'lib/htmx/htmx.min.js' %}" defer></script>
@@ -10,8 +10,8 @@
 {% block content %}
   <section class="app-surface">
     <header>
-      <h1>Service Health</h1>
-      <p>Review the current database, migration, and cache status as each check loads independently.</p>
+      <h1>{% translate "Service Health" %}</h1>
+      <p>{% translate "Review the current database, migration, and cache status as each check loads independently." %}</p>
     </header>
   </section>
 
@@ -24,10 +24,10 @@
   >
     <article class="app-surface healthcheck-card healthcheck-card--checking">
       <header>
-        <p class="healthcheck-card__eyebrow"><strong>Overall status</strong></p>
-        <h2 class="healthcheck-card__title">Checking</h2>
+        <p class="healthcheck-card__eyebrow"><strong>{% translate "Overall status" %}</strong></p>
+        <h2 class="healthcheck-card__title">{% translate "Checking" %}</h2>
       </header>
-      <p class="healthcheck-card__meta">Each healthcheck runs one-by-one so one failure does not block the remaining checks.</p>
+      <p class="healthcheck-card__meta">{% translate "Each healthcheck runs one-by-one so one failure does not block the remaining checks." %}</p>
     </article>
   </section>
 
@@ -45,9 +45,9 @@
             <article class="app-surface healthcheck-card healthcheck-card--checking">
               <header>
                 <p class="healthcheck-card__eyebrow"><strong>{{ check_name|title }}</strong></p>
-                <h2 class="healthcheck-card__title">Checking</h2>
+                <h2 class="healthcheck-card__title">{% translate "Checking" %}</h2>
               </header>
-              <p class="healthcheck-card__meta">Waiting for the latest check result.</p>
+              <p class="healthcheck-card__meta">{% translate "Waiting for the latest check result." %}</p>
             </article>
           </section>
         {% endwith %}
@@ -62,9 +62,9 @@
         <article class="app-surface healthcheck-card healthcheck-card--checking">
           <header>
             <p class="healthcheck-card__eyebrow"><strong>{{ check_name|title }}</strong></p>
-            <h2 class="healthcheck-card__title">Checking</h2>
+            <h2 class="healthcheck-card__title">{% translate "Checking" %}</h2>
           </header>
-          <p class="healthcheck-card__meta">Waiting for the latest check result.</p>
+          <p class="healthcheck-card__meta">{% translate "Waiting for the latest check result." %}</p>
         </article>
       </section>
       {% endif %}

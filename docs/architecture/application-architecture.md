@@ -50,8 +50,10 @@ shell:
 
 - a persistent top navigation bar for primary navigation
 - a left-side burger menu that opens a collapsible detailed navigation panel
-- a top-right utility area for Docs, API, Admin, Logout, and the authenticated
-    user context
+- a detailed navigation panel that contains Administration, Healthcheck, API
+    Docs, sign-out, and the authenticated user context
+- a top-right utility area for the fullscreen shortcut, the authenticated user
+    context, and sign-out
 - a main content area for dashboards, issues, forms, tables, and reports
 
 All user frontend views should require an authenticated Django session. If a
@@ -118,7 +120,8 @@ All three surfaces use the same underlying application data and business rules.
 - Groups are represented through Django `Group`.
 - Branding starts from environment-backed Django settings and may be overridden
     by persisted `App Branding` configuration for the displayed product name,
-    navbar logo, and login background image.
+    navbar logo, login background image, login screen message, and login
+    message level.
 
 All operations and domain data models should be available through the REST API
 in addition to the user and admin frontends.

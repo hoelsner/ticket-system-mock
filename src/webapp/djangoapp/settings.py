@@ -80,6 +80,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "djangoapp.user_interface.middleware.UserProfileLocaleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -237,6 +238,6 @@ MEDIA_ROOT = str(DJANGO_MEDIA_ROOT)
 FIXTURE_DIRS = [str(BASE_DIR / "fixtures")]
 
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True

@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, JsonResponse
 from django.template.response import TemplateResponse
+from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -11,10 +12,10 @@ from .checks import HealthcheckService
 logger = logging.getLogger(__name__)
 
 CHECK_LABELS = {
-    "database": "Database",
-    "migrations": "Migrations",
-    "cache": "Cache",
-    "webhooks": "Webhook endpoints",
+    "database": _("Database"),
+    "migrations": _("Migrations"),
+    "cache": _("Cache"),
+    "webhooks": _("Webhook endpoints"),
 }
 
 CHECK_SEQUENCE = ("database", "migrations", "cache", "webhooks")
@@ -84,7 +85,7 @@ class HealthcheckCheckPartialView(FrontendAccessMixin, View):
     def get(self, request, *args, **kwargs):
         check_name = kwargs["check_name"]
         if check_name not in CHECK_LABELS:
-            raise Http404("Unknown healthcheck.")
+            raise Http404(_("Unknown healthcheck."))
 
         result = HealthcheckService.run_check(check_name)
         if result.status != "healthy":

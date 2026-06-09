@@ -102,11 +102,22 @@ DUPLICATE
    where that same `User` was mentioned.
 - The `Issue Detail View` shows the full issue title, markdown description,
   comments, and attachments.
+- The `User Profile View` shows public profile details for a selected `User`.
+- The `Profile Settings View` lets the signed-in `User` change personal
+   language, avatar type, avatar image, and system-user preferences.
 
 The `Instance Kanban Board` supports search and filtering in its standard view.
 For presentations or wallboard-style monitoring, it can also be opened in a
 fullscreen mode that hides the global top navigation, the visible board title,
 and the search and filter controls.
+
+User avatars from the `UserProfile` are shown on Kanban issue cards, beside
+comments, and in user navigation. The selected avatar type decides whether the
+profile renders initials or an image. When a new avatar image is uploaded, the
+profile switches to image mode automatically. If the profile remains in image
+mode and no custom avatar is uploaded for a system user, the default agent
+avatar is used automatically. User mentions and visible author names link to
+the corresponding public profile.
 
 ## Attachments
 

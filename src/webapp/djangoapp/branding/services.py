@@ -11,6 +11,8 @@ class BrandingSnapshot:
     display_name: str
     logo_url: str
     login_background_url: str
+    login_message_text: str
+    login_message_level: str
     light_primary_color: str
     light_primary_hover_color: str
     dark_primary_color: str
@@ -22,6 +24,8 @@ def get_branding_snapshot():
     display_name = settings.PRODUCT_DISPLAY_NAME
     logo_url = static("img/default_app_logo.png")
     login_background_url = static("img/default_app_hero_image.png")
+    login_message_text = ""
+    login_message_level = "info"
     light_primary_color = "#0172ad"
     light_primary_hover_color = "#015887"
     dark_primary_color = "#01aaff"
@@ -32,6 +36,8 @@ def get_branding_snapshot():
             display_name=display_name,
             logo_url=logo_url,
             login_background_url=login_background_url,
+            login_message_text=login_message_text,
+            login_message_level=login_message_level,
             light_primary_color=light_primary_color,
             light_primary_hover_color=light_primary_hover_color,
             dark_primary_color=dark_primary_color,
@@ -44,6 +50,9 @@ def get_branding_snapshot():
         logo_url = branding.logo_image.url
     if branding.login_background_image:
         login_background_url = branding.login_background_image.url
+    if branding.login_message_text:
+        login_message_text = branding.login_message_text
+    login_message_level = branding.login_message_level
     light_primary_color = branding.light_primary_color
     light_primary_hover_color = branding.light_primary_hover_color
     dark_primary_color = branding.dark_primary_color
@@ -53,6 +62,8 @@ def get_branding_snapshot():
         display_name=display_name,
         logo_url=logo_url,
         login_background_url=login_background_url,
+        login_message_text=login_message_text,
+        login_message_level=login_message_level,
         light_primary_color=light_primary_color,
         light_primary_hover_color=light_primary_hover_color,
         dark_primary_color=dark_primary_color,

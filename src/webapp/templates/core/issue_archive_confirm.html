@@ -1,16 +1,17 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Archive Issue{% endblock %}
+{% block title %}{% translate "Archive Issue" %}{% endblock %}
 
 {% block content %}
   <nav class="issue-detail-nav">
-    <a href="{% url 'issue-detail' issue.pk %}">Back to issue</a>
+    <a href="{% url 'issue-detail' issue.pk %}">{% translate "Back to issue" %}</a>
   </nav>
 
   <header class="app-page-header app-page-header--stacked">
     <div>
-      <p class="app-page-header__eyebrow">Issue workflow</p>
-      <h1>Archive Issue</h1>
+      <p class="app-page-header__eyebrow">{% translate "Issue workflow" %}</p>
+      <h1>{% translate "Archive Issue" %}</h1>
       <p>{{ issue.issue_number }}: {{ issue.title }}</p>
     </div>
   </header>
@@ -18,7 +19,7 @@
   <c-issue.card :issue="issue" />
 
   <article class="app-surface app-form-shell app-form-shell--compact">
-    <p>Archiving removes the issue from the active board and dashboard while keeping the data for audit and reporting.</p>
+    <p>{% translate "Archiving removes the issue from the active board and dashboard while keeping the data for audit and reporting." %}</p>
 
     <form method="post" class="app-form-layout app-form-layout--compact">
       {% csrf_token %}
@@ -29,8 +30,8 @@
         </label>
       {% endfor %}
       <div class="form-actions-row">
-        <button type="submit">Archive issue</button>
-        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Cancel</a>
+        <button type="submit">{% translate "Archive issue" %}</button>
+        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">{% translate "Cancel" %}</a>
       </div>
     </form>
   </article>

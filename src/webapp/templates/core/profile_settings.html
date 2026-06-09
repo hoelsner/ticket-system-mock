@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Profile settings" %}{% endblock %}
+
+{% block content %}
+  <section class="profile-page">
+    <header class="app-page-header profile-page__header">
+      <div>
+        <p class="app-page-header__eyebrow">{% translate "User settings" %}</p>
+        <h1>{% translate "Profile settings" %}</h1>
+        <p>{% translate "Configure your personal language and avatar preferences." %}</p>
+      </div>
+
+      <div class="app-page-header__actions">
+        <a href="{% url 'user-profile-detail' request.user.username %}" role="button" class="secondary">{% translate "View public profile" %}</a>
+      </div>
+    </header>
+
+    <section class="profile-page__grid profile-page__grid--single-column">
+      <article class="app-surface profile-page__card profile-page__card--summary">
+        <div class="profile-page__identity">
+          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" only %}
+          <div>
+            <h2>{{ profile.display_name }}</h2>
+            <p class="profile-page__username">@{{ profile.user.username }}</p>
+          </div>
+        </div>
+        <p class="profile-page__summary">{% translate "Review your current settings on the left, then update language and avatar preferences in the form." %}</p>
+        <dl class="detail-definition-list profile-page__facts">
+          <dt>{% translate "Current language" %}</dt>
+          <dd>{{ profile.get_language_preference_display }}</dd>
+          <dt>{% translate "Current avatar type" %}</dt>
+          <dd>{{ profile.get_avatar_type_display }}</dd>
+          <dt>{% translate "System user" %}</dt>
+          <dd>{% if profile.is_system_user %}{% translate "Yes" %}{% else %}{% translate "No" %}{% endif %}</dd>
+        </dl>
+      </article>
+
+      <article class="app-surface profile-page__card profile-page__card--settings">
+        <div class="profile-page__section-heading">
+          <h2>{% translate "Customize settings" %}</h2>
+          <p>{% translate "Keep language and avatar preferences up to date so the interface stays consistent everywhere your User appears." %}</p>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="app-form-layout profile-settings-form">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          <section class="app-form-section">
+            <div class="profile-page__section-heading profile-page__section-heading--compact">
+              <h3>{% translate "Preferences" %}</h3>
+              <p>{% translate "Choose the language, avatar type, and system-user behavior used across the application." %}</p>
+            </div>
+            <div class="app-form-fields">
+              <label class="app-form-field">
+                {{ form.language_preference.label }}
+                {{ form.language_preference }}
+                {{ form.language_preference.errors }}
+              </label>
+              <label class="app-form-field">
+                {{ form.avatar_type.label }}
+                {{ form.avatar_type }}
+                {{ form.avatar_type.errors }}
+              </label>
+              <label class="app-form-field app-form-field--checkbox profile-page__checkbox-field">
+                {{ form.is_system_user }}
+                <span>{{ form.is_system_user.label }}</span>
+                {{ form.is_system_user.errors }}
+              </label>
+            </div>
+          </section>
+          <section class="app-form-section">
+            <div class="profile-page__section-heading profile-page__section-heading--compact">
+              <h3>{% translate "Avatar details" %}</h3>
+              <p>{% translate "Upload a custom avatar image. If no image is uploaded and the User is flagged as a system user, the default agent avatar is used automatically." %}</p>
+            </div>
+            <div class="profile-page__avatar-preview-row">
+              {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar-preview" only %}
+              <div>
+                <p class="profile-page__preview-label">{% translate "Current preview" %}</p>
+                <p class="profile-page__preview-note">{% translate "This reflects your currently saved avatar configuration." %}</p>
+              </div>
+            </div>
+            <label class="app-form-field app-form-field--wide">
+              {{ form.avatar_image.label }}
+              {{ form.avatar_image }}
+              <small class="profile-page__help-text">{{ form.avatar_image.help_text }}</small>
+              {{ form.avatar_image.errors }}
+            </label>
+            <label class="app-form-field app-form-field--checkbox profile-page__checkbox-field">
+              {{ form.clear_avatar_image }}
+              <span>{{ form.clear_avatar_image.label }}</span>
+            </label>
+          </section>
+          <div class="form-actions-row form-actions-row--stacked">
+            <button type="submit">{% translate "Save profile settings" %}</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  </section>
+{% endblock %}

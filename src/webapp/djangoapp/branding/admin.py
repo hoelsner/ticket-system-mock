@@ -22,6 +22,10 @@ class AppBrandingAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Login screen",
+            {"fields": ("login_message_text", "login_message_level")},
+        ),
+        (
             "Light mode theme",
             {"fields": ("light_primary_color", "light_primary_hover_color")},
         ),

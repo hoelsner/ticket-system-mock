@@ -40,7 +40,12 @@ when a ticket does not follow the standard path.
 - Track ownership, priority, category, status, and timestamps
 - Monitor work on a Kanban board
 - Toggle the Kanban board into a fullscreen presentation mode
-- Customize the displayed product name, navbar logo, and login background
+- Configure per-user language, avatar type, avatar image, and system-user avatar behavior
+	through a dedicated profile settings view
+- Open public user profiles from assignee names, comment authors, and user
+	mentions
+- Customize the displayed product name, navbar logo, login background, and
+	login screen message
 
 ## Interface Structure
 
@@ -68,10 +73,16 @@ navigation and secondary side navigation.
 	 application.
 2. A burger menu in the top-left corner opens a collapsible detailed navigation
 	 panel for deeper module navigation and contextual actions.
-3. A utility area in the top-right corner provides Docs, API, Admin, Logout,
-	 and the current user context.
-4. The main content area is reserved for dashboards, issues, forms, tables,
+3. The detailed navigation panel contains Administration, Healthcheck, API
+	 Docs, sign-out, and the current user context.
+4. A utility area in the top-right corner provides the fullscreen shortcut,
+	 the current user context, profile settings access, and sign-out.
+5. The main content area is reserved for dashboards, issues, forms, tables,
 	 reports, and other workflow-specific views.
+
+Clicking the signed-in username opens the authenticated user's profile settings.
+Other user names in issue and comment views open a public profile view that is
+read-only for viewers.
 
 For presentation-heavy walkthroughs, the `Instance Kanban Board` can also be
 opened in a fullscreen mode that hides the top navigation, page title, and
@@ -79,9 +90,11 @@ search and filter controls while keeping the board content itself available.
 
 ## Kanban Board
 
-The main entry point is a Kanban board. Each column represents a workflow phase,
-and each card represents a ticket. The board is intended to reflect the current
-operational state and support live updates without a full page reload.
+The default post-login landing page is the personal dashboard. The Kanban board
+remains the main operational overview for workflow state. Each column
+represents a workflow phase, and each card represents a ticket. The board is
+intended to reflect the current operational state and support live updates
+without a full page reload.
 
 The standard board view also includes search and filter controls for assignee,
 priority, collection, and category. When needed for demos or wallboard-style
@@ -96,8 +109,10 @@ Integrations can create, enrich, query, or transition tickets while the web
 application remains the source of truth for workflow state and business rules.
 
 The API includes metadata endpoints, board and dashboard projections, issue
-listing and detail responses, and issue mutation operations for create, update,
-archive, comment, and board movement workflows.
+listing and detail responses, issue mutation operations for create, update,
+archive, comment, and board movement workflows, and user profile endpoints for
+reading and updating language preferences, avatar type preferences, avatar
+images, and the system-user flag.
 
 ## Product Boundaries
 
@@ -110,6 +125,7 @@ Included:
 - Backend administration through Django Admin
 - Configurable product display name
 - Configurable navbar logo and login background artwork
+- Configurable login screen message and message level
 
 Not included in the initial scope:
 

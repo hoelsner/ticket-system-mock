@@ -50,6 +50,7 @@ class IssueMarkdownTests(TestCase):
         self.assertIn(reverse("issue-detail", args=[referenced_issue.pk]), rendered)
         self.assertIn(attachment.file.url, rendered)
         self.assertIn("@demo", rendered)
+        self.assertIn(reverse("user-profile-detail", args=[self.user.username]), rendered)
         self.assertIn("Primary network log", rendered)
 
     def test_render_issue_markdown_preserves_unresolved_tokens(self):

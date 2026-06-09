@@ -84,9 +84,9 @@ media assets.
 
 - `PRODUCT_DISPLAY_NAME` provides the fallback product name for the application.
 - Django Admin exposes one `App Branding` record that can override the display
-	name, upload a custom navbar logo and login background image, and set the
-	primary Pico CSS accent colors used by the user frontend in light mode and
-	dark mode.
+	name, upload a custom navbar logo and login background image, configure a
+	login screen message and its message level, and set the primary Pico CSS
+	accent colors used by the user frontend in light mode and dark mode.
 - If no branding record exists, the application falls back to the default
 	product name, bundled placeholder images, and the default Pico CSS primary
 	palette.

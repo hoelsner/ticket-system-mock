@@ -12,4 +12,5 @@ know.
 | --- | --- |
 | [Product Overview](product-overview.md) | Describes the product scope, target users, core workflow, and main capabilities of the application. |
 | [Issue Workflow](issue-workflow.md) | Explains how an issue moves through the product lifecycle from creation to closure, including attachments and the main user-facing views. |
+| [Permissions Guide](permissions.md) | Describes the implemented access model, including authentication, groups, profile editing rules, and which users can perform which actions. |
 | [Configuration Guide](configuration.md) | Describes the environment variables used by the application and the default value applied for each one. |

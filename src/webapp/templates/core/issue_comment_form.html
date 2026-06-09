@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
-{% block title %}Add Comment{% endblock %}
+{% block title %}{% translate "Add Comment" %}{% endblock %}
 
 {% block extra_head %}
   <script src="{% static 'js/issue-markdown-editor.js' %}" defer></script>
@@ -9,13 +9,13 @@
 
 {% block content %}
   <nav class="issue-detail-nav">
-    <a href="{% url 'issue-detail' issue.pk %}">Back to issue</a>
+    <a href="{% url 'issue-detail' issue.pk %}">{% translate "Back to issue" %}</a>
   </nav>
 
   <header class="app-page-header app-page-header--stacked">
     <div>
-      <p class="app-page-header__eyebrow">Issue workflow</p>
-      <h1>Add Comment</h1>
+      <p class="app-page-header__eyebrow">{% translate "Issue workflow" %}</p>
+      <h1>{% translate "Add Comment" %}</h1>
       <p>{{ issue.issue_number }}: {{ issue.title }}</p>
     </div>
   </header>
@@ -28,8 +28,8 @@
       {{ form.non_field_errors }}
       <section class="app-form-section app-form-section--full">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Comment</p>
-          <h2>Write the update</h2>
+          <p class="app-page-header__eyebrow">{% translate "Comment" %}</p>
+          <h2>{% translate "Write the update" %}</h2>
         </div>
         {% url 'issue-markdown-preview' issue.pk as preview_url %}
         {% url 'user-suggestions' as user_suggestions_url %}
@@ -40,8 +40,8 @@
 
       <section class="app-form-section">
         <div class="app-form-section__header">
-          <p class="app-page-header__eyebrow">Visibility and files</p>
-          <h2>Comment settings</h2>
+          <p class="app-page-header__eyebrow">{% translate "Visibility and files" %}</p>
+          <h2>{% translate "Comment settings" %}</h2>
         </div>
         <div class="app-form-fields">
           <label class="app-form-field">
@@ -63,8 +63,8 @@
       </section>
 
       <div class="form-actions-row">
-        <button type="submit">Add comment</button>
-        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">Cancel</a>
+        <button type="submit">{% translate "Add comment" %}</button>
+        <a href="{% url 'issue-detail' issue.pk %}" role="button" class="secondary">{% translate "Cancel" %}</a>
       </div>
     </form>
   </article>

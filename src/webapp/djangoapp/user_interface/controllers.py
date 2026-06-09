@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -23,6 +24,7 @@ from djangoapp.core.models import (
     IssuePriority,
     WorkflowState,
 )
+from djangoapp.user_interface.models import ensure_user_profile
 
 BOARD_STATES = (
     WorkflowState.BACKLOG,
@@ -94,13 +96,54 @@ def build_dashboard_context(user):
         ),
         "mentioned_comments": list(
             IssueComment.objects
-            .select_related("issue", "author_user")
+            .select_related("issue", "issue__user", "issue__user__profile", "author_user", "author_user__profile")
             .prefetch_related("mentions__mentioned_user")
             .filter(mentions__mentioned_user=user, issue__archived_at__isnull=True)
             .distinct()
             .order_by("-created_at")
         ),
     }
+
+
+def get_user_profile(user):
+    return ensure_user_profile(user)
+
+
+def get_user_profile_by_username(username):
+    user_model = get_user_model()
+    user = get_object_or_404(
+        user_model.objects.prefetch_related("groups").filter(is_active=True),
+        username=username,
+    )
+    return ensure_user_profile(user)
+
+
+def build_user_profile_context(profile, viewer):
+    assigned_issue_count = Issue.objects.filter(user=profile.user, archived_at__isnull=True).count()
+    return {
+        "profile": profile,
+        "profile_user": profile.user,
+        "is_current_user": viewer.is_authenticated and viewer.pk == profile.user_id,
+        "profile_group_memberships": list(profile.user.groups.order_by("name")),
+        "assigned_issue_count": assigned_issue_count,
+    }
+
+
+def update_user_profile(profile, cleaned_data):
+    profile.language_preference = cleaned_data["language_preference"]
+    profile.avatar_type = cleaned_data["avatar_type"]
+    profile.is_system_user = cleaned_data.get("is_system_user", False)
+
+    if cleaned_data.get("clear_avatar_image"):
+        profile.avatar_image = ""
+
+    avatar_image = cleaned_data.get("avatar_image")
+    if isinstance(avatar_image, UploadedFile):
+        profile.avatar_image = avatar_image
+        profile.avatar_type = profile.AVATAR_TYPE_IMAGE
+
+    profile.save()
+    return profile
 
 
 def get_issue(issue_id):
@@ -374,9 +417,10 @@ def _build_board_column(state, issues, column_states):
 
 
 def _get_issue_queryset():
-    return Issue.objects.select_related("collection", "category", "group", "user").prefetch_related(
+    return Issue.objects.select_related("collection", "category", "group", "user", "user__profile").prefetch_related(
         "attachments",
         "comments__author_user",
+        "comments__author_user__profile",
         "comments__mentions__mentioned_user",
         "history_events__changed_by_user",
         "state_transitions__changed_by_user",
@@ -396,12 +440,14 @@ def _sort_issues(issues):
 
 
 def _get_issue_payload(cleaned_data):
+    workflow_state = cleaned_data.get("workflow_state") or WorkflowState.BACKLOG
     return {
         "title": cleaned_data["title"],
         "description_markdown": cleaned_data["description_markdown"],
         "collection": cleaned_data["collection"],
         "category": cleaned_data["category"],
         "priority": cleaned_data["priority"],
+        "workflow_state": workflow_state,
         "group": cleaned_data.get("group"),
         "user": cleaned_data.get("user"),
         "is_escalated": cleaned_data.get("is_escalated", False),

@@ -1,25 +1,37 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block content %}
   <section class="auth-layout">
     <article class="auth-layout__form-panel">
-      <h1>Sign in</h1>
-      <p>Login using your credentials.</p>
+      <h1>{% translate "Sign in" %}</h1>
+      <p>{% translate "Login using your credentials." %}</p>
+
+      {% include "includes/language_switcher.html" with language_switcher_id="login-language" language_switcher_class="language-switcher language-switcher--auth" %}
+
+      {% if app_branding.login_message_text %}
+        <section class="message-panel" aria-label="{% translate 'Login screen message' %}">
+          <article class="message-panel__item message-panel__item--{{ app_branding.login_message_level }}" {% if app_branding.login_message_level == 'error' %}role="alert"{% else %}role="status"{% endif %}>
+            <p class="message-panel__eyebrow">{% if app_branding.login_message_level == 'error' %}{% translate "Error" %}{% elif app_branding.login_message_level == 'warning' %}{% translate "Warning" %}{% elif app_branding.login_message_level == 'success' %}{% translate "Success" %}{% else %}{% translate "Info" %}{% endif %}</p>
+            <p>{{ app_branding.login_message_text|linebreaksbr }}</p>
+          </article>
+        </section>
+      {% endif %}
 
       <form method="post" action="{% url 'login' %}">
         {% csrf_token %}
         <label>
-          Username
+          {% translate "Username" %}
           {{ form.username }}
         </label>
 
         <label>
-          Password
+          {% translate "Password" %}
           {{ form.password }}
         </label>
 
         <input type="hidden" name="next" value="{{ next }}">
-        <button type="submit" class="app-inline-icon-link">{% include "includes/icon.html" with name="login" class_name="" %}<span>Sign in</span></button>
+        <button type="submit" class="app-inline-icon-link">{% include "includes/icon.html" with name="login" class_name="" %}<span>{% translate "Sign in" %}</span></button>
       </form>
     </article>
 

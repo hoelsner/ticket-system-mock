@@ -22,6 +22,8 @@ from .views import (
     IssueSuggestionView,
     IssueUpdateView,
     MarkdownPreviewView,
+    UserProfileDetailView,
+    UserProfileSettingsView,
     UserSuggestionView,
 )
 
@@ -31,6 +33,8 @@ urlpatterns = [
     path("board/events/", BoardEventStreamView.as_view(), name="board-events"),
     path("board/column-state/", BoardColumnStateView.as_view(), name="board-column-state"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("profile/", UserProfileSettingsView.as_view(), name="profile-settings"),
+    path("users/<str:username>/", UserProfileDetailView.as_view(), name="user-profile-detail"),
     path("issues/create/", IssueCreateView.as_view(), name="issue-create"),
     path("issues/<int:pk>/", IssueDetailView.as_view(), name="issue-detail"),
     path("issues/<int:pk>/description/", IssueDescriptionUpdateView.as_view(), name="issue-description-update"),
