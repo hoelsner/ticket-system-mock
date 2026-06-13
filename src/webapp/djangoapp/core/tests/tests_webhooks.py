@@ -52,8 +52,8 @@ class WebhookDeliveryTests(TestCase):
             issue=self.issue,
             target_endpoint_ids=[self.endpoint.pk],
             payload={
-                "event_type": WebhookEventType.ISSUE_UPDATED,
-                "issue": {"id": self.issue.pk},
+                "event": WebhookEventType.ISSUE_UPDATED,
+                "data": {"id": self.issue.pk},
             },
         )
 
@@ -256,6 +256,25 @@ class WebhookDeliveryTests(TestCase):
     def test_validate_target_url_rejects_non_http_schemes(self):
         with self.assertRaisesMessage(ValueError, "Webhook target URLs must use http or https."):
             WebhookDeliveryController._validate_target_url("ftp://example.com/webhooks")
+
+    def test_webhook_endpoint_clean_allows_internal_service_hostname_target_url(self):
+        endpoint = WebhookEndpoint(
+            name="Local n8n sink",
+            target_url="http://n8n:5678/webhook-test/ea69561c-4574-45d1-b245-093ea574330a/it-operation-ticketing",
+            subscribed_event_types=[WebhookEventType.ISSUE_UPDATED],
+        )
+
+        endpoint.full_clean()
+
+    def test_webhook_endpoint_clean_rejects_target_url_without_hostname(self):
+        endpoint = WebhookEndpoint(
+            name="Broken target",
+            target_url="http:///webhooks/broken",
+            subscribed_event_types=[WebhookEventType.ISSUE_UPDATED],
+        )
+
+        with self.assertRaises(ValidationError):
+            endpoint.full_clean()
 
     def test_webhook_endpoint_clean_rejects_invalid_event_types(self):
         endpoint = WebhookEndpoint(

@@ -76,6 +76,20 @@ class BrandingTests(TestCase):
         self.assertContains(response, "Login screen message")
         self.assertContains(response, "Login message style")
 
+    def test_branding_admin_change_page_renders_without_template_debug_noise(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="admin-no-debug",
+            email="admin-no-debug@example.com",
+            password="admin-password-123",
+        )
+        branding = AppBranding.objects.create()
+        self.client.force_login(admin_user)
+
+        with self.assertNoLogs("django.template", level="DEBUG"):
+            response = self.client.get(reverse("admin:branding_appbranding_change", args=[branding.pk]))
+
+        self.assertEqual(response.status_code, 200)
+
     def test_branding_snapshot_uses_runtime_theme_colors(self):
         AppBranding.objects.create(
             light_primary_color="#1357aa",

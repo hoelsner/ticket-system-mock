@@ -1,3 +1,16 @@
+FROM node:20-bookworm-slim AS n8n_node_builder
+
+WORKDIR /app/src/n8n_node
+
+COPY src/n8n_node/package*.json ./
+RUN npm ci
+
+COPY src/n8n_node ./
+RUN npm run pack:node \
+    && mkdir -p /tmp/n8n-node-package \
+    && cp build/*.tgz /tmp/n8n-node-package/
+
+
 FROM python:3.14-slim
 
 ARG UID=1000
@@ -62,6 +75,7 @@ COPY --chown=appuser:appuser deploy/containers/webapp/*.bash /app/deploy/contain
 COPY scripts/fetch_static_files.bash /tmp/fetch_static_files.bash
 COPY --chown=appuser:appuser src/webapp /app/src/webapp
 COPY --chown=appuser:appuser docs/user /app/docs/user
+COPY --from=n8n_node_builder /tmp/n8n-node-package /app/build/integrations
 
 RUN REPO_ROOT=/app bash /tmp/fetch_static_files.bash \
     && mkdir -p /app/build /runtime/static /runtime/media /runtime/certificates /runtime/provisioning /runtime/nginx \

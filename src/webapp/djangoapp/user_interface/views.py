@@ -1,17 +1,19 @@
 import json
 import uuid
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import FileResponse, Http404, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
+from django.views.i18n import set_language as django_set_language
 
 from djangoapp.core.models import WorkflowState
 
@@ -141,6 +143,22 @@ class SessionLogoutView(View):
         return redirect("login")
 
 
+class SessionLanguageView(View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        language = str(request.POST.get("language", "")).strip()
+        supported_languages = {code for code, _label in settings.LANGUAGES}
+
+        if request.user.is_authenticated and language in supported_languages:
+            profile = controllers.get_user_profile(request.user)
+            if profile.language_preference != language:
+                profile.language_preference = language
+                profile.save(update_fields=["language_preference", "updated_at"])
+
+        return django_set_language(request)
+
+
 class AuthenticatedTemplateView(AppLoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -214,6 +232,31 @@ class DashboardView(AuthenticatedTemplateView):
         return context
 
 
+class IntegrationsView(AuthenticatedTemplateView):
+    template_name = "core/integrations.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(controllers.build_integrations_context())
+        return context
+
+
+class N8nNodePackageDownloadView(AppLoginRequiredMixin, View):
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        package = controllers.get_n8n_node_package()
+        if package is None:
+            raise Http404(_("The n8n integration package is not available."))
+
+        return FileResponse(
+            package["path"].open("rb"),
+            as_attachment=True,
+            filename=package["filename"],
+            content_type="application/gzip",
+        )
+
+
 class UserProfileDetailView(AuthenticatedTemplateView):
     template_name = "core/profile_detail.html"
 
@@ -266,6 +309,8 @@ class IssueDetailView(IssueContextMixin, AuthenticatedTemplateView):
             "description_form": description_form or IssueDescriptionForm(instance=issue),
             "description_edit_open": description_edit_open,
             "modal_mode": self.request.GET.get("modal") == "1",
+            "board_fullscreen_mode": False,
+            "board_fullscreen_querystring": "?fullscreen=1",
         }
         context.update(controllers.build_issue_detail_context(issue))
         return context
@@ -302,10 +347,12 @@ class IssueCreateView(AuthenticatedFormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        form = context.get("form")
         context.update({
             "active_nav": "create-issue",
             "issue": None,
             "issue_create_draft_token": _get_issue_create_draft_token(self.request),
+            "issue_description_templates": form.get_description_template_metadata() if form else [],
             "form_title": _("Create New Issue"),
             "submit_label": _("Create issue"),
         })

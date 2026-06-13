@@ -7,6 +7,7 @@ from .issue_category import IssueCategory
 from .issue_comment import IssueComment
 from .issue_comment_mention import IssueCommentMention
 from .issue_comment_visibility import IssueCommentVisibility
+from .issue_description_template import IssueDescriptionTemplate
 from .issue_history_event import IssueHistoryEvent
 from .issue_priority import IssuePriority
 from .issue_state_transition import IssueStateTransition
@@ -16,6 +17,7 @@ from .webhook_endpoint import WebhookEndpoint
 from .webhook_event import WebhookEvent
 from .webhook_event_type import WebhookEventType
 from .workflow_state import WorkflowState
+from .workflow_state_auto_assignment_rule import WorkflowStateAutoAssignmentRule
 
 __all__ = [
     "Collection",
@@ -23,6 +25,7 @@ __all__ = [
     "Issue",
     "IssueAttachment",
     "IssueCategory",
+    "IssueDescriptionTemplate",
     "IssueComment",
     "IssueCommentMention",
     "IssueCommentVisibility",
@@ -34,6 +37,7 @@ __all__ = [
     "WebhookEndpoint",
     "WebhookEvent",
     "WebhookEventType",
+    "WorkflowStateAutoAssignmentRule",
     "WorkflowState",
     "draft_issue_attachment_upload_to",
     "issue_attachment_upload_to",

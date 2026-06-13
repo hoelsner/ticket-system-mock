@@ -161,10 +161,10 @@ class WebhookController:
         return {
             "base_url": settings.SERVICE_BASE_URL.rstrip("/"),
             "event_id": str(event_id),
-            "event_type": event_type,
+            "event": event_type,
             "occurred_at": WebhookController._serialize_datetime_value(occurred_at),
             "actor": WebhookController._serialize_actor(actor),
-            "issue": WebhookController._serialize_issue(issue),
+            "data": WebhookController._serialize_issue(issue),
         }
 
     @staticmethod

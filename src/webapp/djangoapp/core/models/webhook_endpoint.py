@@ -1,3 +1,5 @@
+from urllib import parse
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -11,10 +13,19 @@ def _invalid_subscribed_event_types(subscribed_event_types):
     return [event_type for event_type in subscribed_event_types if event_type not in valid_event_types]
 
 
+def validate_webhook_target_url(target_url):
+    parsed_url = parse.urlsplit(str(target_url))
+    if parsed_url.scheme not in {"http", "https"}:
+        raise ValidationError(_("Webhook target URLs must use http or https."))
+
+    if not parsed_url.hostname:
+        raise ValidationError(_("Webhook target URLs must include a host name."))
+
+
 class WebhookEndpoint(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
-    target_url = models.URLField()
+    target_url = models.CharField(max_length=200, validators=[validate_webhook_target_url])
     enabled = models.BooleanField(default=True)
     subscribed_event_types = models.JSONField(default=list, blank=True)
     secret = models.CharField(max_length=255, blank=True)

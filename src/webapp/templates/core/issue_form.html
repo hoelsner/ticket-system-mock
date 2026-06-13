@@ -5,6 +5,9 @@
 
 {% block extra_head %}
   <script src="{% static 'js/issue-markdown-editor.js' %}" defer></script>
+  {% if not issue and issue_description_templates %}
+    <script src="{% static 'js/issue-description-template.js' %}" defer></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -78,12 +81,21 @@
             <p class="app-form-section__summary">{% translate "Use the description as the primary record of what changed, what was observed, and what support teams should act on next." %}</p>
           {% endif %}
         </div>
+          {% if not issue and issue_description_templates %}
+            <label class="app-form-field app-form-field--wide">
+              {{ form.description_template.label }}
+              {{ form.description_template }}
+              {% if form.description_template.help_text %}<small>{{ form.description_template.help_text }}</small>{% endif %}
+              {{ form.description_template.errors }}
+            </label>
+            {{ issue_description_templates|json_script:"issue-description-template-data" }}
+          {% endif %}
           {% url 'user-suggestions' as user_suggestions_url %}
           {% url 'issue-suggestions' as issue_suggestions_url %}
           {% if issue %}
             {% url 'issue-markdown-preview' issue.pk as preview_url %}
             {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
-            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="1" only %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="1" preview_open="" only %}
           {% else %}
             {% url 'markdown-preview' as preview_url %}
             {% url 'draft-attachment-suggestions' as attachment_suggestions_url %}
@@ -140,7 +152,7 @@
             <span class="app-form-toggle__control">{{ form.is_escalated }}</span>
             {{ form.is_escalated.errors }}
           </label>
-          {% if form.transition_reason %}
+          {% if "transition_reason" in form %}
             <label class="app-form-field app-form-field--wide">
               {{ form.transition_reason.label }}
               {{ form.transition_reason }}

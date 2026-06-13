@@ -1,0 +1,46 @@
+{
+  "name": "n8n-nodes-ticket-system-mock",
+  "version": "0.1.0",
+  "description": "Private n8n nodes for the Ticket System Mock REST API.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node tools/copy-assets.js",
+    "dev": "tsc -w -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "pack:node": "npm run build && mkdir -p build && npm pack --pack-destination build",
+    "test": "npm run build && node --test tests/*.test.js"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/TicketSystemMockApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/ReferenceData/ReferenceData.node.js",
+	      "dist/nodes/Collection/Collection.node.js",
+	      "dist/nodes/Category/Category.node.js",
+	      "dist/nodes/Issue/Issue.node.js",
+      "dist/nodes/IssueAttachment/IssueAttachment.node.js",
+        "dist/nodes/IssueActivity/IssueActivity.node.js",
+        "dist/nodes/IssuePollTrigger/IssuePollTrigger.node.js",
+        "dist/nodes/IssueWebhookTrigger/IssueWebhookTrigger.node.js"
+    ]
+  },
+  "dependencies": {
+    "form-data": "^4.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "n8n-workflow": "1.82.0",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "^1.82.0"
+  }
+}

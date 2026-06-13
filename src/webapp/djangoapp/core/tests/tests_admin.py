@@ -22,6 +22,7 @@ from djangoapp.core.models import (
     Collection,
     Issue,
     IssueCategory,
+    IssueDescriptionTemplate,
     IssueHistoryEvent,
     IssueStateTransition,
     WebhookDeliveryAttempt,
@@ -83,6 +84,19 @@ class CoreAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.category.name)
+
+    def test_issue_description_template_admin_changelist_is_available(self):
+        IssueDescriptionTemplate.objects.create(
+            name="VPN access request",
+            description_markdown="## Request details",
+            category=self.category,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("admin:core_issuedescriptiontemplate_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "VPN access request")
 
     def test_issue_admin_save_model_creates_issue_on_add(self):
         admin_instance = IssueAdmin(Issue, self.site)
@@ -221,6 +235,23 @@ class CoreAdminTests(TestCase):
 
         self.assertEqual(endpoint.secret, "")
 
+    def test_webhook_endpoint_admin_form_allows_internal_service_hostname_target_url(self):
+        form = WebhookEndpointAdminForm(
+            data={
+                "name": "Local n8n sink",
+                "description": "",
+                "target_url": "http://n8n:5678/webhook-test/ea69561c-4574-45d1-b245-093ea574330a/it-operation-ticketing",
+                "enabled": True,
+                "subscribed_event_types": [WebhookEventType.ISSUE_CREATED],
+                "secret": "",
+                "timeout_seconds": 5,
+                "max_retries": 3,
+                "retry_backoff_seconds": 60,
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
     def test_webhook_endpoint_event_type_filter_filters_matching_endpoints(self):
         matching_endpoint = WebhookEndpoint.objects.create(
             name="Matching sink",
@@ -268,7 +299,7 @@ class CoreAdminTests(TestCase):
             event_type=WebhookEventType.ISSUE_UPDATED,
             issue=self.issue,
             target_endpoint_ids=[endpoint.pk],
-            payload={"event_type": WebhookEventType.ISSUE_UPDATED},
+            payload={"event": WebhookEventType.ISSUE_UPDATED, "data": {"id": self.issue.pk}},
         )
         delivery_attempt = WebhookDeliveryAttempt.objects.create(
             webhook_endpoint=endpoint,

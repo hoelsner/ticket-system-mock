@@ -87,7 +87,7 @@
             {% for comment in issue_comments %}
               <li class="comment-thread__item{% if comment.author_user_id == request.user.id %} comment-thread__item--self{% endif %}">
                 <div class="comment-thread__row">
-                  {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar comment-thread__avatar" only %}
+                  {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar comment-thread__avatar" title_text="" only %}
                   <article class="comment-thread__bubble">
                     <header class="comment-thread__meta">
                       <a href="{% url 'user-profile-detail' comment.author_user.username %}" class="comment-thread__author-link"><strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong></a>

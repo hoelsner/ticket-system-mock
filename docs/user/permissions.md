@@ -90,6 +90,11 @@ Implemented group behavior:
 - the issue forms can filter assignable users by the selected `Group`
 - when a `User` is assigned to an `Issue`, that user must belong to the chosen
   `Group`
+- a configured workflow-state auto-assignment rule can set the `Group` and
+  optionally the `User` during a workflow transition
+- if a workflow-state auto-assignment rule sets a `Group` without a `User`, the
+  issue remains assigned only to that `Group` until a `User` from that `Group`
+  takes ownership
 
 `Group` membership is therefore used for assignment consistency, not as a
 general access-control boundary.

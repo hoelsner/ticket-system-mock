@@ -1,7 +1,11 @@
 from django.contrib import admin
+from django.contrib.admin.helpers import AdminReadonlyField
 from django.utils.html import format_html
 
 from .models import AppBranding
+
+if not hasattr(AdminReadonlyField, "is_fieldset"):
+    AdminReadonlyField.is_fieldset = False
 
 
 @admin.register(AppBranding)

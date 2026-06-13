@@ -16,14 +16,8 @@ It currently provides:
 - a Django Admin surface for data and branding management
 - a Django Ninja REST API that mirrors the main issue and board workflows for
 	automation and integrations
-
-Key documentation entry points:
-
-- [Product Overview](docs/user/product-overview.md)
-- [Configuration Guide](docs/user/configuration.md)
-- [Issue Workflow](docs/user/issue-workflow.md)
-- [Application Architecture](docs/architecture/application-architecture.md)
-- [Webapp Sitemap](docs/development/webapp-sitemap.md)
+- a bundled private n8n node package that can be downloaded from the web
+	application Integrations page and installed into an n8n instance
 
 ## Production Deployment with Docker Compose
 
@@ -128,4 +122,36 @@ docker compose -f docker-compose.yaml logs webapp
 If you only need the deployment assets after the image has already been built,
 set `SKIP_DOCKER_BUILD=1` before running the build script. This reuses the
 existing image tag and only regenerates the ZIP bundle.
+
+Key documentation entry points:
+
+- [Product Overview](docs/user/product-overview.md)
+- [Configuration Guide](docs/user/configuration.md)
+- [Issue Workflow](docs/user/issue-workflow.md)
+- [n8n Integration Guide](docs/user/n8n-integration.md)
+- [n8n Node Reference](docs/user/n8n-node-reference.md)
+- [Application Architecture](docs/architecture/application-architecture.md)
+- [Webapp Sitemap](docs/development/webapp-sitemap.md)
+- [n8n Node Use And Build](docs/development/n8n-node-use-and-build.md)
+
+## n8n Integration
+
+The repository includes a private `n8n` custom node package under
+`src/n8n_node`. The packaged file is bundled into the web application build
+and exposed to signed-in users through the Integrations page. Operators
+download that file and place the package under
+`~/.n8n/custom/node_modules/n8n-nodes-ticket-system-mock/` on the target `n8n`
+instance.
+
+Use the user-facing guide when you want to connect `n8n` to a deployed Ticket
+System Mock instance:
+
+- [n8n Integration Guide](docs/user/n8n-integration.md)
+- [n8n Node Reference](docs/user/n8n-node-reference.md)
+
+Use the development documentation when you need to build, package, or smoke-test
+the custom node locally:
+
+- [n8n Node Use And Build](docs/development/n8n-node-use-and-build.md)
+- [n8n Local Smoke Test](docs/development/n8n-local-smoke-test.md)
 

@@ -23,7 +23,7 @@
     <section class="profile-page__grid">
       <article class="app-surface profile-page__card">
         <div class="profile-page__identity">
-          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" only %}
+          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" title_text="" only %}
           <div>
             <h2>{{ profile.display_name }}</h2>
             <p class="profile-page__username">@{{ profile.user.username }}</p>

@@ -13,12 +13,14 @@ from djangoapp.core.models import (
     IssueCategory,
     IssueComment,
     IssueCommentMention,
+    IssueDescriptionTemplate,
     IssuePriority,
     IssueStateTransition,
     WebhookEndpoint,
     WebhookEvent,
     WebhookEventType,
     WorkflowState,
+    WorkflowStateAutoAssignmentRule,
     issue_attachment_upload_to,
 )
 from djangoapp.user_interface import controllers as user_interface_controllers
@@ -58,7 +60,7 @@ class CoreModelTests(TestCase):
 
         self.assertEqual(issue.issue_number, "TASK-001")
         self.assertEqual(issue.collection_issue_sequence, 1)
-        self.assertEqual(issue.workflow_state, WorkflowState.BACKLOG)
+        self.assertEqual(issue.workflow_state, WorkflowState.NEW)
         self.assertEqual(issue.board_position, 1)
         self.collection.refresh_from_db()
         self.assertEqual(self.collection.next_issue_sequence, 2)
@@ -95,6 +97,29 @@ class CoreModelTests(TestCase):
             duplicate_category.full_clean()
 
         self.assertIn("name", error.exception.message_dict)
+
+    def test_issue_description_template_requires_collection_or_category(self):
+        template = IssueDescriptionTemplate(
+            name="Generic outage",
+            description_markdown="## Summary",
+        )
+
+        with self.assertRaises(ValidationError) as error:
+            template.full_clean()
+
+        self.assertIn("collection", error.exception.message_dict)
+        self.assertIn("category", error.exception.message_dict)
+
+    def test_issue_description_template_allows_collection_and_category_scope(self):
+        template = IssueDescriptionTemplate.objects.create(
+            name="Database incident",
+            description_markdown="## Impact",
+            collection=self.collection,
+            category=self.category,
+        )
+
+        self.assertEqual(template.collection, self.collection)
+        self.assertEqual(template.category, self.category)
 
     def test_issue_requires_assigned_user_to_belong_to_group(self):
         issue = Issue(
@@ -155,7 +180,7 @@ class CoreModelTests(TestCase):
         self.assertEqual(updated_issue.workflow_state, WorkflowState.RESOLVED)
         self.assertIsNotNone(updated_issue.resolved_at)
         self.assertIsInstance(transition, IssueStateTransition)
-        self.assertEqual(transition.from_state, WorkflowState.BACKLOG)
+        self.assertEqual(transition.from_state, WorkflowState.NEW)
         self.assertEqual(transition.to_state, WorkflowState.RESOLVED)
         self.assertEqual(transition.changed_by_user, self.assigned_user)
 
@@ -173,6 +198,70 @@ class CoreModelTests(TestCase):
         self.assertEqual(updated_issue.workflow_state, WorkflowState.CLOSED)
         self.assertIsNotNone(updated_issue.closed_at)
         self.assertIsNotNone(transition)
+
+    def test_workflow_state_auto_assignment_rule_requires_user_to_belong_to_group(self):
+        rule = WorkflowStateAutoAssignmentRule(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=self.group,
+            user=self.other_user,
+        )
+
+        with self.assertRaises(ValidationError):
+            rule.full_clean()
+
+    def test_update_workflow_state_applies_matching_auto_assignment_rule(self):
+        issue = self.create_issue()
+        WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=self.group,
+            user=self.assigned_user,
+        )
+
+        updated_issue, transition = IssueController.update_workflow_state(
+            issue,
+            WorkflowState.ASSIGNED,
+            changed_by_user=self.assigned_user,
+        )
+
+        updated_issue.refresh_from_db()
+
+        self.assertEqual(updated_issue.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(updated_issue.group, self.group)
+        self.assertEqual(updated_issue.user, self.assigned_user)
+        self.assertIsNotNone(transition)
+
+    def test_update_workflow_state_assigns_group_and_clears_user_when_rule_has_no_user(self):
+        issue = self.create_issue(group=self.group, user=self.assigned_user)
+        other_group = Group.objects.create(name="Field Operations")
+        WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.WAITING,
+            group=other_group,
+        )
+
+        updated_issue, _transition = IssueController.update_workflow_state(
+            issue,
+            WorkflowState.WAITING,
+            changed_by_user=self.assigned_user,
+        )
+
+        updated_issue.refresh_from_db()
+
+        self.assertEqual(updated_issue.group, other_group)
+        self.assertIsNone(updated_issue.user)
+
+    def test_update_workflow_state_keeps_assignments_when_no_auto_assignment_rule_matches(self):
+        issue = self.create_issue(group=self.group, user=self.assigned_user)
+
+        updated_issue, _transition = IssueController.update_workflow_state(
+            issue,
+            WorkflowState.IN_PROGRESS,
+            changed_by_user=self.assigned_user,
+        )
+
+        updated_issue.refresh_from_db()
+
+        self.assertEqual(updated_issue.group, self.group)
+        self.assertEqual(updated_issue.user, self.assigned_user)
 
     @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
     def test_create_issue_emits_webhook_created_event(self, _dispatch_event_async):
@@ -200,7 +289,8 @@ class CoreModelTests(TestCase):
 
         self.assertEqual(webhook_event.issue, issue)
         self.assertEqual(webhook_event.target_endpoint_ids, [endpoint.pk])
-        self.assertEqual(webhook_event.payload["issue"]["key"], issue.issue_number)
+        self.assertEqual(webhook_event.payload["event"], WebhookEventType.ISSUE_CREATED)
+        self.assertEqual(webhook_event.payload["data"]["key"], issue.issue_number)
         self.assertEqual(webhook_event.payload["actor"]["id"], self.assigned_user.pk)
 
     @patch("djangoapp.core.controllers.webhook_delivery_controller.WebhookDeliveryController.dispatch_event_async")
@@ -261,6 +351,7 @@ class CoreModelTests(TestCase):
         webhook_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_COMMENTED)
 
         self.assertEqual(webhook_event.issue, issue)
+        self.assertEqual(webhook_event.payload["event"], WebhookEventType.ISSUE_COMMENTED)
         self.assertEqual(webhook_event.payload["comment"]["id"], comment.pk)
         self.assertEqual(webhook_event.payload["comment"]["visibility"], "INTERNAL")
 
@@ -281,7 +372,8 @@ class CoreModelTests(TestCase):
 
         webhook_event = WebhookEvent.objects.get(event_type=WebhookEventType.ISSUE_CLOSED)
 
-        self.assertEqual(webhook_event.payload["issue"]["workflow_state"], WorkflowState.CLOSED)
+        self.assertEqual(webhook_event.payload["event"], WebhookEventType.ISSUE_CLOSED)
+        self.assertEqual(webhook_event.payload["data"]["workflow_state"], WorkflowState.CLOSED)
         self.assertEqual(webhook_event.payload["actor"]["id"], self.assigned_user.pk)
 
     def test_update_workflow_state_is_noop_when_state_does_not_change(self):
@@ -289,7 +381,7 @@ class CoreModelTests(TestCase):
 
         updated_issue, transition = IssueController.update_workflow_state(
             issue,
-            WorkflowState.BACKLOG,
+            WorkflowState.NEW,
             changed_by_user=self.assigned_user,
         )
 
@@ -304,10 +396,10 @@ class CoreModelTests(TestCase):
 
         moved_issue, _transition = IssueController.move_on_board(
             third_issue,
-            WorkflowState.BACKLOG,
+            WorkflowState.NEW,
             changed_by_user=self.assigned_user,
             position_index=0,
-            reason="Prioritize within backlog",
+            reason="Prioritize within new issues",
         )
 
         first_issue.refresh_from_db()
@@ -336,7 +428,7 @@ class CoreModelTests(TestCase):
 
         issue.priority = IssuePriority.HIGH
         issue.save()
-        IssueController.sync_board_position(issue, WorkflowState.BACKLOG, IssuePriority.MEDIUM)
+        IssueController.sync_board_position(issue, WorkflowState.NEW, IssuePriority.MEDIUM)
 
         existing_high_priority.refresh_from_db()
         issue.refresh_from_db()

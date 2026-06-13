@@ -28,8 +28,8 @@ New
 -> Closed
 ```
 
-Exceptional states such as `Rejected`, `Duplicate`, and `Escalated` can be used
-when a ticket does not follow the standard path.
+Exceptional handling uses `Rejected` when a ticket does not follow the
+standard path. `Escalated` remains a separate flag, not a workflow state.
 
 ## Main Capabilities
 

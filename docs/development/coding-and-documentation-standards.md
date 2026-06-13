@@ -90,7 +90,7 @@ Documentation quality is part of code review. Reviewers should check whether:
 - names and terminology are consistent
 - comments explain intent rather than repeating code
 
-## Recommended Workflow
+## Mandatory Workflow
 
 1. Make the code change.
 2. Update the relevant tests or validation steps.
@@ -99,6 +99,8 @@ Documentation quality is part of code review. Reviewers should check whether:
 4. If the change affects the REST API, review `/api/docs` and `/api/openapi.json`
   and update the generated documentation inputs in `djangoapp.rest_api.api`.
 5. Review the result for duplicated or outdated explanations.
+
+If the webapp was changed, verify the n8n node implementation and extend them if needed.
 
 ## Repository-Specific Guidance
 

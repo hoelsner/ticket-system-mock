@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
-from djangoapp.core.models import Issue, IssueStateTransition, WorkflowState
+from djangoapp.core.models import Issue, IssueStateTransition, WorkflowState, WorkflowStateAutoAssignmentRule
 
 from .webhook_controller import WebhookController
 
@@ -51,12 +51,27 @@ class IssueController:
             return issue, None
 
         issue.workflow_state = to_state
+        auto_assignment_rule = (
+            WorkflowStateAutoAssignmentRule.objects
+            .filter(
+                workflow_state=to_state,
+                is_active=True,
+            )
+            .select_related("group", "user")
+            .first()
+        )
+        issue.group, issue.user = (
+            (auto_assignment_rule.group, auto_assignment_rule.user)
+            if auto_assignment_rule
+            else (issue.group, issue.user)
+        )
 
-        now = timezone.now()
-        if to_state == WorkflowState.RESOLVED:
-            issue.resolved_at = now
-        elif to_state == WorkflowState.CLOSED:
-            issue.closed_at = now
+        timestamp_field = {
+            WorkflowState.RESOLVED: "resolved_at",
+            WorkflowState.CLOSED: "closed_at",
+        }.get(to_state)
+        if timestamp_field:
+            setattr(issue, timestamp_field, timezone.now())
 
         issue.save()
 
@@ -78,7 +93,7 @@ class IssueController:
     @staticmethod
     @transaction.atomic
     def sync_board_position(issue, previous_state, previous_priority):
-        band_changed = previous_state != issue.workflow_state or previous_priority != issue.priority
+        band_changed = (previous_state, previous_priority) != (issue.workflow_state, issue.priority)
         if not band_changed:
             if issue.board_position < 1:
                 IssueController._insert_into_band(issue, 0)
@@ -104,16 +119,12 @@ class IssueController:
         clamped_index = len(siblings) if position_index is None else max(0, min(position_index, len(siblings)))
         siblings.insert(clamped_index, issue)
 
-        for index, sibling in enumerate(siblings, start=1):
-            if sibling.pk == issue.pk:
-                if issue.board_position != index:
-                    issue.board_position = index
-                    issue.save(update_fields=["board_position", "updated_at"])
+        for index, positioned_issue in enumerate(siblings, start=1):
+            if positioned_issue.board_position == index:
                 continue
 
-            if sibling.board_position != index:
-                sibling.board_position = index
-                sibling.save(update_fields=["board_position", "updated_at"])
+            positioned_issue.board_position = index
+            positioned_issue.save(update_fields=["board_position", "updated_at"])
 
     @staticmethod
     def _normalize_band(workflow_state, priority, exclude_issue_id=None):
@@ -121,9 +132,7 @@ class IssueController:
             archived_at__isnull=True,
             workflow_state=workflow_state,
             priority=priority,
-        )
-        if exclude_issue_id is not None:
-            queryset = queryset.exclude(pk=exclude_issue_id)
+        ).exclude(pk=exclude_issue_id)
 
         for index, sibling in enumerate(queryset.order_by("board_position", "created_at", "pk"), start=1):
             if sibling.board_position != index:

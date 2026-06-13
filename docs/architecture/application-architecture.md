@@ -109,6 +109,11 @@ The current REST API surface includes:
 - multipart attachment support on issue create, update, and comment flows so
     integrations can submit files through the same business rules used by the UI
 
+The REST API list endpoints for groups, users, collections, categories, and
+issues return their result arrays under a shared root `data` key. Webhook
+payloads use the same root key for the emitted entity and expose the causal
+action under the root `event` key.
+
 ## Shared Domain Layer
 
 All three surfaces use the same underlying application data and business rules.

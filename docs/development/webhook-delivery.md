@@ -68,6 +68,19 @@ delivery target set stable for the life of the event.
 
 Each delivery attempt sends an HTTP `POST` request with a JSON body.
 
+The persisted and delivered webhook body uses these root-level contract fields:
+
+- `base_url`
+- `event_id`
+- `event`
+- `occurred_at`
+- `actor`
+- `data`
+
+The `data` field contains the emitted Issue snapshot. Event-specific payload
+additions such as `changes`, `transition`, and `comment` remain at the root
+level beside `data`.
+
 The request headers include:
 
 - `Content-Type: application/json`

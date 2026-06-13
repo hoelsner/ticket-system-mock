@@ -1,0 +1,15 @@
+{
+  "node": "n8n-nodes-ticket-system-mock.collection",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": [
+    "Data & Storage"
+  ],
+  "resources": {
+    "primaryDocumentation": [
+      {
+        "url": "https://docs.n8n.io/integrations/creating-nodes/overview/"
+      }
+    ]
+  }
+}

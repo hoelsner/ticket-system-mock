@@ -21,7 +21,7 @@
         </div>
       </div>
       <div class="issue-card__title-row">
-        {% include "includes/user_avatar.html" with user=issue.user class_name="issue-card__avatar issue-card__avatar--title" only %}
+        {% include "includes/user_avatar.html" with user=issue.user class_name="issue-card__avatar issue-card__avatar--title" title_text=issue.user.username only %}
         <h3 class="issue-card__title">
           <a
             href="{% url 'issue-detail' issue.pk %}"
@@ -41,7 +41,7 @@
     </div>
   </header>
   {% with comment_count=issue.comments.all|length attachment_count=issue.attachments.all|length transition_count=issue.state_transitions.all|length %}
-  <details class="issue-card__details" aria-label="Issue details">
+  <details class="issue-card__details" aria-label="{% translate 'Issue Details' %}">
     <summary>
       <span class="issue-card__details-trigger">
         <span class="issue-card__details-chevron" aria-hidden="true">▾</span>
@@ -90,7 +90,7 @@
               <li class="issue-card__comment-item">
                 <header class="issue-card__comment-meta">
                   <span class="issue-card__comment-author">
-                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" only %}
+                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" title_text="" only %}
                     <a href="{% url 'user-profile-detail' comment.author_user.username %}"><strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong></a>
                   </span>
                   <span>{{ comment.get_visibility_display }} · {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>
@@ -140,7 +140,7 @@
     </div>
   </header>
   {% with comment_count=issue.comments.all|length attachment_count=issue.attachments.all|length transition_count=issue.state_transitions.all|length %}
-  <details class="issue-card__details" aria-label="Issue details">
+  <details class="issue-card__details" aria-label="{% translate 'Issue Details' %}">
     <summary>
       <span class="issue-card__details-trigger">
         <span class="issue-card__details-chevron" aria-hidden="true">▾</span>
@@ -189,7 +189,7 @@
               <li class="issue-card__comment-item">
                 <header class="issue-card__comment-meta">
                   <span class="issue-card__comment-author">
-                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" only %}
+                    {% include "includes/user_avatar.html" with user=comment.author_user class_name="issue-card__avatar issue-card__avatar--comment" title_text="" only %}
                     <a href="{% url 'user-profile-detail' comment.author_user.username %}"><strong>{{ comment.author_user.get_full_name|default:comment.author_user.username }}</strong></a>
                   </span>
                   <span>{{ comment.get_visibility_display }} · {{ comment.created_at|localtime|date:"SHORT_DATETIME_FORMAT" }}</span>

@@ -3,7 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
-from djangoapp.core.models import Collection, Issue, IssueCategory, IssueComment, WorkflowState
+from djangoapp.core.models import (
+    Collection,
+    Issue,
+    IssueCategory,
+    IssueComment,
+    IssueDescriptionTemplate,
+    WorkflowState,
+)
 from djangoapp.user_interface.models import UserProfile
 
 
@@ -101,12 +108,37 @@ class IssueBaseForm(forms.ModelForm):
 class IssueCreateForm(IssueBaseForm):
     attachment_file = MultipleFileField(required=False)
     attachment_draft_token = forms.CharField(required=False, widget=forms.HiddenInput)
-    workflow_state = forms.ChoiceField(choices=WorkflowState.choices, initial=WorkflowState.BACKLOG, required=False)
+    description_template = forms.ChoiceField(required=False, label=_("Description template"))
+    workflow_state = forms.ChoiceField(choices=WorkflowState.choices, initial=WorkflowState.NEW, required=False)
 
     def __init__(self, *args, show_workflow_state=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.description_template_queryset = list(
+            IssueDescriptionTemplate.objects
+            .filter(is_active=True)
+            .select_related("collection", "category")
+            .order_by("name")
+        )
+        self.fields["description_template"].choices = [("", _("Select a template"))] + [
+            (str(template.pk), template.name) for template in self.description_template_queryset
+        ]
+        self.fields["description_template"].help_text = _(
+            "Choose a predefined template. You can edit the description before creating the issue."
+        )
         if not show_workflow_state:
             self.fields["workflow_state"].widget = forms.HiddenInput()
+
+    def get_description_template_metadata(self):
+        return [
+            {
+                "id": str(template.pk),
+                "name": template.name,
+                "description_markdown": template.description_markdown,
+                "collection_id": str(template.collection_id) if template.collection_id else "",
+                "category_id": str(template.category_id) if template.category_id else "",
+            }
+            for template in self.description_template_queryset
+        ]
 
 
 class IssueUpdateForm(IssueBaseForm):
@@ -156,6 +188,10 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["language_preference"].label = _("Language preference")
         self.fields["language_preference"].choices = [
             (code, code.upper()) for code, _label in UserProfile.LANGUAGE_PREFERENCE_CHOICES
         ]
+        self.fields["avatar_type"].label = _("Avatar type")
+        self.fields["is_system_user"].label = _("System user")
+        self.fields["avatar_image"].label = _("Avatar image")

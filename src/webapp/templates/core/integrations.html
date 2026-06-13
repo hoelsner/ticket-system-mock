@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Integrations" %}{% endblock %}
+
+{% block content %}
+  <section class="dashboard-page">
+    <header class="app-page-header">
+      <div>
+        <p class="app-page-header__eyebrow">{% translate "Extensions" %}</p>
+        <h1>{% translate "Integrations" %}</h1>
+        <p>{% translate "Download the bundled n8n package and place it into your n8n custom node directory." %}</p>
+      </div>
+
+    </header>
+
+    <section class="detail-section-grid">
+      <article class="app-surface">
+        <h2>{% translate "Bundled Asset" %}</h2>
+        {% if n8n_node_package %}
+          <dl>
+            <dt>{% translate "Filename" %}</dt>
+            <dd>{{ n8n_node_package.filename }}</dd>
+            <dt>{% translate "Size" %}</dt>
+            <dd>{{ n8n_node_package.size_bytes|filesizeformat }}</dd>
+          </dl>
+          <p>{% translate "Use the download button to retrieve the packaged n8n integration file from this deployment." %}</p>
+          <p>
+            <a href="{% url 'integrations-n8n-download' %}" role="button" class="app-inline-icon-link">{% include "includes/icon.html" with name="api" class_name="" %}<span>{% translate "Download n8n Node" %}</span></a>
+          </p>
+        {% else %}
+          <p>{% translate "The n8n node package is not available in this environment." %}</p>
+        {% endif %}
+      </article>
+
+      <article class="app-surface">
+        <h2>{% translate "How to Use It" %}</h2>
+        <ol>
+          <li>{% translate "Download the packaged n8n node file from this page." %}</li>
+          <li>{% translate "Unpack it into ~/.n8n/custom/node_modules/n8n-nodes-ticket-system-mock/ on your n8n host." %}</li>
+          <li>{% translate "Create the Ticket System Mock API credential in n8n and use the provided nodes and triggers." %}</li>
+        </ol>
+
+        <h3>{% translate "Install in n8n" %}</h3>
+        <ol>
+          <li>{% translate "Create ~/.n8n/custom/node_modules/n8n-nodes-ticket-system-mock/ on the n8n host if it does not already exist." %}</li>
+          <li>{% translate "Extract the downloaded .tgz file into that directory so package.json and dist/ are present there." %}</li>
+          <li>{% translate "Refresh or restart n8n if your deployment model requires a reload before newly installed community nodes appear." %}</li>
+          <li>{% translate "Search for Ticket System Mock in the node picker and confirm that the TSM nodes are available." %}</li>
+        </ol>
+
+        <h3>{% translate "Configure the shared credential" %}</h3>
+        <ul>
+          <li>{% translate "Credential name in n8n: Ticket System Mock API" %}</li>
+          <li>{% translate "Base URL: use the root URL of this web application and include the full http:// or https:// prefix." %}</li>
+          <li>{% translate "Username and password: use an application account that is allowed to access the API." %}</li>
+        </ul>
+
+        <h3>{% translate "Recommended first check" %}</h3>
+        <p>{% translate "Start with the TSM - Reference Data node and run the Health operation before building larger workflows." %}</p>
+
+        <p>{% translate "If setup fails, the bundled nodes report clearer messages for invalid Base URLs, unreachable hosts, authentication failures, permission problems, and server-side API errors." %}</p>
+      </article>
+    </section>
+  </section>
+{% endblock %}

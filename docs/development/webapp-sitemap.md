@@ -83,12 +83,14 @@ flowchart TD
   authenticated user's username and privilege flags.
 - `Reference Data`: available at `/api/groups`, `/api/users`,
   `/api/collections`, and `/api/categories` for integration-friendly metadata.
+  These list endpoints return their arrays under the root `data` key.
 - `Board Projection`: available at `/api/board` and returns the filtered board
   context used by the user frontend.
 - `Dashboard Projection`: available at `/api/dashboard` and returns the current
   user's assigned issues and mentions.
 - `Issue Listing and Detail`: available at `/api/issues` and
-  `/api/issues/{issue_id}`.
+  `/api/issues/{issue_id}`. The `/api/issues` list endpoint returns matching
+  issues under the root `data` key.
 - `Issue Mutations`: available at `/api/issues`, `/api/issues/{issue_id}`,
   `/api/issues/{issue_id}/archive`, `/api/issues/{issue_id}/comments`, and
   `/api/issues/{issue_id}/move`.

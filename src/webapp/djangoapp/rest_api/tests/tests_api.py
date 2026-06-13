@@ -21,6 +21,7 @@ from djangoapp.core.models import (
     IssuePriority,
     IssueStateTransition,
     WorkflowState,
+    WorkflowStateAutoAssignmentRule,
 )
 from djangoapp.rest_api.api import (
     DjangoBasicAuth,
@@ -119,6 +120,28 @@ class RestApiTests(TestCase):
             schema["paths"]["/api/board"]["get"]["parameters"][0]["description"],
             "Free-text filter applied to issue number, title, and description content.",
         )
+        board_parameters = {
+            parameter["name"]: parameter for parameter in schema["paths"]["/api/board"]["get"]["parameters"]
+        }
+        issue_list_parameters = {
+            parameter["name"]: parameter for parameter in schema["paths"]["/api/issues"]["get"]["parameters"]
+        }
+        self.assertEqual(
+            board_parameters["group"]["description"],
+            "Optional group identifier used to limit the board projection.",
+        )
+        self.assertEqual(
+            board_parameters["updated_within_seconds"]["description"],
+            "Optional relative time window used to limit board issues to entries updated within the last X seconds.",
+        )
+        self.assertEqual(
+            issue_list_parameters["updated_within_seconds"]["description"],
+            "Optional relative time window used to limit returned issues to entries updated within the last X seconds.",
+        )
+        self.assertEqual(
+            schema["paths"]["/api/issues"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+            "#/components/schemas/IssueListResponseSchema",
+        )
         self.assertEqual(
             schema["paths"]["/api/issues"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"][
                 "required"
@@ -130,7 +153,6 @@ class RestApiTests(TestCase):
                 "schema"
             ]["properties"]["target_state"]["enum"],
             [
-                "BACKLOG",
                 "NEW",
                 "TRIAGE",
                 "ASSIGNED",
@@ -139,12 +161,15 @@ class RestApiTests(TestCase):
                 "RESOLVED",
                 "CLOSED",
                 "REJECTED",
-                "DUPLICATE",
             ],
         )
         self.assertEqual(
             schema["components"]["schemas"]["IssueDetailSchema"]["properties"]["attachments"]["description"],
             "Attachments currently associated with the issue.",
+        )
+        self.assertEqual(
+            schema["components"]["schemas"]["IssueListResponseSchema"]["properties"]["data"]["description"],
+            "Issues that match the supplied board-style filters.",
         )
         self.assertEqual(
             schema["components"]["schemas"]["AuthenticatedUserSchema"]["properties"]["display_name"]["description"],
@@ -275,17 +300,17 @@ class RestApiTests(TestCase):
         response = self.client.get("/api/collections", headers=self.basic_auth_header())
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]["prefix"], "TASK")
+        self.assertEqual(response.json()["data"][0]["prefix"], "TASK")
 
         response = self.client.get("/api/categories", headers=self.basic_auth_header())
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]["code"], "NETWORK")
+        self.assertEqual(response.json()["data"][0]["code"], "NETWORK")
 
         response = self.client.get("/api/groups", headers=self.basic_auth_header())
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]["name"], "Network Operations")
+        self.assertEqual(response.json()["data"][0]["name"], "Network Operations")
 
         response = self.client.get(
             "/api/users",
@@ -294,15 +319,15 @@ class RestApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]["username"], "demo")
-        self.assertEqual(response.json()[0]["avatar_type"], "initials")
-        self.assertFalse(response.json()[0]["is_system_user"])
-        self.assertEqual(response.json()[0]["avatar_text"], "DU")
+        self.assertEqual(response.json()["data"][0]["username"], "demo")
+        self.assertEqual(response.json()["data"][0]["avatar_type"], "initials")
+        self.assertFalse(response.json()["data"][0]["is_system_user"])
+        self.assertEqual(response.json()["data"][0]["avatar_text"], "DU")
 
         response = self.client.get("/api/users", headers=self.basic_auth_header())
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(len(response.json()["data"]), 2)
 
     def test_profile_endpoints_return_and_update_user_settings(self):
         profile_response = self.client.get("/api/profile/me", headers=self.basic_auth_header())
@@ -567,8 +592,8 @@ class RestApiTests(TestCase):
 
         self.assertEqual(board_response.status_code, 200)
         self.assertEqual(board_response.json()["board_issue_count"], 1)
-        self.assertEqual(board_response.json()["board_columns"][1]["issues"][0]["issue_number"], issue.issue_number)
-        self.assertEqual(board_response.json()["board_columns"][1]["issues"][0]["user"]["avatar_text"], "DU")
+        self.assertEqual(board_response.json()["board_columns"][0]["issues"][0]["issue_number"], issue.issue_number)
+        self.assertEqual(board_response.json()["board_columns"][0]["issues"][0]["user"]["avatar_text"], "DU")
 
         dashboard_response = self.client.get("/api/dashboard", headers=self.basic_auth_header())
 
@@ -608,6 +633,8 @@ class RestApiTests(TestCase):
                 "priority": IssuePriority.CRITICAL,
                 "collection": self.collection.pk,
                 "category": self.category.pk,
+                "group": self.support_group.pk,
+                "is_escalated": "false",
             },
             headers=self.basic_auth_header(),
         )
@@ -617,7 +644,44 @@ class RestApiTests(TestCase):
         self.assertEqual(payload["board_issue_count"], 1)
         self.assertEqual(payload["selected_assignee"], str(self.user.pk))
         self.assertEqual(payload["selected_priority"], IssuePriority.CRITICAL)
-        self.assertEqual(payload["board_columns"][1]["issues"][0]["issue_number"], matching_issue.issue_number)
+        self.assertEqual(payload["selected_group"], str(self.support_group.pk))
+        self.assertEqual(payload["selected_is_escalated"], "false")
+        self.assertEqual(payload["board_columns"][0]["issues"][0]["issue_number"], matching_issue.issue_number)
+
+    def test_board_endpoint_filters_by_updated_within_seconds(self):
+        recent_issue = Issue.objects.create(
+            title="Recent board issue",
+            description_markdown="Recently updated issue.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+        stale_issue = Issue.objects.create(
+            title="Stale board issue",
+            description_markdown="Older issue update.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+        Issue.objects.filter(pk=stale_issue.pk).update(updated_at=timezone.now() - timezone.timedelta(seconds=120))
+
+        response = self.client.get(
+            "/api/board",
+            {"updated_within_seconds": "30"},
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["selected_updated_within_seconds"], "30")
+        self.assertEqual(payload["board_issue_count"], 1)
+        self.assertEqual(payload["board_columns"][0]["issues"][0]["issue_number"], recent_issue.issue_number)
 
     def test_issue_list_endpoint_applies_filter_combinations(self):
         filtered_issue = Issue.objects.create(
@@ -656,8 +720,150 @@ class RestApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(len(payload), 1)
-        self.assertEqual(payload[0]["issue_number"], filtered_issue.issue_number)
+        self.assertEqual(len(payload["data"]), 1)
+        self.assertEqual(payload["data"][0]["issue_number"], filtered_issue.issue_number)
+
+    def test_issue_list_endpoint_filters_by_workflow_state_code(self):
+        matching_issue = Issue.objects.create(
+            title="Awaiting vendor response",
+            description_markdown="Waiting for supplier triage.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.WAITING,
+            priority=IssuePriority.HIGH,
+        )
+        Issue.objects.create(
+            title="Still new",
+            description_markdown="No action started.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.get(
+            "/api/issues",
+            {"workflow_state": WorkflowState.WAITING},
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual([item["issue_number"] for item in payload["data"]], [matching_issue.issue_number])
+
+    def test_issue_list_endpoint_filters_by_workflow_state_label(self):
+        matching_issue = Issue.objects.create(
+            title="Queued for dispatch",
+            description_markdown="Assignment pending.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.MEDIUM,
+        )
+        Issue.objects.create(
+            title="Resolved already",
+            description_markdown="Awaiting closeout.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.RESOLVED,
+            priority=IssuePriority.MEDIUM,
+        )
+
+        response = self.client.get(
+            "/api/issues",
+            {"workflow_state_label": "Assigned"},
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual([item["issue_number"] for item in payload["data"]], [matching_issue.issue_number])
+
+    def test_issue_list_endpoint_filters_by_group_and_escalation(self):
+        matching_issue = Issue.objects.create(
+            title="Escalated group issue",
+            description_markdown="Needs follow-up by the support group.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+            is_escalated=True,
+        )
+        other_group = Group.objects.create(name="Field Operations")
+        Issue.objects.create(
+            title="Escalated elsewhere",
+            description_markdown="Assigned to another group.",
+            collection=self.collection,
+            category=self.category,
+            group=other_group,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+            is_escalated=True,
+        )
+        Issue.objects.create(
+            title="Not escalated",
+            description_markdown="Same group without escalation.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+            is_escalated=False,
+        )
+
+        response = self.client.get(
+            "/api/issues",
+            {"group": self.support_group.pk, "is_escalated": "true"},
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual([item["issue_number"] for item in payload["data"]], [matching_issue.issue_number])
+
+    def test_issue_list_endpoint_filters_by_updated_within_seconds(self):
+        recent_issue = Issue.objects.create(
+            title="Recent update",
+            description_markdown="Recently touched issue.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+        stale_issue = Issue.objects.create(
+            title="Stale update",
+            description_markdown="Old issue update.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+        Issue.objects.filter(pk=stale_issue.pk).update(updated_at=timezone.now() - timezone.timedelta(seconds=120))
+
+        response = self.client.get(
+            "/api/issues",
+            {"updated_within_seconds": "30"},
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual([item["issue_number"] for item in payload["data"]], [recent_issue.issue_number])
 
     def test_issue_detail_endpoint_includes_related_records(self):
         issue = Issue.objects.create(
@@ -810,6 +1016,46 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
         self.assertEqual(issue.state_transitions.count(), 1)
 
+    def test_update_issue_endpoint_applies_workflow_state_auto_assignment_rule(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+        WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=self.support_group,
+            user=self.user,
+        )
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "title": issue.title,
+                "description_markdown": issue.description_markdown,
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "group": None,
+                "user": None,
+                "is_escalated": False,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "Triaged and dispatched.",
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(issue.group, self.support_group)
+        self.assertEqual(issue.user, self.user)
+
     def test_update_issue_endpoint_returns_combined_history_for_non_workflow_changes(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -846,6 +1092,39 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.history_events.count(), 2)
         self.assertEqual(response.json()["issue"]["history"][0]["message"], "Escalation enabled")
         self.assertEqual(response.json()["issue"]["history"][1]["message"], "Issue description changed")
+
+    def test_update_issue_endpoint_supports_partial_put_payloads(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "title": "Primary uplink outage updated",
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "Triaged and dispatched.",
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.title, "Primary uplink outage updated")
+        self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(issue.description_markdown, "Core switch unreachable from branch office.")
+        self.assertEqual(issue.collection_id, self.collection.pk)
+        self.assertEqual(issue.category_id, self.category.pk)
+        self.assertEqual(issue.priority, IssuePriority.HIGH)
 
     def test_update_issue_endpoint_accepts_multipart_attachments(self):
         issue = Issue.objects.create(

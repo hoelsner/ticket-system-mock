@@ -27,6 +27,11 @@ When developing code, use the following workflow to ensure that your code is cle
 make check
 ```
 
+Run repository-level `make` targets from the repository root. If your current
+working directory drifted into a subdirectory such as `src/webapp` or
+`src/n8n_node`, use `make -C /workspaces/itoperation-ticketing-demo-service …`
+instead of assuming the local directory has the same targets.
+
 If you encounter errors, fix them before proceeding to the next task.
 
 7. after completing all tasks, run the following command to check for linting errors, run tests, and generate a coverage report:
@@ -47,11 +52,15 @@ If you encounter errors, fix them before proceeding to the next step.
   includes endpoint summaries, descriptions, tags, query parameter
   descriptions, request payload attributes, and response schema field
   descriptions
+- for machine-facing contract changes that affect the bundled n8n package,
+  update the corresponding files under `src/n8n_node`, rebuild the committed
+  `dist/` output, and refresh the n8n-facing docs in the same change set
 
 ## Common Principles
 
 - avoid unnecessary abstractions and complexity; prefer simple, direct solutions that are easy to understand and maintain
 - avoid duplicated knowledge; if you find yourself copying and pasting code or explanations, consider whether there is a better way to structure the code or documentation to keep the information in one place
+- for all user-facing webapp work, treat localization as the default: templates, form labels, help text, model field metadata, choice labels, validation messages, and other UI copy must use Django i18n APIs and be added to the locale catalogs in the same change set
 - maintain release-build configuration variables in `deploy/docker-compose/docker-compose-template.yaml` as the primary runtime source, keep `docs/user/configuration.md` aligned with those variables, and use the Dockerfile only for stable non-secret container defaults and build metadata
 - for frontend design work, let visual distinctiveness come from a single held design direction and disciplined tokens, not from fabricated data, filler copy, or themed replacements for standard UI labels
 - for frontend styling in `src/webapp`, keep color treatment close to Pico CSS by default; avoid adding tinted gradients, blurred color washes, or custom background colorization unless the user explicitly asks for a stronger visual departure
@@ -60,3 +69,5 @@ If you encounter errors, fix them before proceeding to the next step.
 - do not modify the code related to complexity or linting, if you think a change is needed, mention it first and wait for confirmation before making any changes to the codebase
 - if you run into complexity violations, refactor the code to reduce complexity while preserving behavior, and then update the instructions to prevent similar issues in the future
 - for REST API work, treat `/api/docs` and `/api/openapi.json` as maintained deliverables, not incidental output; add or update OpenAPI-focused tests when changing endpoint purpose or payload shape
+- for YAML configuration and customization files, use spaces only; tabs can make
+  files fail validation even when the content is otherwise correct

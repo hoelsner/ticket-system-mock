@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 23:17+0000\n"
+"POT-Creation-Date: 2026-06-09 22:03+0000\n"
 "PO-Revision-Date: 2026-06-08 23:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
@@ -19,24 +19,26 @@ msgstr ""
 
 #: djangoapp/core/models/collection.py:14
 msgid "Use uppercase letters and digits only, starting with a letter."
-msgstr "Nur Großbuchstaben und Ziffern verwenden, beginnend mit einem Buchstaben."
+msgstr ""
+"Nur Großbuchstaben und Ziffern verwenden, beginnend mit einem Buchstaben."
 
 #: djangoapp/core/models/collection.py:17
 msgid "Prefix used for issue identifiers, for example TASK."
 msgstr "Präfix für Ticketkennungen, zum Beispiel TASK."
 
-#: djangoapp/core/models/issue.py:95 djangoapp/user_interface/forms.py:89
+#: djangoapp/core/models/issue.py:95 djangoapp/user_interface/forms.py:90
 msgid "A group is required when a user is assigned."
 msgstr "Eine Gruppe ist erforderlich, wenn eine Person zugewiesen wird."
 
-#: djangoapp/core/models/issue.py:98 djangoapp/user_interface/forms.py:93
+#: djangoapp/core/models/issue.py:98 djangoapp/user_interface/forms.py:94
 msgid "The assigned user must belong to the assigned group."
 msgstr "Die zugewiesene Person muss zur zugewiesenen Gruppe gehören."
 
 #: djangoapp/core/models/issue.py:102
 msgid "Archived timestamp is required when archived by user is set."
-msgstr "Ein Archivierungszeitpunkt ist erforderlich, wenn "
-"\"archiviert von\" gesetzt ist."
+msgstr ""
+"Ein Archivierungszeitpunkt ist erforderlich, wenn \"archiviert von\" gesetzt "
+"ist."
 
 #: djangoapp/core/models/issue_category.py:13
 msgid "Issue category"
@@ -74,7 +76,7 @@ msgstr "Kritisch"
 msgid "Pending"
 msgstr "Ausstehend"
 
-#: djangoapp/core/models/webhook_delivery_status.py:7 templates/base.html:140
+#: djangoapp/core/models/webhook_delivery_status.py:7 templates/base.html:143
 #: templates/registration/login.html:15
 msgid "Success"
 msgstr "Erfolg"
@@ -118,7 +120,7 @@ msgstr "Ticket geschlossen"
 
 #: djangoapp/core/models/workflow_state.py:6
 msgid "Backlog"
-msgstr "Backlog"
+msgstr "Eingang"
 
 #: djangoapp/core/models/workflow_state.py:7
 msgid "New"
@@ -174,7 +176,8 @@ msgstr "Die Überprüfung der Cache-Verbindung ist fehlgeschlagen."
 
 #: djangoapp/healthchecks/checks.py:134
 msgid "Cache read/write verification failed."
-msgstr "Die Überprüfung von Cache-Lese- und Schreibzugriffen ist fehlgeschlagen."
+msgstr ""
+"Die Überprüfung von Cache-Lese- und Schreibzugriffen ist fehlgeschlagen."
 
 #: djangoapp/healthchecks/checks.py:149
 msgid "No enabled webhook endpoints are configured."
@@ -185,12 +188,12 @@ msgstr "Es sind keine aktivierten Webhook-Endpunkte konfiguriert."
 msgid "Webhook endpoints unreachable: %(endpoint_names)s."
 msgstr "Webhook-Endpunkte nicht erreichbar: %(endpoint_names)s."
 
-#: djangoapp/healthchecks/checks.py:169
+#: djangoapp/healthchecks/checks.py:170
 #, python-format
 msgid "%(endpoint_count)s enabled webhook endpoint reachable."
 msgstr "%(endpoint_count)s aktivierter Webhook-Endpunkt ist erreichbar."
 
-#: djangoapp/healthchecks/checks.py:169
+#: djangoapp/healthchecks/checks.py:173
 #, python-format
 msgid "%(endpoint_count)s enabled webhook endpoints reachable."
 msgstr "%(endpoint_count)s aktivierte Webhook-Endpunkte sind erreichbar."
@@ -215,93 +218,148 @@ msgstr "Webhook-Endpunkte"
 msgid "Unknown healthcheck."
 msgstr "Unbekannter Healthcheck."
 
-#: djangoapp/settings.py:163
+#: djangoapp/settings.py:164
 msgid "English"
 msgstr "Englisch"
 
-#: djangoapp/settings.py:164
+#: djangoapp/settings.py:165
 msgid "German"
 msgstr "Deutsch"
 
-#: djangoapp/user_interface/forms.py:97
+#: djangoapp/user_interface/forms.py:98
 msgid "Select a file when providing an attachment description."
 msgstr "Wählen Sie eine Datei aus, wenn Sie eine Anhangsbeschreibung angeben."
 
-#: djangoapp/user_interface/forms.py:140
+#: djangoapp/user_interface/forms.py:147
 msgid "I understand this issue will be archived."
 msgstr "Ich verstehe, dass dieses Ticket archiviert wird."
 
-#: djangoapp/user_interface/views.py:29
+#: djangoapp/user_interface/forms.py:151
+msgid "Remove current avatar image"
+msgstr "Aktuelles Avatarbild entfernen"
+
+#: djangoapp/user_interface/forms.py:156
+msgid "Language preference"
+msgstr "Spracheinstellung"
+
+#: djangoapp/user_interface/forms.py:160
+msgid "Avatar type"
+msgstr "Avatartyp"
+
+#: djangoapp/user_interface/forms.py:162
+msgid "Avatar image"
+msgstr "Avatarbild"
+
+#: djangoapp/user_interface/models.py:18
+msgid "Initials"
+msgstr "Initialen"
+
+#: djangoapp/user_interface/models.py:19
+msgid "Uploaded image"
+msgstr "Hochgeladenes Bild"
+
+#: djangoapp/user_interface/models.py:27
+msgid "Choose one of the configured application languages."
+msgstr "Wählen Sie eine der konfigurierten Anwendungssprachen aus."
+
+#: djangoapp/user_interface/models.py:33
+msgid ""
+"Choose whether the profile should render initials or an image by default."
+msgstr "Wählen Sie, ob das Profil standardmäßig Initialen oder ein Bild anzeigen soll."
+
+#: djangoapp/user_interface/models.py:37
+msgid "Use the system-agent avatar when no custom avatar image is uploaded."
+msgstr "Verwenden Sie den Systemagent-Avatar, wenn kein eigenes Avatarbild hochgeladen wurde."
+
+#: djangoapp/user_interface/models.py:42
+msgid "Optional avatar image shown everywhere the user appears."
+msgstr "Optionales Avatarbild, das überall angezeigt wird, wo die Person erscheint."
+
+#: djangoapp/user_interface/models.py:48 templates/core/profile_detail.html:10
+msgid "User profile"
+msgstr "Benutzerprofil"
+
+#: djangoapp/user_interface/models.py:49
+msgid "User profiles"
+msgstr ""
+
+#: djangoapp/user_interface/views.py:40
 msgid "Invalid request payload."
 msgstr "Ungültige Anfragedaten."
 
-#: djangoapp/user_interface/views.py:33
+#: djangoapp/user_interface/views.py:44
 msgid "Invalid workflow state."
 msgstr "Ungültiger Workflow-Status."
 
-#: djangoapp/user_interface/views.py:38
+#: djangoapp/user_interface/views.py:49
 msgid "Invalid target position."
 msgstr "Ungültige Zielposition."
 
-#: djangoapp/user_interface/views.py:111
+#: djangoapp/user_interface/views.py:129
 msgid "Signed in successfully."
 msgstr "Erfolgreich angemeldet."
 
-#: djangoapp/user_interface/views.py:115
+#: djangoapp/user_interface/views.py:133
 msgid "Username and password did not match. Please try again."
-msgstr "Benutzername und Passwort stimmen nicht überein. Bitte versuchen Sie es erneut."
+msgstr ""
+"Benutzername und Passwort stimmen nicht überein. Bitte versuchen Sie es "
+"erneut."
 
-#: djangoapp/user_interface/views.py:124
+#: djangoapp/user_interface/views.py:142
 msgid "Signed out successfully."
 msgstr "Erfolgreich abgemeldet."
 
-#: djangoapp/user_interface/views.py:133
+#: djangoapp/user_interface/views.py:172
 msgid "Review the highlighted fields and try again."
 msgstr "Prüfen Sie die hervorgehobenen Felder und versuchen Sie es erneut."
 
-#: djangoapp/user_interface/views.py:232 templates/core/dashboard.html:17
+#: djangoapp/user_interface/views.py:248
+msgid "Your profile settings were updated."
+msgstr ""
+
+#: djangoapp/user_interface/views.py:327 templates/core/dashboard.html:17
 msgid "Create New Issue"
 msgstr "Neues Ticket erstellen"
 
-#: djangoapp/user_interface/views.py:233
+#: djangoapp/user_interface/views.py:328
 msgid "Create issue"
 msgstr "Ticket erstellen"
 
-#: djangoapp/user_interface/views.py:241
+#: djangoapp/user_interface/views.py:336
 #, python-format
 msgid "Issue %(issue_number)s was created."
 msgstr "Ticket %(issue_number)s wurde erstellt."
 
-#: djangoapp/user_interface/views.py:259
+#: djangoapp/user_interface/views.py:354
 #: templates/core/partials/issue_detail_content.html:27
 msgid "Update Existing Issue"
 msgstr "Bestehendes Ticket aktualisieren"
 
-#: djangoapp/user_interface/views.py:260
+#: djangoapp/user_interface/views.py:355
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
-#: djangoapp/user_interface/views.py:267
+#: djangoapp/user_interface/views.py:362
 #, python-format
 msgid "Issue %(issue_number)s was updated."
 msgstr "Ticket %(issue_number)s wurde aktualisiert."
 
-#: djangoapp/user_interface/views.py:283
+#: djangoapp/user_interface/views.py:379
 #, python-format
 msgid "Issue %(issue_number)s description was updated."
 msgstr "Die Beschreibung von Ticket %(issue_number)s wurde aktualisiert."
 
-#: djangoapp/user_interface/views.py:314
+#: djangoapp/user_interface/views.py:411
 #, python-format
 msgid "Issue %(issue_number)s was archived."
 msgstr "Ticket %(issue_number)s wurde archiviert."
 
-#: djangoapp/user_interface/views.py:332
+#: djangoapp/user_interface/views.py:430
 #, python-format
 msgid "A new issue comment was added to %(issue_number)s."
 msgstr "Ein neuer Ticketkommentar wurde zu %(issue_number)s hinzugefügt."
 
-#: djangoapp/user_interface/views.py:354
+#: djangoapp/user_interface/views.py:455
 #, python-format
 msgid "Attachment %(attachment_name)s was removed from %(issue_number)s."
 msgstr "Anhang %(attachment_name)s wurde aus %(issue_number)s entfernt."
@@ -324,11 +382,11 @@ msgstr "Detaillierte Navigation schließen"
 
 #: templates/base.html:64 templates/base.html:107
 msgid "Dashboard"
-msgstr "Dashboard"
+msgstr "Übersicht"
 
 #: templates/base.html:67 templates/base.html:108
 msgid "Board"
-msgstr "Board"
+msgstr "Kanban-Board"
 
 #: templates/base.html:70 templates/base.html:109
 msgid "Create Issue"
@@ -340,13 +398,17 @@ msgstr "Administration"
 
 #: templates/base.html:79
 msgid "Healthcheck"
-msgstr "Healthcheck"
+msgstr "Systemstatus"
+
+#: templates/base.html:82 templates/core/integrations.html:4
+msgid "Integrations"
+msgstr "Integrationen"
 
 #: templates/base.html:82
 msgid "API Docs"
 msgstr "API-Dokumentation"
 
-#: templates/base.html:90 templates/base.html:126
+#: templates/base.html:90 templates/base.html:129
 msgid "Sign out"
 msgstr "Abmelden"
 
@@ -355,30 +417,30 @@ msgstr "Abmelden"
 msgid "Logged in as <strong>%(username)s</strong>"
 msgstr "Angemeldet als <strong>%(username)s</strong>"
 
-#: templates/base.html:120 templates/base.html:121
+#: templates/base.html:119 templates/base.html:120
 msgid "Open board fullscreen"
 msgstr "Board im Vollbild öffnen"
 
-#: templates/base.html:129 templates/registration/login.html:7
+#: templates/base.html:132 templates/registration/login.html:7
 #: templates/registration/login.html:34
 msgid "Sign in"
 msgstr "Anmelden"
 
-#: templates/base.html:137
+#: templates/base.html:140
 msgid "System messages"
 msgstr "Systemmeldungen"
 
-#: templates/base.html:140 templates/registration/login.html:15
+#: templates/base.html:143 templates/registration/login.html:15
 msgid "Error"
 msgstr "Fehler"
 
-#: templates/base.html:140 templates/healthchecks/partials/check_card.html:6
+#: templates/base.html:143 templates/healthchecks/partials/check_card.html:6
 #: templates/healthchecks/partials/summary.html:6
 #: templates/registration/login.html:15
 msgid "Warning"
 msgstr "Warnung"
 
-#: templates/base.html:140 templates/registration/login.html:15
+#: templates/base.html:143 templates/registration/login.html:15
 msgid "Info"
 msgstr "Info"
 
@@ -389,6 +451,58 @@ msgstr "Persönliches Dashboard"
 #: templates/core/dashboard.html:10
 msgid "User workspace"
 msgstr "Arbeitsbereich"
+
+#: templates/core/integrations.html:10
+msgid "Extensions"
+msgstr "Erweiterungen"
+
+#: templates/core/integrations.html:12
+msgid "Download the n8n node package that is bundled with this webapp build."
+msgstr "Laden Sie das n8n-Node-Paket herunter, das mit diesem Webapp-Build gebündelt ist."
+
+#: templates/core/integrations.html:17
+msgid "Download n8n Node"
+msgstr "n8n-Node herunterladen"
+
+#: templates/core/integrations.html:23
+msgid "Bundled Asset"
+msgstr "Gebündeltes Asset"
+
+#: templates/core/integrations.html:26
+msgid "Filename"
+msgstr "Dateiname"
+
+#: templates/core/integrations.html:28
+msgid "Size"
+msgstr "Größe"
+
+#: templates/core/integrations.html:30
+msgid "Use the download button to retrieve the packaged n8n integration archive from this deployment."
+msgstr "Verwenden Sie die Download-Schaltfläche, um das paketierte n8n-Integrationsarchiv aus dieser Bereitstellung abzurufen."
+
+#: templates/core/integrations.html:32
+msgid "The n8n node package is not available in this environment."
+msgstr "Das n8n-Node-Paket ist in dieser Umgebung nicht verfügbar."
+
+#: templates/core/integrations.html:37
+msgid "How to Use It"
+msgstr "So wird es verwendet"
+
+#: templates/core/integrations.html:39
+msgid "Download the packaged n8n node archive from this page."
+msgstr "Laden Sie das paketierte n8n-Node-Archiv von dieser Seite herunter."
+
+#: templates/core/integrations.html:40
+msgid "Import or install the archive into your n8n instance."
+msgstr "Importieren oder installieren Sie das Archiv in Ihre n8n-Instanz."
+
+#: templates/core/integrations.html:41
+msgid "Configure the IT Operation Ticketing API credential in n8n and use the provided nodes and triggers."
+msgstr "Konfigurieren Sie die Anmeldedaten für die IT-Operation-Ticketing-API in n8n und verwenden Sie die bereitgestellten Nodes und Trigger."
+
+#: djangoapp/user_interface/views.py:220
+msgid "The n8n integration package is not available."
+msgstr "Das n8n-Integrationspaket ist nicht verfügbar."
 
 #: templates/core/dashboard.html:12
 msgid "Issues assigned to you and comments that mention you."
@@ -411,8 +525,9 @@ msgid "Mentioned Comments"
 msgstr "Erwähnte Kommentare"
 
 #: templates/core/dashboard.html:42
-#, python-format
-msgid "%(username)s mentioned you at %(created_at)s"
+#, fuzzy, python-format
+#| msgid "%(username)s mentioned you at %(created_at)s"
+msgid "mentioned you at %(created_at)s"
 msgstr "%(username)s hat Sie um %(created_at)s erwähnt"
 
 #: templates/core/dashboard.html:48
@@ -479,7 +594,7 @@ msgstr "Nach Kategorie filtern"
 msgid "All categories"
 msgstr "Alle Kategorien"
 
-#: templates/core/home.html:92 templates/includes/language_switcher.html:15
+#: templates/core/home.html:92 templates/includes/language_switcher.html:14
 msgid "Apply"
 msgstr "Anwenden"
 
@@ -511,13 +626,13 @@ msgstr ""
 "entfernt, während die Daten für Audit und Berichte erhalten bleiben."
 
 #: templates/core/issue_archive_confirm.html:33
-#: templates/cotton/issue/card.html:39 templates/cotton/issue/card.html:135
+#: templates/cotton/issue/card.html:39 templates/cotton/issue/card.html:138
 msgid "Archive issue"
 msgstr "Ticket archivieren"
 
 #: templates/core/issue_archive_confirm.html:34
-#: templates/core/issue_comment_form.html:67 templates/core/issue_form.html:180
-#: templates/core/issue_form.html:186
+#: templates/core/issue_comment_form.html:67 templates/core/issue_form.html:182
+#: templates/core/issue_form.html:184
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -543,8 +658,8 @@ msgid "Comment settings"
 msgstr "Kommentar-Einstellungen"
 
 #: templates/core/issue_comment_form.html:66
-#: templates/core/partials/issue_detail_content.html:142
-#: templates/cotton/issue/card.html:38 templates/cotton/issue/card.html:134
+#: templates/core/partials/issue_detail_content.html:145
+#: templates/cotton/issue/card.html:38 templates/cotton/issue/card.html:137
 msgid "Add comment"
 msgstr "Kommentar hinzufügen"
 
@@ -571,7 +686,7 @@ msgstr ""
 
 #: templates/core/issue_form.html:75
 #: templates/core/partials/issue_detail_content.html:36
-#: templates/cotton/issue/card.html:77 templates/cotton/issue/card.html:173
+#: templates/cotton/issue/card.html:77 templates/cotton/issue/card.html:176
 msgid "Description"
 msgstr "Beschreibung"
 
@@ -585,8 +700,8 @@ msgid ""
 "observed, and what support teams should act on next."
 msgstr ""
 "Verwenden Sie die Beschreibung als zentrale Dokumentation dafür, was sich "
-"geändert hat, was beobachtet wurde und welche nächsten Schritte die "
-"Support-Teams ausführen sollen."
+"geändert hat, was beobachtet wurde und welche nächsten Schritte die Support-"
+"Teams ausführen sollen."
 
 #: templates/core/issue_form.html:91
 msgid ""
@@ -614,15 +729,15 @@ msgstr "um auf ein anderes Ticket zu verweisen, und"
 msgid "to embed uploaded attachments."
 msgstr "um hochgeladene Anhänge einzubetten."
 
-#: templates/core/issue_form.html:110
+#: templates/core/issue_form.html:111
 msgid "Routing"
 msgstr "Routing"
 
-#: templates/core/issue_form.html:111
+#: templates/core/issue_form.html:112
 msgid "Assignment and escalation"
 msgstr "Zuweisung und Eskalation"
 
-#: templates/core/issue_form.html:113
+#: templates/core/issue_form.html:114
 msgid ""
 "Assign a group first if you want to assign a user. Leave both blank when the "
 "issue only needs to be captured for triage."
@@ -631,28 +746,24 @@ msgstr ""
 "Lassen Sie beides leer, wenn das Ticket nur für die Triage erfasst werden "
 "soll."
 
-#: templates/core/issue_form.html:155
+#: templates/core/issue_form.html:156
 msgid "Supporting material"
 msgstr "Zusätzliche Materialien"
 
-#: templates/core/issue_form.html:156
-msgid "Initial attachment"
-msgstr "Erster Anhang"
-
-#: templates/core/issue_form.html:156
-#: templates/core/partials/issue_detail_content.html:200
+#: templates/core/issue_form.html:157
+#: templates/core/partials/issue_detail_content.html:203
 msgid "Attachments"
 msgstr "Anhänge"
 
-#: templates/core/issue_form.html:158
+#: templates/core/issue_form.html:159
 msgid ""
 "Add files here when they should be included with the issue on submit. Use "
 "the editor upload tool when a file also needs to be linked in the "
 "description."
 msgstr ""
 "Fügen Sie hier Dateien hinzu, wenn sie beim Absenden mit dem Ticket "
-"gespeichert werden sollen. Verwenden Sie das Upload-Werkzeug im Editor, "
-"wenn eine Datei zusätzlich in der Beschreibung verlinkt werden soll."
+"gespeichert werden sollen. Verwenden Sie das Upload-Werkzeug im Editor, wenn "
+"eine Datei zusätzlich in der Beschreibung verlinkt werden soll."
 
 #: templates/core/partials/issue_detail_content.html:5
 msgid "Issue detail"
@@ -667,6 +778,7 @@ msgid "Open Full Page"
 msgstr "Vollständige Seite öffnen"
 
 #: templates/core/partials/issue_detail_content.html:24
+#: templates/core/profile_detail.html:19
 msgid "Back to dashboard"
 msgstr "Zurück zum Dashboard"
 
@@ -683,7 +795,7 @@ msgstr ""
 "was beobachtet wurde und welche weiteren Schritte das Ticket benötigt."
 
 #: templates/core/partials/issue_detail_content.html:46
-#: templates/cotton/issue/card.html:81 templates/cotton/issue/card.html:177
+#: templates/cotton/issue/card.html:81 templates/cotton/issue/card.html:180
 msgid "No description provided."
 msgstr "Keine Beschreibung vorhanden."
 
@@ -728,29 +840,30 @@ msgstr ""
 "Fügen Sie Kontext hinzu, erwähnen Sie die richtige Person und halten Sie "
 "neue Ticketentscheidungen an einem Ort fest."
 
-#: templates/core/partials/issue_detail_content.html:92
+#: templates/core/partials/issue_detail_content.html:94
 #, python-format
 msgid "%(visibility)s at %(created_at)s"
 msgstr "%(visibility)s um %(created_at)s"
 
-#: templates/core/partials/issue_detail_content.html:99
+#: templates/core/partials/issue_detail_content.html:102
 msgid "Mentions:"
 msgstr "Erwähnungen:"
 
-#: templates/core/partials/issue_detail_content.html:109
-#: templates/cotton/issue/card.html:100 templates/cotton/issue/card.html:196
+#: templates/core/partials/issue_detail_content.html:112
+#: templates/cotton/issue/card.html:103 templates/cotton/issue/card.html:202
 msgid "No comments yet."
 msgstr "Noch keine Kommentare."
 
-#: templates/core/partials/issue_detail_content.html:155
+#: templates/core/partials/issue_detail_content.html:158
 msgid "Current state"
 msgstr "Aktueller Status"
 
-#: templates/core/partials/issue_detail_content.html:156
+#: templates/core/partials/issue_detail_content.html:159
+#: templates/cotton/issue/card.html:44 templates/cotton/issue/card.html:143
 msgid "Issue Details"
 msgstr "Ticketdetails"
 
-#: templates/core/partials/issue_detail_content.html:157
+#: templates/core/partials/issue_detail_content.html:160
 msgid ""
 "The current Issue routing and timestamps stay visible beside the working "
 "narrative."
@@ -758,61 +871,65 @@ msgstr ""
 "Das aktuelle Ticket-Routing und die Zeitangaben bleiben neben der laufenden "
 "Beschreibung sichtbar."
 
-#: templates/core/partials/issue_detail_content.html:162
+#: templates/core/partials/issue_detail_content.html:165
 msgid "Workflow state"
 msgstr "Workflow-Status"
 
-#: templates/core/partials/issue_detail_content.html:166
+#: templates/core/partials/issue_detail_content.html:169
 msgid "Priority"
 msgstr "Priorität"
 
-#: templates/core/partials/issue_detail_content.html:170
-#: templates/cotton/issue/card.html:63 templates/cotton/issue/card.html:159
+#: templates/core/partials/issue_detail_content.html:173
+#: templates/cotton/issue/card.html:63 templates/cotton/issue/card.html:162
 msgid "Category"
 msgstr "Kategorie"
 
-#: templates/core/partials/issue_detail_content.html:174
-#: templates/cotton/issue/card.html:67 templates/cotton/issue/card.html:163
+#: templates/core/partials/issue_detail_content.html:177
+#: templates/cotton/issue/card.html:67 templates/cotton/issue/card.html:166
 msgid "Associated team"
 msgstr "Zugeordnetes Team"
 
-#: templates/core/partials/issue_detail_content.html:175
-#: templates/core/partials/issue_detail_content.html:179
+#: templates/core/partials/issue_detail_content.html:178
+#: templates/core/partials/issue_detail_content.html:182
 msgid "Not assigned"
 msgstr "Nicht zugewiesen"
 
-#: templates/core/partials/issue_detail_content.html:178
+#: templates/core/partials/issue_detail_content.html:181
 msgid "Assigned user"
 msgstr "Zugewiesene Person"
 
-#: templates/core/partials/issue_detail_content.html:182
-#: templates/cotton/issue/card.html:19 templates/cotton/issue/card.html:115
+#: templates/core/partials/issue_detail_content.html:185
+#: templates/cotton/issue/card.html:19 templates/cotton/issue/card.html:118
 msgid "Escalated"
 msgstr "Eskaliert"
 
-#: templates/core/partials/issue_detail_content.html:183
+#: templates/core/partials/issue_detail_content.html:186
+#: templates/core/profile_detail.html:36
+#: templates/core/profile_settings.html:36
 msgid "Yes"
 msgstr "Ja"
 
-#: templates/core/partials/issue_detail_content.html:183
+#: templates/core/partials/issue_detail_content.html:186
+#: templates/core/profile_detail.html:36
+#: templates/core/profile_settings.html:36
 msgid "No"
 msgstr "Nein"
 
-#: templates/core/partials/issue_detail_content.html:186
-#: templates/cotton/issue/card.html:59 templates/cotton/issue/card.html:155
+#: templates/core/partials/issue_detail_content.html:189
+#: templates/cotton/issue/card.html:59 templates/cotton/issue/card.html:158
 msgid "Created"
 msgstr "Erstellt"
 
-#: templates/core/partials/issue_detail_content.html:190
-#: templates/cotton/issue/card.html:55 templates/cotton/issue/card.html:151
+#: templates/core/partials/issue_detail_content.html:193
+#: templates/cotton/issue/card.html:55 templates/cotton/issue/card.html:154
 msgid "Last change"
 msgstr "Letzte Änderung"
 
-#: templates/core/partials/issue_detail_content.html:199
+#: templates/core/partials/issue_detail_content.html:202
 msgid "Files"
 msgstr "Dateien"
 
-#: templates/core/partials/issue_detail_content.html:201
+#: templates/core/partials/issue_detail_content.html:204
 msgid ""
 "Reference files stay separate from the discussion so the latest evidence is "
 "easier to scan."
@@ -820,42 +937,44 @@ msgstr ""
 "Referenzdateien bleiben getrennt von der Diskussion, damit sich die neuesten "
 "Nachweise leichter erfassen lassen."
 
-#: templates/core/partials/issue_detail_content.html:212
+#: templates/core/partials/issue_detail_content.html:215
 msgid "Remove"
 msgstr "Entfernen"
 
-#: templates/core/partials/issue_detail_content.html:218
+#: templates/core/partials/issue_detail_content.html:221
 msgid "No attachments available."
 msgstr "Keine Anhänge vorhanden."
 
-#: templates/core/partials/issue_detail_content.html:227
+#: templates/core/partials/issue_detail_content.html:230
 msgid "Timeline"
 msgstr "Zeitleiste"
 
-#: templates/core/partials/issue_detail_content.html:228
+#: templates/core/partials/issue_detail_content.html:231
 msgid "Issue history"
 msgstr "Ticketverlauf"
 
-#: templates/core/partials/issue_detail_content.html:229
+#: templates/core/partials/issue_detail_content.html:232
 msgid "Track state transitions and field changes in chronological order."
-msgstr "Verfolgen Sie Statuswechsel und Feldänderungen in chronologischer Reihenfolge."
+msgstr ""
+"Verfolgen Sie Statuswechsel und Feldänderungen in chronologischer "
+"Reihenfolge."
 
-#: templates/core/partials/issue_detail_content.html:238
+#: templates/core/partials/issue_detail_content.html:241
 #, python-format
 msgid "%(username)s at %(changed_at)s"
 msgstr "%(username)s um %(changed_at)s"
 
-#: templates/core/partials/issue_detail_content.html:240
+#: templates/core/partials/issue_detail_content.html:243
 #, python-format
 msgid "From: %(from_value)s"
 msgstr "Von: %(from_value)s"
 
-#: templates/core/partials/issue_detail_content.html:241
+#: templates/core/partials/issue_detail_content.html:244
 #, python-format
 msgid "To: %(to_value)s"
 msgstr "Zu: %(to_value)s"
 
-#: templates/core/partials/issue_detail_content.html:247
+#: templates/core/partials/issue_detail_content.html:250
 msgid "No issue history recorded yet."
 msgstr "Es wurde noch kein Ticketverlauf aufgezeichnet."
 
@@ -868,23 +987,28 @@ msgstr "Ticketdetail-Dialog schließen"
 msgid "Kanban Board"
 msgstr "Kanban-Board"
 
-#: templates/core/partials/kanban_board.html:15
+#: templates/core/partials/kanban_board.html:19
+#, python-format
+msgid "Create issue in %(column_label)s"
+msgstr "Ticket in %(column_label)s erstellen"
+
+#: templates/core/partials/kanban_board.html:22
 #, python-format
 msgid "%(issue_count)s issue"
 msgid_plural "%(issue_count)s issues"
 msgstr[0] "%(issue_count)s Ticket"
 msgstr[1] "%(issue_count)s Tickets"
 
-#: templates/core/partials/kanban_board.html:32
+#: templates/core/partials/kanban_board.html:39
 #, python-format
 msgid "No issues in %(column_label)s."
 msgstr "Keine Tickets in %(column_label)s."
 
-#: templates/core/partials/kanban_board.html:41
+#: templates/core/partials/kanban_board.html:48
 msgid "No matching issues"
 msgstr "Keine passenden Tickets"
 
-#: templates/core/partials/kanban_board.html:42
+#: templates/core/partials/kanban_board.html:49
 msgid ""
 "Adjust the search or filters to widen the board results, or create a new "
 "issue."
@@ -936,62 +1060,171 @@ msgstr "Vorschau umschalten"
 #: templates/core/partials/markdown_editor.html:57
 #: templates/core/partials/markdown_editor.html:62
 msgid "Start typing to preview markdown output."
-msgstr "Beginnen Sie mit dem Tippen, um die Markdown-Ausgabe in der Vorschau zu sehen."
+msgstr ""
+"Beginnen Sie mit dem Tippen, um die Markdown-Ausgabe in der Vorschau zu "
+"sehen."
 
-#: templates/cotton/issue/card.html:34 templates/cotton/issue/card.html:130
+#: templates/core/profile_detail.html:17
+#, fuzzy
+#| msgid "Comment settings"
+msgid "Edit settings"
+msgstr "Kommentar-Einstellungen"
+
+#: templates/core/profile_detail.html:33
+#: templates/includes/language_switcher.html:6
+msgid "Language"
+msgstr "Sprache"
+
+#: templates/core/profile_detail.html:35
+#: templates/core/profile_settings.html:35
+msgid "System user"
+msgstr "Systembenutzer"
+
+#: templates/core/profile_detail.html:37
+#, fuzzy
+#| msgid "Assigned Issues"
+msgid "Assigned active issues"
+msgstr "Zugewiesene Tickets"
+
+#: templates/core/profile_detail.html:43
+msgid "Group memberships"
+msgstr ""
+
+#: templates/core/profile_detail.html:51
+#, fuzzy
+#| msgid "The assigned user must belong to the assigned group."
+msgid "This user does not belong to any group."
+msgstr "Die zugewiesene Person muss zur zugewiesenen Gruppe gehören."
+
+#: templates/core/profile_settings.html:4
+#: templates/core/profile_settings.html:11
+#, fuzzy
+#| msgid "Comment settings"
+msgid "Profile settings"
+msgstr "Kommentar-Einstellungen"
+
+#: templates/core/profile_settings.html:10
+msgid "User settings"
+msgstr "Persönliche Einstellungen"
+
+#: templates/core/profile_settings.html:12
+msgid "Configure your personal language and avatar preferences."
+msgstr "Konfigurieren Sie Ihre persönlichen Sprach- und Avatar-Einstellungen."
+
+#: templates/core/profile_settings.html:16
+msgid "View public profile"
+msgstr "Öffentliches Profil anzeigen"
+
+#: templates/core/profile_settings.html:29
+msgid ""
+"Review your current settings on the left, then update language and avatar "
+"preferences in the form."
+msgstr "Prüfen Sie links Ihre aktuellen Einstellungen und aktualisieren Sie dann Sprache und Avatar im Formular."
+
+#: templates/core/profile_settings.html:31
+msgid "Current language"
+msgstr "Aktuelle Sprache"
+
+#: templates/core/profile_settings.html:33
+msgid "Current avatar type"
+msgstr "Aktueller Avatartyp"
+
+#: templates/core/profile_settings.html:42
+msgid "Customize settings"
+msgstr "Einstellungen anpassen"
+
+#: templates/core/profile_settings.html:43
+msgid ""
+"Keep language and avatar preferences up to date so the interface stays "
+"consistent everywhere your User appears."
+msgstr "Halten Sie Sprach- und Avatar-Einstellungen aktuell, damit die Oberfläche überall konsistent bleibt, wo die Person erscheint."
+
+#: templates/core/profile_settings.html:50
+msgid "Preferences"
+msgstr "Einstellungen"
+
+#: templates/core/profile_settings.html:51
+msgid ""
+"Choose the language, avatar type, and system-user behavior used across the "
+"application."
+msgstr "Wählen Sie die Sprache, den Avatartyp und das Verhalten als Systembenutzer für die gesamte Anwendung aus."
+
+#: templates/core/profile_settings.html:73
+msgid "Avatar details"
+msgstr "Avatar-Details"
+
+#: templates/core/profile_settings.html:74
+msgid ""
+"Upload a custom avatar image. If no image is uploaded and the User is "
+"flagged as a system user, the default agent avatar is used automatically."
+msgstr "Laden Sie ein eigenes Avatarbild hoch. Wenn kein Bild hochgeladen wurde und die Person als Systembenutzer markiert ist, wird automatisch der Standard-Agentenavatar verwendet."
+
+#: templates/core/profile_settings.html:79
+msgid "Current preview"
+msgstr "Aktuelle Vorschau"
+
+#: templates/core/profile_settings.html:80
+msgid "This reflects your currently saved avatar configuration."
+msgstr "Dies zeigt Ihre aktuell gespeicherte Avatar-Konfiguration an."
+
+#: templates/core/profile_settings.html:95
+msgid "Save profile settings"
+msgstr "Profileinstellungen speichern"
+
+#: templates/cotton/issue/card.html:34 templates/cotton/issue/card.html:133
 msgid "Issue actions"
 msgstr "Ticketaktionen"
 
-#: templates/cotton/issue/card.html:35 templates/cotton/issue/card.html:131
+#: templates/cotton/issue/card.html:35 templates/cotton/issue/card.html:134
 msgid "Open issue details"
 msgstr "Ticketdetails öffnen"
 
-#: templates/cotton/issue/card.html:36 templates/cotton/issue/card.html:132
+#: templates/cotton/issue/card.html:36 templates/cotton/issue/card.html:135
 msgid "Open in New Window"
 msgstr "In neuem Fenster öffnen"
 
-#: templates/cotton/issue/card.html:37 templates/cotton/issue/card.html:133
+#: templates/cotton/issue/card.html:37 templates/cotton/issue/card.html:136
 msgid "Edit issue"
 msgstr "Ticket bearbeiten"
 
-#: templates/cotton/issue/card.html:48 templates/cotton/issue/card.html:144
+#: templates/cotton/issue/card.html:48 templates/cotton/issue/card.html:147
 msgid "Details and activity"
 msgstr "Details und Aktivität"
 
-#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:149
 msgid "comments"
 msgstr "Kommentare"
 
-#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:149
 msgid "attachments"
 msgstr "Anhänge"
 
-#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:146
+#: templates/cotton/issue/card.html:50 templates/cotton/issue/card.html:149
 msgid "transitions"
 msgstr "Übergänge"
 
-#: templates/cotton/issue/card.html:53 templates/cotton/issue/card.html:149
+#: templates/cotton/issue/card.html:53 templates/cotton/issue/card.html:152
 msgid "Issue metadata"
 msgstr "Ticketmetadaten"
 
-#: templates/cotton/issue/card.html:68 templates/cotton/issue/card.html:164
-#: templates/cotton/issue/card.html:168
+#: templates/cotton/issue/card.html:68 templates/cotton/issue/card.html:167
+#: templates/cotton/issue/card.html:171
 msgid "Unassigned"
 msgstr "Nicht zugewiesen"
 
-#: templates/cotton/issue/card.html:71 templates/cotton/issue/card.html:167
+#: templates/cotton/issue/card.html:71 templates/cotton/issue/card.html:170
 msgid "Assignee"
 msgstr "Zugewiesen an"
 
-#: templates/cotton/issue/card.html:76 templates/cotton/issue/card.html:172
+#: templates/cotton/issue/card.html:76 templates/cotton/issue/card.html:175
 msgid "Issue description"
 msgstr "Ticketbeschreibung"
 
-#: templates/cotton/issue/card.html:85 templates/cotton/issue/card.html:181
+#: templates/cotton/issue/card.html:85 templates/cotton/issue/card.html:184
 msgid "Issue comments"
 msgstr "Ticketkommentare"
 
-#: templates/cotton/issue/card.html:86 templates/cotton/issue/card.html:182
+#: templates/cotton/issue/card.html:86 templates/cotton/issue/card.html:185
 #, python-format
 msgid "Comments (%(comment_count)s)"
 msgstr "Kommentare (%(comment_count)s)"
@@ -1050,10 +1283,6 @@ msgstr ""
 msgid "Waiting for the latest check result."
 msgstr "Warten auf das neueste Prüfergebnis."
 
-#: templates/includes/language_switcher.html:5
-msgid "Language"
-msgstr "Sprache"
-
 #: templates/registration/login.html:8
 msgid "Login using your credentials."
 msgstr "Melden Sie sich mit Ihren Zugangsdaten an."
@@ -1069,3 +1298,6 @@ msgstr "Benutzername"
 #: templates/registration/login.html:29
 msgid "Password"
 msgstr "Passwort"
+
+#~ msgid "Initial attachment"
+#~ msgstr "Erster Anhang"

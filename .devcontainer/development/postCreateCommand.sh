@@ -21,6 +21,7 @@ npx -g -y playwright install-deps
 npx -y @playwright/mcp install-browser chrome-for-testing
 
 echo "customizing shell..."
+pre-commit install
 
 echo "DONE"
 echo ""

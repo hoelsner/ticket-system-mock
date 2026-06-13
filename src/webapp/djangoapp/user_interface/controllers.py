@@ -1,5 +1,7 @@
 import re
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
@@ -27,7 +29,6 @@ from djangoapp.core.models import (
 from djangoapp.user_interface.models import ensure_user_profile
 
 BOARD_STATES = (
-    WorkflowState.BACKLOG,
     WorkflowState.NEW,
     WorkflowState.TRIAGE,
     WorkflowState.ASSIGNED,
@@ -46,6 +47,7 @@ BOARD_PRIORITIES = (
 
 PRIORITY_RANKS = {priority: index for index, priority in enumerate(BOARD_PRIORITIES)}
 BOARD_STATE_VALUES = {state.value for state in BOARD_STATES}
+WORKFLOW_STATE_LABEL_LOOKUP = {str(state.label).casefold(): state.value for state in WorkflowState}
 DRAFT_ATTACHMENT_TOKEN_RE = re.compile(r"\{\{\s*attachment\s*:\s*draft-(\d+)\s*\}\}")
 HISTORY_EVENT_MESSAGES = {
     "title": "Issue title changed",
@@ -103,6 +105,37 @@ def build_dashboard_context(user):
             .order_by("-created_at")
         ),
     }
+
+
+def build_integrations_context():
+    return {
+        "active_nav": "integrations",
+        "n8n_node_package": get_n8n_node_package(),
+    }
+
+
+def get_n8n_node_package():
+    for search_dir in settings.N8N_NODE_PACKAGE_SEARCH_DIRS:
+        candidate_dir = Path(search_dir)
+        if not candidate_dir.exists():
+            continue
+
+        package_files = sorted(
+            candidate_dir.glob("n8n-nodes-ticket-system-mock-*.tgz"),
+            key=lambda package_path: package_path.stat().st_mtime,
+            reverse=True,
+        )
+        if not package_files:
+            continue
+
+        package_path = package_files[0]
+        return {
+            "filename": package_path.name,
+            "path": package_path,
+            "size_bytes": package_path.stat().st_size,
+        }
+
+    return None
 
 
 def get_user_profile(user):
@@ -327,6 +360,7 @@ def is_board_state(value):
 def _get_filter_values(params):
     updated_start = params.get("updated_start")
     updated_end = params.get("updated_end")
+    updated_within_seconds = params.get("updated_within_seconds")
 
     return {
         "search_query": params.get("search", "").strip(),
@@ -334,23 +368,36 @@ def _get_filter_values(params):
         "selected_priority": params.get("priority", "").strip(),
         "selected_collection": params.get("collection", "").strip(),
         "selected_category": params.get("category", "").strip(),
+        "selected_group": params.get("group", "").strip(),
+        "selected_is_escalated": params.get("is_escalated", "").strip(),
+        "selected_workflow_state": params.get("workflow_state", "").strip(),
+        "selected_workflow_state_label": params.get("workflow_state_label", "").strip(),
         "selected_updated_start": _serialize_filter_datetime(updated_start),
         "selected_updated_end": _serialize_filter_datetime(updated_end),
+        "selected_updated_within_seconds": str(updated_within_seconds).strip()
+        if updated_within_seconds is not None
+        else "",
         "updated_start": updated_start,
         "updated_end": updated_end,
+        "updated_within_seconds": updated_within_seconds,
     }
 
 
 def _get_filtered_issues(filters):
-    queryset = _get_issue_queryset().filter(
-        archived_at__isnull=True,
-        workflow_state__in=BOARD_STATES,
+    queryset = _get_issue_queryset().filter(archived_at__isnull=True)
+    queryset = _apply_workflow_state_filters(
+        queryset,
+        filters["selected_workflow_state"],
+        filters["selected_workflow_state_label"],
     )
     queryset = _apply_optional_filter(queryset, "user_id", filters["selected_assignee"])
     queryset = _apply_optional_filter(queryset, "priority", filters["selected_priority"])
     queryset = _apply_optional_filter(queryset, "collection_id", filters["selected_collection"])
     queryset = _apply_optional_filter(queryset, "category_id", filters["selected_category"])
+    queryset = _apply_optional_filter(queryset, "group_id", filters["selected_group"])
+    queryset = _apply_boolean_filter(queryset, "is_escalated", filters["selected_is_escalated"])
     queryset = _apply_datetime_range(queryset, "updated_at", filters["updated_start"], filters["updated_end"])
+    queryset = _apply_updated_within_seconds(queryset, filters["updated_within_seconds"])
     queryset = _apply_search(queryset, filters["search_query"])
     return _sort_issues(list(queryset))
 
@@ -361,12 +408,76 @@ def _apply_optional_filter(queryset, key, value):
     return queryset
 
 
+def _apply_boolean_filter(queryset, key, value):
+    normalized_value = str(value).strip().casefold()
+    if not normalized_value:
+        return queryset
+
+    boolean_values = {
+        "1": True,
+        "true": True,
+        "yes": True,
+        "0": False,
+        "false": False,
+        "no": False,
+    }
+    if normalized_value not in boolean_values:
+        return queryset.none()
+
+    return queryset.filter(**{key: boolean_values[normalized_value]})
+
+
+def _apply_workflow_state_filters(queryset, workflow_state_value, workflow_state_label):
+    normalized_state = workflow_state_value.strip()
+    normalized_label = workflow_state_label.strip().casefold()
+
+    resolved_states = None
+    if normalized_state:
+        if normalized_state not in WorkflowState.values:
+            return queryset.none()
+        resolved_states = {normalized_state}
+
+    if normalized_label:
+        resolved_label_state = WORKFLOW_STATE_LABEL_LOOKUP.get(normalized_label)
+        if resolved_label_state is None:
+            return queryset.none()
+        resolved_states = (
+            {resolved_label_state} if resolved_states is None else resolved_states & {resolved_label_state}
+        )
+
+    if resolved_states is not None:
+        if not resolved_states:
+            return queryset.none()
+        return queryset.filter(workflow_state__in=resolved_states)
+
+    return queryset.filter(workflow_state__in=BOARD_STATES)
+
+
 def _apply_datetime_range(queryset, key, start_value, end_value):
     if start_value is not None:
         queryset = queryset.filter(**{f"{key}__gte": start_value})
     if end_value is not None:
         queryset = queryset.filter(**{f"{key}__lte": end_value})
     return queryset
+
+
+def _apply_updated_within_seconds(queryset, value):
+    if value is None:
+        return queryset
+
+    normalized_value = str(value).strip()
+    if not normalized_value:
+        return queryset
+
+    try:
+        seconds = int(normalized_value)
+    except TypeError, ValueError:
+        return queryset.none()
+
+    if seconds < 0:
+        return queryset.none()
+
+    return queryset.filter(updated_at__gte=timezone.now() - timezone.timedelta(seconds=seconds))
 
 
 def _serialize_filter_datetime(value):
@@ -440,7 +551,7 @@ def _sort_issues(issues):
 
 
 def _get_issue_payload(cleaned_data):
-    workflow_state = cleaned_data.get("workflow_state") or WorkflowState.BACKLOG
+    workflow_state = cleaned_data.get("workflow_state") or WorkflowState.NEW
     return {
         "title": cleaned_data["title"],
         "description_markdown": cleaned_data["description_markdown"],

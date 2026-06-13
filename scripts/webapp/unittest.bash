@@ -56,4 +56,4 @@ if [[ ${#test_labels[@]} -eq 0 ]]; then
     exit 1
 fi
 
-run_silent env "$python_bin" manage.py test --noinput "${test_labels[@]}"
+run_silent env "$python_bin" manage.py test --keepdb --noinput "${test_labels[@]}"

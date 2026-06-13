@@ -79,6 +79,24 @@ class UserSummarySchema(Schema):
     )
 
 
+class GroupListResponseSchema(Schema):
+    data: list[GroupSchema] = Field(description="Groups that can be used to dispatch or assign issues.")
+
+
+class CollectionListResponseSchema(Schema):
+    data: list[CollectionSchema] = Field(description="Active collections that may own new issue numbers.")
+
+
+class IssueCategoryListResponseSchema(Schema):
+    data: list[IssueCategorySchema] = Field(description="Active issue categories that may be assigned to issues.")
+
+
+class UserListResponseSchema(Schema):
+    data: list[UserSummarySchema] = Field(
+        description="Users that may be assigned to issues, optionally filtered to one group."
+    )
+
+
 class UserProfileSchema(Schema):
     user: UserSummarySchema = Field(description="User who owns the profile.")
     language_preference: str = Field(description="Stored language preference code for the profile.")
@@ -175,6 +193,10 @@ class IssueDetailSchema(IssueSummarySchema):
     transitions: list[IssueTransitionSchema] = Field(description="Workflow state transition history for the issue.")
 
 
+class IssueListResponseSchema(Schema):
+    data: list[IssueSummarySchema] = Field(description="Issues that match the supplied board-style filters.")
+
+
 class BoardColumnSchema(Schema):
     value: str = Field(description="Stored workflow state code represented by this board column.")
     label: str = Field(description="Human-readable label for the workflow state column.")
@@ -189,6 +211,9 @@ class BoardResponseSchema(Schema):
     selected_priority: str = Field(description="Current priority filter value.")
     selected_collection: str = Field(description="Current collection filter value.")
     selected_category: str = Field(description="Current issue category filter value.")
+    selected_group: str = Field(description="Current group filter value.")
+    selected_is_escalated: str = Field(description="Current escalation filter value.")
+    selected_updated_within_seconds: str = Field(description="Current relative update window filter value.")
     assignee_options: list[UserSummarySchema] = Field(description="Available assignee filter options.")
     priority_options: list[ChoiceSchema] = Field(description="Available priority filter options.")
     collection_options: list[CollectionSchema] = Field(description="Available collection filter options.")
@@ -351,7 +376,7 @@ ISSUE_CREATE_REQUEST_BODY = _request_body(
 
 
 ISSUE_UPDATE_REQUEST_BODY = _request_body(
-    "Multipart payload used to update an existing issue, optionally including one attachment update.",
+    "Multipart payload used to update an existing issue with partial PUT semantics, optionally including one attachment update.",
     "multipart/form-data",
     {
         "title": {"type": "string", "description": "Short summary of the issue."},
@@ -370,7 +395,6 @@ ISSUE_UPDATE_REQUEST_BODY = _request_body(
             "type": "string",
             "description": "Workflow state code to apply to the issue.",
             "enum": [
-                "BACKLOG",
                 "NEW",
                 "TRIAGE",
                 "ASSIGNED",
@@ -379,7 +403,6 @@ ISSUE_UPDATE_REQUEST_BODY = _request_body(
                 "RESOLVED",
                 "CLOSED",
                 "REJECTED",
-                "DUPLICATE",
             ],
         },
         "transition_reason": {
@@ -479,6 +502,28 @@ ATTACHMENT_UPDATE_REQUEST_BODY = _request_body(
 )
 
 
+def _issue_update_payload(payload, issue):
+    merged_payload = {
+        "title": issue.title,
+        "description_markdown": issue.description_markdown,
+        "collection": issue.collection_id,
+        "category": issue.category_id,
+        "priority": issue.priority,
+        "group": issue.group_id or "",
+        "user": issue.user_id or "",
+        "is_escalated": issue.is_escalated,
+        "workflow_state": issue.workflow_state,
+        "transition_reason": "",
+    }
+    merged_payload.update(payload)
+
+    if "user" in payload and "group" not in payload:
+        if payload["user"] not in (None, ""):
+            merged_payload["group"] = ""
+
+    return merged_payload
+
+
 MOVE_REQUEST_BODY = _request_body(
     "Payload used to move an issue to a different workflow state and position.",
     "application/json",
@@ -487,7 +532,6 @@ MOVE_REQUEST_BODY = _request_body(
             "type": "string",
             "description": "Destination workflow state code for the move operation.",
             "enum": [
-                "BACKLOG",
                 "NEW",
                 "TRIAGE",
                 "ASSIGNED",
@@ -496,7 +540,6 @@ MOVE_REQUEST_BODY = _request_body(
                 "RESOLVED",
                 "CLOSED",
                 "REJECTED",
-                "DUPLICATE",
             ],
         },
         "position_index": {
@@ -789,6 +832,9 @@ def _serialize_board_context(context):
         "selected_priority": context["selected_priority"],
         "selected_collection": context["selected_collection"],
         "selected_category": context["selected_category"],
+        "selected_group": context["selected_group"],
+        "selected_is_escalated": context["selected_is_escalated"],
+        "selected_updated_within_seconds": context["selected_updated_within_seconds"],
         "assignee_options": [_serialize_user(user) for user in context["assignee_options"]],
         "priority_options": [_serialize_choice(choice) for choice in context["priority_options"]],
         "collection_options": [_serialize_collection(collection) for collection in context["collection_options"]],
@@ -935,20 +981,20 @@ def _parse_urlencoded_form_payload(request, _content_type):
 
 @api.get(
     "/groups",
-    response=list[GroupSchema],
+    response=GroupListResponseSchema,
     summary="List groups",
-    description="Return all groups that can be used to dispatch or assign issues.",
+    description="Return all groups under the root data key that can be used to dispatch or assign issues.",
     tags=["Reference Data"],
 )
 def groups(request):
-    return [_serialize_group(group) for group in Group.objects.order_by("name")]
+    return {"data": [_serialize_group(group) for group in Group.objects.order_by("name")]}
 
 
 @api.get(
     "/users",
-    response=list[UserSummarySchema],
+    response=UserListResponseSchema,
     summary="List users",
-    description="Return users that may be assigned to issues, optionally filtered to one group.",
+    description="Return users under the root data key that may be assigned to issues, optionally filtered to one group.",
     tags=["Reference Data"],
 )
 def users(
@@ -959,7 +1005,7 @@ def users(
     queryset = user_model.objects.order_by("username")
     if group_id is not None:
         queryset = queryset.filter(groups__id=group_id).distinct()
-    return [_serialize_user(user) for user in queryset]
+    return {"data": [_serialize_user(user) for user in queryset]}
 
 
 @api.get(
@@ -976,15 +1022,18 @@ def user_profile(request, username: str):
 
 @api.get(
     "/collections",
-    response=list[CollectionSchema],
+    response=CollectionListResponseSchema,
     summary="List active collections",
-    description="Return active collections that may own new issue numbers.",
+    description="Return active collections under the root data key that may own new issue numbers.",
     tags=["Reference Data"],
 )
 def collections(request):
-    return [
-        _serialize_collection(collection) for collection in Collection.objects.filter(is_active=True).order_by("name")
-    ]
+    return {
+        "data": [
+            _serialize_collection(collection)
+            for collection in Collection.objects.filter(is_active=True).order_by("name")
+        ]
+    }
 
 
 @api.post(
@@ -1032,13 +1081,17 @@ def update_collection(request, collection_id: int):
 
 @api.get(
     "/categories",
-    response=list[IssueCategorySchema],
+    response=IssueCategoryListResponseSchema,
     summary="List active issue categories",
-    description="Return active issue categories that may be assigned to issues.",
+    description="Return active issue categories under the root data key that may be assigned to issues.",
     tags=["Reference Data"],
 )
 def categories(request):
-    return [_serialize_category(category) for category in IssueCategory.objects.filter(is_active=True).order_by("name")]
+    return {
+        "data": [
+            _serialize_category(category) for category in IssueCategory.objects.filter(is_active=True).order_by("name")
+        ]
+    }
 
 
 @api.post(
@@ -1098,6 +1151,17 @@ def board(
     priority: str = Query("", description="Optional priority code used to limit the board projection."),
     collection: str = Query("", description="Optional collection identifier used to limit the board projection."),
     category: str = Query("", description="Optional issue category identifier used to limit the board projection."),
+    group: str = Query("", description="Optional group identifier used to limit the board projection."),
+    is_escalated: str = Query("", description="Optional escalation flag used to limit the board projection."),
+    workflow_state: str = Query("", description="Optional workflow state code used to limit the board projection."),
+    workflow_state_label: str = Query(
+        "",
+        description="Optional workflow state label used to limit the board projection, for example New or In Progress.",
+    ),
+    updated_within_seconds: str = Query(
+        "",
+        description="Optional relative time window used to limit board issues to entries updated within the last X seconds.",
+    ),
 ):
     context = controllers.build_board_context({
         "search": search,
@@ -1105,6 +1169,11 @@ def board(
         "priority": priority,
         "collection": collection,
         "category": category,
+        "group": group,
+        "is_escalated": is_escalated,
+        "workflow_state": workflow_state,
+        "workflow_state_label": workflow_state_label,
+        "updated_within_seconds": updated_within_seconds,
     })
     return _serialize_board_context(context)
 
@@ -1122,9 +1191,9 @@ def dashboard(request):
 
 @api.get(
     "/issues",
-    response=list[IssueSummarySchema],
+    response=IssueListResponseSchema,
     summary="List issues",
-    description="Return issues that match the supplied board-style filters as a flat collection.",
+    description="Return issues under the root data key that match the supplied board-style filters.",
     tags=["Issues"],
 )
 def issue_list(
@@ -1136,6 +1205,17 @@ def issue_list(
     priority: str = Query("", description="Optional priority code used to limit the returned issues."),
     collection: str = Query("", description="Optional collection identifier used to limit the returned issues."),
     category: str = Query("", description="Optional issue category identifier used to limit the returned issues."),
+    group: str = Query("", description="Optional group identifier used to limit the returned issues."),
+    is_escalated: str = Query("", description="Optional escalation flag used to limit the returned issues."),
+    workflow_state: str = Query("", description="Optional workflow state code used to limit the returned issues."),
+    workflow_state_label: str = Query(
+        "",
+        description="Optional workflow state label used to limit the returned issues, for example New or In Progress.",
+    ),
+    updated_within_seconds: str = Query(
+        "",
+        description="Optional relative time window used to limit returned issues to entries updated within the last X seconds.",
+    ),
 ):
     board_context = controllers.build_board_context({
         "search": search,
@@ -1143,11 +1223,16 @@ def issue_list(
         "priority": priority,
         "collection": collection,
         "category": category,
+        "group": group,
+        "is_escalated": is_escalated,
+        "workflow_state": workflow_state,
+        "workflow_state_label": workflow_state_label,
+        "updated_within_seconds": updated_within_seconds,
     })
     issues = []
     for column in board_context["board_columns"]:
         issues.extend(column["issues"])
-    return [_serialize_issue(issue) for issue in issues]
+    return {"data": [_serialize_issue(issue) for issue in issues]}
 
 
 @api.get(
@@ -1196,7 +1281,7 @@ def update_issue(request, issue_id: int):
     if error is not None:
         return error
 
-    form = IssueUpdateForm(payload, files, instance=issue)
+    form = IssueUpdateForm(_issue_update_payload(payload, issue), files, instance=issue)
     if not form.is_valid():
         return _form_error_response(form)
 

@@ -20,7 +20,7 @@
     <section class="profile-page__grid profile-page__grid--single-column">
       <article class="app-surface profile-page__card profile-page__card--summary">
         <div class="profile-page__identity">
-          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" only %}
+          {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar" title_text="" only %}
           <div>
             <h2>{{ profile.display_name }}</h2>
             <p class="profile-page__username">@{{ profile.user.username }}</p>
@@ -74,7 +74,7 @@
               <p>{% translate "Upload a custom avatar image. If no image is uploaded and the User is flagged as a system user, the default agent avatar is used automatically." %}</p>
             </div>
             <div class="profile-page__avatar-preview-row">
-              {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar-preview" only %}
+              {% include "includes/user_avatar.html" with user=profile.user class_name="issue-card__avatar profile-page__avatar-preview" title_text="" only %}
               <div>
                 <p class="profile-page__preview-label">{% translate "Current preview" %}</p>
                 <p class="profile-page__preview-note">{% translate "This reflects your currently saved avatar configuration." %}</p>

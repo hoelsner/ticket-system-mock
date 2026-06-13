@@ -98,6 +98,13 @@ comments.
 An issue title should stay short plain text, while the issue description should
 support large markdown content.
 
+### Keep description templates as scoped reference data
+
+Issue description templates should be modeled as admin-managed reference data.
+Each template may be scoped to one `Collection`, one `IssueCategory`, or both.
+The template helps draft the description in the create form but does not become
+part of the persisted `Issue` data model.
+
 ### Persist comment mentions as extracted relations
 
 Comments may include `@username` mentions. The application should persist those
@@ -137,6 +144,26 @@ Suggested fields:
 - `closed_at`
 - `archived_at`
 - `archived_by_user_id`
+
+### Issue Description Template
+
+Represents reusable markdown content that can prefill the create-Issue form.
+
+Suggested fields:
+
+- `id`
+- `name`
+- `description_markdown`
+- `collection_id` (optional)
+- `category_id` (optional)
+- `is_active`
+
+Behavior notes:
+
+- at least one scope is required
+- the create form should only offer templates whose populated scope fields
+  match the current `Collection`, `IssueCategory`, or both
+- the final `Issue` stores only the edited description markdown
 
 ### Group
 
@@ -266,7 +293,9 @@ Primary lifecycle states:
 Exceptional states:
 
 - `REJECTED`
-- `DUPLICATE`
+
+`REJECTED` is the only exceptional workflow state. `Escalation` remains a
+separate flag on the `Issue`.
 
 ### IssuePriority
 
@@ -414,8 +443,19 @@ erDiagram
         string reason
     }
 
+    ISSUE_DESCRIPTION_TEMPLATE {
+      uuid id
+      string name
+      text description_markdown
+      uuid collection_id
+      uuid category_id
+      boolean is_active
+    }
+
     COLLECTION ||--o{ ISSUE : scopes
+    COLLECTION o|--o{ ISSUE_DESCRIPTION_TEMPLATE : scopes
     ISSUE_CATEGORY ||--o{ ISSUE : classifies
+    ISSUE_CATEGORY o|--o{ ISSUE_DESCRIPTION_TEMPLATE : scopes
     GROUP o|--o{ ISSUE : dispatches
     USER o|--o{ ISSUE : takes
     USER ||--|| USER_PROFILE : customizes
@@ -431,6 +471,8 @@ erDiagram
 ## Resolved Decisions
 
 - `IssueCategory` is managed through admin-maintained reference data.
+- `Issue Description Template` is managed through admin-maintained reference
+  data.
 - Issue identifiers are scoped by `Collection` and formatted as `PREFIX-000`.
 - Escalation is an Issue flag, not a workflow state.
 - Issue comments are separated into customer-visible and internal comments.
@@ -470,6 +512,8 @@ erDiagram
   associations instead of a separate assignment entity.
 - Store issue descriptions as markdown-capable text and keep issue titles short
   and plain.
+- Keep description templates outside the `Issue` entity and use them only to
+  prefill the create form when a matching active template is available.
 - Archive issues through soft-delete metadata instead of hard deletion.
 - Keep `product_display_name` in environment settings rather than a database
   table.

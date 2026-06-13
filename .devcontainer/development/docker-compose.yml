@@ -53,6 +53,45 @@ services:
     ports:
       - "8000:8000"
 
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.26.1
+    profiles:
+      - n8n
+    environment:
+      N8N_HOST: "n8n"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: "http"
+      N8N_EDITOR_BASE_URL: "http://localhost:5678/"
+      N8N_RUNNERS_MODE: "external"
+      N8N_RUNNERS_AUTH_TOKEN: "dev-n8n-runner-token"
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: "0.0.0.0"
+      N8N_NATIVE_PYTHON_RUNNER: "true"
+      WEBHOOK_URL: "http://localhost:5678/"
+      GENERIC_TIMEZONE: "UTC"
+      TZ: "UTC"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ${LOCAL_WORKSPACE_FOLDER}/.devcontainer/development/n8n/custom/node_modules/n8n-nodes-ticket-system-mock:/home/node/.n8n/custom/node_modules/n8n-nodes-ticket-system-mock:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.devcontainer/development/n8n/local-files:/files
+    networks:
+      - dev_internal
+    ports:
+      - "5678:5678"
+
+  n8n-runners:
+    image: n8nio/runners:2.26.1
+    profiles:
+      - n8n
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: "dev-n8n-runner-token"
+      N8N_RUNNERS_TASK_BROKER_URI: "http://n8n:5679"
+      GENERIC_TIMEZONE: "UTC"
+      TZ: "UTC"
+    depends_on:
+      - n8n
+    networks:
+      - dev_internal
+
   database:
     image: postgres:18
     environment:
@@ -85,3 +124,4 @@ networks:
 volumes:
   postgres-data:
   redis-data:
+  n8n-data:

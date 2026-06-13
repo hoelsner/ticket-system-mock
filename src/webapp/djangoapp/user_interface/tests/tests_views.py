@@ -21,10 +21,12 @@ from djangoapp.core.models import (
     IssueAttachment,
     IssueCategory,
     IssueComment,
+    IssueDescriptionTemplate,
     IssueHistoryEvent,
     IssuePriority,
     IssueStateTransition,
     WorkflowState,
+    WorkflowStateAutoAssignmentRule,
 )
 from djangoapp.user_interface.forms import IssueCreateForm, IssueDescriptionForm
 from djangoapp.user_interface.views import ISSUE_CREATE_DRAFT_TOKEN_SESSION_KEY
@@ -161,23 +163,24 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "default_app_logo.png")
         self.assertContains(response, reverse("dashboard"))
         self.assertContains(response, reverse("issue-create"))
+        self.assertContains(response, reverse("integrations"))
         self.assertContains(response, "kanban-column__create")
         self.assertContains(response, f"{reverse('issue-create')}?workflow_state={WorkflowState.NEW}")
         self.assertContains(response, "kanban-board-shell")
         self.assertContains(response, "data-kanban-board-shell")
         self.assertContains(response, "data-kanban-card-wrapper")
-        self.assertContains(response, "Backlog")
+        self.assertContains(response, "New")
         self.assertNotContains(response, "Personal Dashboard")
         self.assertNotContains(response, "Create New Issue")
         self.assertNotContains(response, "kanban-priority-pane")
         self.assertContains(response, "side-navigation__panel")
         self.assertContains(response, "side-navigation__list")
-        self.assertContains(response, "side-navigation__item", count=8)
+        self.assertContains(response, "side-navigation__item", count=9)
         self.assertContains(response, "side-navigation__action")
         self.assertContains(response, 'action="/i18n/setlang/"', html=False)
         self.assertContains(response, "Language")
         self.assertContains(response, "data-side-navigation")
-        self.assertContains(response, "data-side-navigation-close", count=7)
+        self.assertContains(response, "data-side-navigation-close", count=8)
         self.assertContains(response, reverse("healthcheck-status"))
         self.assertContains(response, "data-app-content")
         self.assertContains(response, "app-shell.js")
@@ -236,6 +239,79 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["LANGUAGE_CODE"], "de")
         self.assertContains(response, "Sprache")
+        self.assertContains(response, ">Übersicht<", html=False)
+        self.assertContains(response, ">Kanban-Board<", html=False)
+        self.assertContains(response, "Angemeldet als <strong>Demo User</strong>", html=True)
+        self.assertContains(response, ">Systemstatus<", html=False)
+
+    def test_set_language_updates_authenticated_user_profile_preference(self):
+        Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.CRITICAL,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("set_language"),
+            {"language": "de", "next": reverse("home")},
+            follow=True,
+        )
+
+        self.user.profile.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.user.profile.language_preference, "de")
+        self.assertEqual(response.context["LANGUAGE_CODE"], "de")
+        self.assertContains(response, "Sprache")
+        self.assertContains(response, ">Übersicht<", html=False)
+        self.assertContains(response, ">Kanban-Board<", html=False)
+
+    @override_settings(N8N_NODE_PACKAGE_SEARCH_DIRS=[])
+    def test_integrations_page_shows_unavailable_message_when_package_missing(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("integrations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Integrations")
+        self.assertContains(response, "The n8n node package is not available in this environment.")
+        self.assertNotContains(response, reverse("integrations-n8n-download"))
+
+    def test_integrations_page_lists_bundled_package_and_downloads_it(self):
+        self.client.force_login(self.user)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            package_path = Path(temp_dir) / "n8n-nodes-ticket-system-mock-9.9.9.tgz"
+            package_path.write_bytes(b"fake-package-contents")
+
+            with override_settings(N8N_NODE_PACKAGE_SEARCH_DIRS=[Path(temp_dir)]):
+                page_response = self.client.get(reverse("integrations"))
+                download_response = self.client.get(reverse("integrations-n8n-download"))
+
+        self.assertEqual(page_response.status_code, 200)
+        self.assertContains(page_response, "n8n-nodes-ticket-system-mock-9.9.9.tgz")
+        self.assertContains(page_response, reverse("integrations-n8n-download"))
+        self.assertContains(page_response, "Create the Ticket System Mock API credential in n8n")
+        self.assertContains(
+            page_response,
+            "Extract the downloaded .tgz file into that directory so package.json and dist/ are present there.",
+        )
+        self.assertContains(
+            page_response,
+            "Start with the TSM - Reference Data node and run the Health operation before building larger workflows.",
+        )
+        self.assertEqual(download_response.status_code, 200)
+        self.assertEqual(download_response["Content-Type"], "application/gzip")
+        self.assertIn(
+            'attachment; filename="n8n-nodes-ticket-system-mock-9.9.9.tgz"', download_response["Content-Disposition"]
+        )
+        self.assertEqual(b"".join(download_response.streaming_content), b"fake-package-contents")
 
     def test_profile_settings_link_is_available_from_the_shell(self):
         self.client.force_login(self.user)
@@ -286,6 +362,29 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, 'class="profile-page__grid profile-page__grid--single-column"', html=False)
         self.assertContains(response, 'class="user-avatar issue-card__avatar profile-page__avatar', html=False)
         self.assertContains(response, "/static/img/default_avatar_agent.png")
+
+    def test_profile_settings_render_in_german_when_profile_prefers_german(self):
+        profile = self.user.profile
+        profile.language_preference = "de"
+        profile.save(update_fields=["language_preference", "updated_at"])
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("profile-settings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["LANGUAGE_CODE"], "de")
+        self.assertContains(response, "Profileinstellungen")
+        self.assertContains(response, "Persönliche Einstellungen")
+        self.assertContains(response, "Öffentliches Profil anzeigen")
+        self.assertContains(response, "Aktuelle Sprache")
+        self.assertContains(response, "Spracheinstellung")
+        self.assertContains(response, "Avatartyp")
+        self.assertContains(response, "Systembenutzer")
+        self.assertContains(response, "Avatarbild")
+        self.assertContains(response, "Aktuelles Avatarbild entfernen")
+        self.assertContains(response, "Profileinstellungen speichern")
+        self.assertNotContains(response, "Configure your personal language and avatar preferences.")
+        self.assertNotContains(response, "Language preference")
 
     def test_profile_settings_existing_avatar_respects_selected_avatar_type(self):
         self.client.force_login(self.user)
@@ -518,7 +617,7 @@ class UserInterfaceTests(TestCase):
 
         save_response = self.client.post(
             reverse("board-column-state"),
-            data=json.dumps({"states": {"NEW": False, "BACKLOG": True}}),
+            data=json.dumps({"states": {"NEW": False, "TRIAGE": True}}),
             content_type="application/json",
         )
         response = self.client.get(reverse("home"))
@@ -526,7 +625,7 @@ class UserInterfaceTests(TestCase):
 
         self.assertEqual(save_response.status_code, 200)
         self.assertRegex(rendered, r'<details class="kanban-column"(?![^>]* open)[^>]*data-workflow-state="NEW"')
-        self.assertRegex(rendered, r'<details class="kanban-column"[^>]* open[^>]*data-workflow-state="BACKLOG"')
+        self.assertRegex(rendered, r'<details class="kanban-column"[^>]* open[^>]*data-workflow-state="TRIAGE"')
 
     def test_empty_board_columns_are_collapsed_by_default(self):
         Issue.objects.create(
@@ -544,7 +643,7 @@ class UserInterfaceTests(TestCase):
         response = self.client.get(reverse("home"))
         rendered = response.content.decode("utf-8")
 
-        self.assertRegex(rendered, r'<details class="kanban-column"(?![^>]* open)[^>]*data-workflow-state="BACKLOG"')
+        self.assertRegex(rendered, r'<details class="kanban-column"(?![^>]* open)[^>]*data-workflow-state="TRIAGE"')
         self.assertRegex(rendered, r'<details class="kanban-column"[^>]* open[^>]*data-workflow-state="NEW"')
 
     def test_home_filters_board_by_search(self):
@@ -785,6 +884,24 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Review the highlighted fields and try again.", status_code=400)
         self.assertContains(response, "forced failure", status_code=400)
 
+    def test_issue_description_update_view_renders_without_template_debug_noise(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Initial text.",
+            collection=self.collection,
+            category=self.category,
+        )
+        self.client.force_login(self.user)
+
+        with patch.object(IssueDescriptionForm, "clean", side_effect=ValidationError("forced failure")):
+            with self.assertNoLogs("django.template", level="DEBUG"):
+                response = self.client.post(
+                    reverse("issue-description-update", args=[issue.pk]),
+                    {"description_markdown": "Updated text"},
+                )
+
+        self.assertEqual(response.status_code, 400)
+
     def test_markdown_preview_returns_rendered_html(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -864,6 +981,26 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, "Review the highlighted fields and try again.", status_code=400)
         self.assertContains(response, "This field is required.", status_code=400)
 
+    def test_issue_comment_create_view_renders_without_template_debug_noise(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Initial text.",
+            collection=self.collection,
+            category=self.category,
+        )
+        self.client.force_login(self.user)
+
+        with self.assertNoLogs("django.template", level="DEBUG"):
+            response = self.client.post(
+                reverse("issue-comment-create", args=[issue.pk]),
+                {
+                    "body": "",
+                    "visibility": "INTERNAL",
+                },
+            )
+
+        self.assertEqual(response.status_code, 400)
+
     def test_issue_attachment_media_url_is_served_in_debug(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -913,10 +1050,38 @@ class UserInterfaceTests(TestCase):
         issue = Issue.objects.get(title="Database latency spike")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(issue.workflow_state, WorkflowState.BACKLOG)
+        self.assertEqual(issue.workflow_state, WorkflowState.NEW)
         self.assertTrue(issue.is_escalated)
         self.assertEqual(issue.attachments.count(), 1)
         self.assertContains(response, f"Issue {issue.issue_number} was created.")
+
+    def test_issue_create_view_persists_edited_description_instead_of_template_body(self):
+        template = IssueDescriptionTemplate.objects.create(
+            name="Database incident",
+            description_markdown="## Template body",
+            category=self.category,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-create"),
+            {
+                "title": "Database latency spike",
+                "description_markdown": "Observed during backup window. Added extra detail.",
+                "description_template": str(template.pk),
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+            },
+            follow=True,
+        )
+
+        issue = Issue.objects.get(title="Database latency spike")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.description_markdown, "Observed during backup window. Added extra detail.")
 
     def test_issue_create_view_allows_multiple_attachments(self):
         self.client.force_login(self.user)
@@ -953,19 +1118,19 @@ class UserInterfaceTests(TestCase):
 
     def test_home_orders_issues_by_priority_before_board_position(self):
         low_issue = Issue.objects.create(
-            title="Low priority backlog item",
+            title="Low priority new item",
             description_markdown="Low priority work.",
             collection=self.collection,
             category=self.category,
-            workflow_state=WorkflowState.BACKLOG,
+            workflow_state=WorkflowState.NEW,
             priority=IssuePriority.LOW,
         )
         critical_issue = Issue.objects.create(
-            title="Critical backlog item",
+            title="Critical new item",
             description_markdown="Critical work.",
             collection=self.collection,
             category=self.category,
-            workflow_state=WorkflowState.BACKLOG,
+            workflow_state=WorkflowState.NEW,
             priority=IssuePriority.CRITICAL,
         )
         self.client.force_login(self.user)
@@ -977,19 +1142,19 @@ class UserInterfaceTests(TestCase):
 
     def test_issue_move_view_updates_state_and_position(self):
         first_issue = Issue.objects.create(
-            title="First backlog issue",
-            description_markdown="Backlog work.",
+            title="First new issue",
+            description_markdown="New work.",
             collection=self.collection,
             category=self.category,
-            workflow_state=WorkflowState.BACKLOG,
+            workflow_state=WorkflowState.NEW,
             priority=IssuePriority.HIGH,
         )
         second_issue = Issue.objects.create(
-            title="Second backlog issue",
-            description_markdown="Backlog work.",
+            title="Second new issue",
+            description_markdown="New work.",
             collection=self.collection,
             category=self.category,
-            workflow_state=WorkflowState.BACKLOG,
+            workflow_state=WorkflowState.NEW,
             priority=IssuePriority.HIGH,
         )
         self.client.force_login(self.user)
@@ -997,7 +1162,7 @@ class UserInterfaceTests(TestCase):
         response = self.client.post(
             reverse("issue-move", args=[second_issue.pk]),
             data=json.dumps({
-                "target_state": WorkflowState.BACKLOG,
+                "target_state": WorkflowState.NEW,
                 "position_index": 0,
             }),
             content_type="application/json",
@@ -1007,7 +1172,7 @@ class UserInterfaceTests(TestCase):
         second_issue.refresh_from_db()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(second_issue.workflow_state, WorkflowState.BACKLOG)
+        self.assertEqual(second_issue.workflow_state, WorkflowState.NEW)
         self.assertEqual(second_issue.board_position, 1)
         self.assertEqual(first_issue.board_position, 2)
 
@@ -1043,6 +1208,11 @@ class UserInterfaceTests(TestCase):
             group=self.support_group,
             user=self.user,
         )
+        IssueDescriptionTemplate.objects.create(
+            name="Network outage",
+            description_markdown="## Symptoms",
+            category=self.category,
+        )
         self.client.force_login(self.user)
 
         create_response = self.client.get(reverse("issue-create"))
@@ -1053,6 +1223,9 @@ class UserInterfaceTests(TestCase):
         self.assertContains(create_response, "app-main--paged")
         self.assertContains(create_response, "Create New Issue")
         self.assertContains(create_response, "Create issue")
+        self.assertContains(create_response, 'name="description_template"', html=False)
+        self.assertContains(create_response, "issue-description-template.js")
+        self.assertContains(create_response, "issue-description-template-data")
         self.assertContains(create_response, 'name="workflow_state"', html=False)
         self.assertNotContains(create_response, '<select name="workflow_state"', html=False)
         self.assertContains(create_response, "app-form-layout--issue-compose")
@@ -1076,6 +1249,8 @@ class UserInterfaceTests(TestCase):
         )
         self.assertContains(update_response, "Update Existing Issue")
         self.assertContains(update_response, issue.title)
+        self.assertNotContains(update_response, 'name="description_template"', html=False)
+        self.assertNotContains(update_response, "issue-description-template.js")
         self.assertContains(update_response, "app-form-layout--issue-compose")
         self.assertContains(update_response, reverse("issue-markdown-preview", args=[issue.pk]))
         self.assertContains(update_response, reverse("attachment-suggestions", args=[issue.pk]))
@@ -1101,6 +1276,61 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<select name="workflow_state"', html=False)
         self.assertContains(response, f'value="{WorkflowState.ASSIGNED}"', html=False)
+
+    def test_issue_create_view_renders_active_description_templates_only(self):
+        IssueDescriptionTemplate.objects.create(
+            name="Network outage",
+            description_markdown="## Symptoms",
+            category=self.category,
+        )
+        IssueDescriptionTemplate.objects.create(
+            name="Inactive template",
+            description_markdown="## Ignore",
+            category=self.category,
+            is_active=False,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("issue-create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Network outage")
+        self.assertNotContains(response, "Inactive template")
+
+    def test_issue_create_view_hides_description_template_selector_when_no_templates_exist(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("issue-create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'name="description_template"', html=False)
+        self.assertNotContains(response, "issue-description-template.js")
+        self.assertNotContains(response, "issue-description-template-data")
+
+    def test_issue_create_view_preserves_selected_description_template_on_invalid_submission(self):
+        template = IssueDescriptionTemplate.objects.create(
+            name="Network outage",
+            description_markdown="## Symptoms",
+            category=self.category,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-create"),
+            {
+                "title": "Database latency spike",
+                "description_markdown": "Observed during backup window.",
+                "description_template": str(template.pk),
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "group": "",
+                "user": self.user.pk,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'<option value="{template.pk}" selected>', html=False)
 
     def test_issue_create_view_creates_issue_in_requested_queue(self):
         self.client.force_login(self.user)
@@ -1299,6 +1529,47 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(issue.state_transitions.count(), 1)
         self.assertEqual(issue.state_transitions.get().reason, "Triaged and dispatched.")
         self.assertContains(response, f"Issue {issue.issue_number} was updated.")
+
+    def test_issue_update_view_applies_workflow_state_auto_assignment_rule(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.CRITICAL,
+        )
+        WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=self.support_group,
+            user=self.user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("issue-update", args=[issue.pk]),
+            {
+                "title": "Primary uplink outage",
+                "description_markdown": "Assigned to network operations.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.HIGH,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "Triaged and dispatched.",
+                "group": "",
+                "user": "",
+                "is_escalated": "",
+                "attachment_description": "",
+            },
+            follow=True,
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(issue.group, self.support_group)
+        self.assertEqual(issue.user, self.user)
 
     def test_issue_update_view_without_state_change_keeps_transition_history_empty(self):
         issue = Issue.objects.create(

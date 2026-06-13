@@ -188,6 +188,10 @@ DJANGO_PROVISIONING_FLAG = Path(
 )
 DJANGO_BOOTSTRAP_FIXTURES = env_list("DJANGO_BOOTSTRAP_FIXTURES", ["initial_data"])
 DJANGO_STATIC_FIXTURES = env_list("DJANGO_STATIC_FIXTURES", ["static_data"])
+N8N_NODE_PACKAGE_SEARCH_DIRS = [
+    BASE_DIR.parent / "n8n_node" / "build",
+    BASE_DIR.parent.parent / "build" / "integrations",
+]
 
 
 LOGGING = {

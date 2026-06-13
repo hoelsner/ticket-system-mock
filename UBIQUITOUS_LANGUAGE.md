@@ -8,6 +8,7 @@
 | **Collection** | A logical grouping of issues that shares one identifier prefix and one local sequence. | Queue prefix, ticket namespace |
 | **Issue Description** | The large markdown body that captures the detailed content of an issue. | Long description, issue body |
 | **Workflow State** | The authoritative lifecycle position of an issue. | Status, phase |
+| **Rejected** | The exceptional workflow state used when an issue should not continue through the normal lifecycle. | Duplicate state, invalid ticket |
 | **Priority** | The urgency level used to order or escalate work. | Severity |
 | **Issue Category** | An admin-managed reference value that classifies an issue by type of work or request. | Category, type |
 | **Issue Comment** | A note added to an issue during its lifecycle with explicit visibility. | Message, update |
@@ -109,3 +110,6 @@
   **Group** as the canonical term in the specification.
 - "escalated" was previously treated as a workflow state. Prefer **Escalation**
   as a separate flag on an **Issue**.
+- "duplicate" was previously treated as a workflow state. Prefer
+  **Rejected** for the exceptional terminal state and avoid reintroducing a
+  separate duplicate-specific workflow state.

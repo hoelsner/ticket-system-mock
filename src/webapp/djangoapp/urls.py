@@ -20,13 +20,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from djangoapp.user_interface.views import SessionLoginView, SessionLogoutView
+from djangoapp.user_interface.views import SessionLanguageView, SessionLoginView, SessionLogoutView
 
 admin_title = f"{settings.PRODUCT_DISPLAY_NAME} - Administration"
 admin.site.site_header = admin_title
 admin.site.site_title = admin_title
 
 urlpatterns = [
+    path("i18n/setlang/", SessionLanguageView.as_view(), name="set_language"),
     path("i18n/", include("django.conf.urls.i18n")),
     path("healthcheck/", include("djangoapp.healthchecks.urls")),
     path("", include("djangoapp.user_interface.urls")),

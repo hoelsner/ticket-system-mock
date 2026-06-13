@@ -12,6 +12,7 @@
 - the application name `Ticket System Mock` is within the webapplication
 - the user frontend and the admin frontend must both support a light mode and a dark mode
 - the entire application must support multiple languages using Django's built-in i18n approach
+- all user-facing interface work must be localized by default; do not introduce English-only UI text in templates, forms, model metadata, or Django messages without wiring it through Django's translation system and updating the locale catalogs
 - the login or sign-up page must use a split layout with a functional left panel and a contextual right-side product illustration
 - the authenticated application must use a top-down shell with a persistent top navigation bar, a left burger menu for collapsible detailed navigation, a top-right utility area, and a main content area for page-specific workflows
 - when building or restyling frontend screens, keep the repository layout rules authoritative and use the `frontend-design` skill for deliberate visual direction instead of defaulting to generic layouts

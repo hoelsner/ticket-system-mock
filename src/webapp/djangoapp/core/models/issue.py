@@ -43,7 +43,7 @@ class Issue(models.Model):
     workflow_state = models.CharField(
         max_length=24,
         choices=WorkflowState.choices,
-        default=WorkflowState.BACKLOG,
+        default=WorkflowState.NEW,
     )
     board_position = models.PositiveIntegerField(default=0, editable=False)
     group = models.ForeignKey(

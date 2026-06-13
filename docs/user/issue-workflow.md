@@ -30,8 +30,11 @@ Exceptional states:
 
 ```text
 REJECTED
-DUPLICATE
 ```
+
+`REJECTED` is the only exceptional workflow state. Use it when an `Issue`
+should stop the normal lifecycle instead of progressing through the standard
+Kanban path.
 
 ## Main Workflow
 
@@ -39,6 +42,14 @@ DUPLICATE
 
    A user or integration system creates an `Issue` with a title and markdown
    `Issue Description`.
+
+   In the create form, the user can start from a predefined description
+   template when one is available for the selected `Collection`, `Issue
+   Category`, or both. The inserted template remains editable before the issue
+   is submitted.
+
+   If no matching templates are available, the create form does not show a
+   template selector and the user writes the description directly.
 
    The issue starts in the `NEW` workflow state.
 
@@ -59,11 +70,21 @@ DUPLICATE
 
    The issue is associated with one responsible `Group`.
 
+   If the system is configured with an automatic workflow-state assignment rule
+   for the target `Workflow State`, the `Group` is applied automatically during
+   the transition.
+
    Once the issue has a responsible group, it can move to `ASSIGNED`.
 
 4. `User Takes the Issue`
 
    A `User` from the assigned `Group` takes ownership of the issue.
+
+   A workflow-state assignment rule may also set the `User`
+   automatically when the issue enters a configured `Workflow State`.
+
+   If a rule sets only the `Group`, the issue remains unassigned at the
+   `User` level until a `User` from that `Group` takes ownership.
 
    The issue is now associated with that `User` and moves to `IN_PROGRESS`.
 

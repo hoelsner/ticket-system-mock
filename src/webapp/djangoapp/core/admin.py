@@ -9,12 +9,14 @@ from .models import (
     IssueCategory,
     IssueComment,
     IssueCommentMention,
+    IssueDescriptionTemplate,
     IssueHistoryEvent,
     IssueStateTransition,
     WebhookDeliveryAttempt,
     WebhookEndpoint,
     WebhookEvent,
     WebhookEventType,
+    WorkflowStateAutoAssignmentRule,
 )
 
 
@@ -105,6 +107,106 @@ class IssueCategoryAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("name", "code")
     ordering = ("name",)
+
+
+@admin.register(IssueDescriptionTemplate)
+class IssueDescriptionTemplateAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "collection_name",
+        "collection_id_value",
+        "category_name",
+        "category_id_value",
+        "has_collection_scope",
+        "has_category_scope",
+        "active_status",
+    )
+    list_filter = ("is_active", "collection", "category")
+    search_fields = ("name", "description_markdown")
+    ordering = ("name",)
+
+    @admin.display(ordering="collection__name", description="collection")
+    def collection_name(self, obj):
+        return getattr(obj.collection, "name", "")
+
+    @admin.display(ordering="collection", description="collection id")
+    def collection_id_value(self, obj):
+        return obj.collection_id
+
+    @admin.display(ordering="category__name", description="category")
+    def category_name(self, obj):
+        return getattr(obj.category, "name", "")
+
+    @admin.display(ordering="category", description="category id")
+    def category_id_value(self, obj):
+        return obj.category_id
+
+    @admin.display(boolean=True, description="collection scoped")
+    def has_collection_scope(self, obj):
+        return obj.collection_id is not None
+
+    @admin.display(boolean=True, description="category scoped")
+    def has_category_scope(self, obj):
+        return obj.category_id is not None
+
+    @admin.display(boolean=True, ordering="is_active", description="active")
+    def active_status(self, obj):
+        return obj.is_active
+
+
+@admin.register(WorkflowStateAutoAssignmentRule)
+class WorkflowStateAutoAssignmentRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        "workflow_state_label",
+        "workflow_state_code",
+        "group_name",
+        "group_id_value",
+        "user_name",
+        "user_id_value",
+        "assigns_user",
+        "active_status",
+        "last_updated",
+    )
+    list_filter = ("workflow_state", "is_active", "group")
+    search_fields = ("group__name", "user__username")
+    ordering = ("workflow_state",)
+    readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(ordering="workflow_state", description="workflow state")
+    def workflow_state_label(self, obj):
+        return obj.get_workflow_state_display()
+
+    @admin.display(ordering="workflow_state", description="workflow state code")
+    def workflow_state_code(self, obj):
+        return obj.workflow_state
+
+    @admin.display(ordering="group__name", description="group")
+    def group_name(self, obj):
+        return obj.group.name
+
+    @admin.display(ordering="group", description="group id")
+    def group_id_value(self, obj):
+        return obj.group_id
+
+    @admin.display(ordering="user__username", description="user")
+    def user_name(self, obj):
+        return getattr(obj.user, "username", "")
+
+    @admin.display(ordering="user", description="user id")
+    def user_id_value(self, obj):
+        return obj.user_id
+
+    @admin.display(boolean=True, description="assigns user")
+    def assigns_user(self, obj):
+        return obj.user_id is not None
+
+    @admin.display(boolean=True, ordering="is_active", description="active")
+    def active_status(self, obj):
+        return obj.is_active
+
+    @admin.display(ordering="updated_at", description="updated at")
+    def last_updated(self, obj):
+        return obj.updated_at
 
 
 @admin.register(Issue)

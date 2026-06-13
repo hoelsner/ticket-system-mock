@@ -113,7 +113,7 @@ if [[ ${#test_labels[@]} -eq 0 ]]; then
     exit 1
 fi
 
-run_silent env "$python_bin" -m coverage run --rcfile "$coverage_config" manage.py test --noinput "${test_labels[@]}"
+run_silent env "$python_bin" -m coverage run --rcfile "$coverage_config" manage.py test --keepdb --noinput "${test_labels[@]}"
 
 printf "combining coverage data... "
 run_silent combine_coverage_data

@@ -79,6 +79,9 @@
                     <a href="{% url 'healthcheck-status' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'healthcheck' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="healthcheck" class_name="" %}<span>{% translate "Healthcheck" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
+                    <a href="{% url 'integrations' %}" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close{% if active_nav == 'integrations' %} aria-current="page"{% endif %}>{% include "includes/icon.html" with name="api" class_name="" %}<span>{% translate "Integrations" %}</span></a>
+                  </li>
+                  <li class="side-navigation__item">
                     <a href="/api/docs" class="side-navigation__link contrast app-inline-icon-link" data-side-navigation-close target="_blank" rel="noopener noreferrer">{% include "includes/icon.html" with name="api" class_name="" %}<span>{% translate "API Docs" %}</span></a>
                   </li>
                   <li class="side-navigation__item">
@@ -91,7 +94,7 @@
                     </form>
                   </li>
                 </ul>
-                <p class="side-navigation__session">{% translate "Logged in as" %} <a href="{% url 'profile-settings' %}"><strong>{{ user.get_full_name|default:user.username }}</strong></a></p>
+                <p class="side-navigation__session">{% blocktranslate trimmed with username=user.get_full_name|default:user.username %}Logged in as <strong>{{ username }}</strong>{% endblocktranslate %}</p>
               </nav>
             </details>
           {% endif %}
@@ -120,7 +123,7 @@
               title="{% translate 'Open board fullscreen' %}"
             >{% include "includes/icon.html" with name="fullscreen" class_name="top-navigation__icon" %}</a>
             <a href="{% url 'profile-settings' %}" class="top-navigation__user">
-              {% include "includes/user_avatar.html" with user=user class_name="issue-card__avatar" only %}
+              {% include "includes/user_avatar.html" with user=user class_name="issue-card__avatar" title_text="" only %}
               <span class="top-navigation__user-label">{{ user.get_full_name|default:user.username }}</span>
             </a>
             {% include "includes/language_switcher.html" with language_switcher_id="top-navigation-language" language_switcher_class="language-switcher" show_language_label=False %}

@@ -23,10 +23,28 @@ Exceptional states:
 
 ```text
 REJECTED
-DUPLICATE
 ```
 
+`REJECTED` is the only exceptional workflow state. It is used when an `Issue`
+should not continue through the normal lifecycle.
+
 State changes should be recorded as `Issue State Transition` records.
+
+## Description Templates
+
+The HTML issue create page may offer a predefined `Issue Description`
+template before the `Issue` is saved.
+
+Implementation rules:
+
+- templates are managed as admin-maintained reference data
+- a template may be scoped to one `Collection`, one `Issue Category`, or both
+- the create form should show the selector only when at least one active
+  template is available
+- selecting a template replaces the current description draft in the form
+- the user may edit the inserted markdown before the issue is created
+- the persisted `Issue Description` stores only the final edited markdown, not
+  a reference back to the template
 
 ## Attachments
 

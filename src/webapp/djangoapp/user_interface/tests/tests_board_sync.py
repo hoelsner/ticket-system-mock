@@ -60,18 +60,18 @@ class BoardSyncTests(TestCase):
 
     def create_issue(self, **overrides):
         payload = {
-            "title": "Backlog issue",
+            "title": "New issue",
             "description_markdown": "Board sync fixture.",
             "collection": self.collection,
             "category": self.category,
-            "workflow_state": WorkflowState.BACKLOG,
+            "workflow_state": WorkflowState.NEW,
             "priority": IssuePriority.HIGH,
         }
         payload.update(overrides)
         return Issue.objects.create(**payload)
 
     def test_board_fragment_view_renders_flat_board_markup(self):
-        self.create_issue(title="Visible backlog issue")
+        self.create_issue(title="Visible new issue")
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("board-fragment"))
@@ -99,7 +99,7 @@ class BoardSyncTests(TestCase):
 
         response = self.client.post(
             reverse("issue-move", args=[issue.pk]),
-            data=json.dumps({"target_state": WorkflowState.BACKLOG, "position_index": "invalid"}),
+            data=json.dumps({"target_state": WorkflowState.NEW, "position_index": "invalid"}),
             content_type="application/json",
         )
 
