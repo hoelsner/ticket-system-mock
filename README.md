@@ -16,6 +16,9 @@ It currently provides:
 - a Django Admin surface for data and branding management
 - a Django Ninja REST API that mirrors the main issue and board workflows for
 	automation and integrations
+- a standalone Python SDK under `src/ticketsystemmock` that wraps the REST API
+	for sync and async Python consumers and can be downloaded from the
+	authenticated Integrations page as a pip-installable source distribution
 - a bundled private n8n node package that can be downloaded from the web
 	application Integrations page and installed into an n8n instance
 
@@ -132,6 +135,7 @@ Key documentation entry points:
 - [n8n Node Reference](docs/user/n8n-node-reference.md)
 - [Application Architecture](docs/architecture/application-architecture.md)
 - [Webapp Sitemap](docs/development/webapp-sitemap.md)
+- [Python SDK Use And Validation](docs/development/python-sdk-use-and-validation.md)
 - [n8n Node Use And Build](docs/development/n8n-node-use-and-build.md)
 
 ## n8n Integration
@@ -154,4 +158,21 @@ the custom node locally:
 
 - [n8n Node Use And Build](docs/development/n8n-node-use-and-build.md)
 - [n8n Local Smoke Test](docs/development/n8n-local-smoke-test.md)
+
+## Python SDK
+
+The repository also includes a standalone Python SDK under:
+
+```text
+src/ticketsystemmock/
+```
+
+This package mirrors the current REST API contract and exposes sync and async
+clients plus entity models for Python-based **Integration System** consumers.
+The authenticated Integrations page can also serve the packaged SDK as a
+downloadable source distribution for separate Python environments.
+
+Use the contributor guide when you need to install, validate, or extend the SDK:
+
+- [Python SDK Use And Validation](docs/development/python-sdk-use-and-validation.md)
 

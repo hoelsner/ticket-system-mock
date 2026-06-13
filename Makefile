@@ -1,5 +1,5 @@
-check: clean validate-bash validate-yaml webapp-compile webapp-complexity-check webapp-bandit-tests webapp-unittest n8n-node-test n8n-node-validate-package
-test: clean webapp-test-coverage
+check: clean validate-bash validate-yaml webapp-compile webapp-complexity-check webapp-bandit-tests ticketsystemmock-compile ticketsystemmock-complexity-check ticketsystemmock-bandit-tests ticketsystemmock-unittest ticketsystemmock-validate-package webapp-unittest n8n-node-test n8n-node-validate-package
+test: clean ticketsystemmock-test-coverage webapp-test-coverage
 
 n8n-node-build:
 	@cd src/n8n_node && npm run build
@@ -24,6 +24,15 @@ n8n-node-pack:
 
 n8n-node-validate-package:
 	@./scripts/validate_n8n_package.bash
+
+ticketsystemmock-stage-dev-package:
+	@./scripts/build_ticketsystemmock_for_devserver.bash
+
+ticketsystemmock-pack:
+	@uv build --sdist src/ticketsystemmock
+
+ticketsystemmock-validate-package:
+	@./scripts/validate_ticketsystemmock_package.bash
 
 webapp-runserver:
 	@cd src/webapp && ./.venv/bin/python3 manage.py runserver 0.0.0.0:8000
@@ -54,3 +63,18 @@ webapp-unittest:
 
 webapp-test-coverage:
 	@./scripts/webapp/test_coverage.bash
+
+ticketsystemmock-unittest:
+	@./scripts/ticketsystemmock/unittest.bash
+
+ticketsystemmock-compile:
+	@./scripts/ticketsystemmock/compile.bash
+
+ticketsystemmock-complexity-check:
+	@./scripts/ticketsystemmock/complexity.bash
+
+ticketsystemmock-bandit-tests:
+	@./scripts/ticketsystemmock/bandit.bash
+
+ticketsystemmock-test-coverage:
+	@./scripts/ticketsystemmock/test_coverage.bash

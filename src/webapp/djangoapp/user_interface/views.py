@@ -241,19 +241,36 @@ class IntegrationsView(AuthenticatedTemplateView):
         return context
 
 
+def _integration_package_response(package, *, unavailable_message):
+    if package is None:
+        raise Http404(_(unavailable_message))
+
+    return FileResponse(
+        package["path"].open("rb"),
+        as_attachment=True,
+        filename=package["filename"],
+        content_type="application/gzip",
+    )
+
+
 class N8nNodePackageDownloadView(AppLoginRequiredMixin, View):
     http_method_names = ["get"]
 
     def get(self, request, *args, **kwargs):
         package = controllers.get_n8n_node_package()
-        if package is None:
-            raise Http404(_("The n8n integration package is not available."))
+        return _integration_package_response(
+            package,
+            unavailable_message="The n8n integration package is not available.",
+        )
 
-        return FileResponse(
-            package["path"].open("rb"),
-            as_attachment=True,
-            filename=package["filename"],
-            content_type="application/gzip",
+class PythonSdkPackageDownloadView(AppLoginRequiredMixin, View):
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        package = controllers.get_python_sdk_package()
+        return _integration_package_response(
+            package,
+            unavailable_message="The Python SDK package is not available.",
         )
 
 

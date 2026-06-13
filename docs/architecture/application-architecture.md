@@ -103,11 +103,19 @@ The current REST API surface includes:
 
 - metadata endpoints for the authenticated user, groups, users, collections,
     and issue categories
+- superuser-only management endpoints for Django `User` and `Group` records,
+    including membership updates
 - read projections for the board, dashboard, issue list, and issue detail
 - mutation endpoints for issue creation, update, archive, comment creation,
     and board movement
 - multipart attachment support on issue create, update, and comment flows so
     integrations can submit files through the same business rules used by the UI
+
+Within that API surface, the general `/api/users` list is intentionally scoped
+to active users so integrations resolve assignable identities. Administrative
+user deletion deactivates accounts rather than removing historical references,
+and administrative group deletion is rejected while issues still reference that
+group.
 
 The REST API list endpoints for groups, users, collections, categories, and
 issues return their result arrays under a shared root `data` key. Webhook
@@ -169,6 +177,8 @@ flowchart TD
 - Anonymous requests to user frontend views are redirected to the login page.
 - The admin frontend uses Django Admin's session-based authentication flow.
 - The REST API uses HTTP Basic Authentication.
+- The REST API uses additional superuser checks on the endpoints that manage
+    Django `User` and `Group` records.
 - The REST API must provide access to the same domain operations and data models
     that the application exposes through its other surfaces.
 

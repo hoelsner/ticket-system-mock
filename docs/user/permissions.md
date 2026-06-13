@@ -13,7 +13,8 @@ Ticket System Mock uses Django authentication as the base access mechanism.
 The implemented permission model is intentionally simple:
 
 - A signed-in `User` can use the authenticated web interface.
-- A valid API user can use the authenticated REST API.
+- A valid active API user can use the authenticated REST API.
+- Superuser-only REST API endpoints manage Django `User` and `Group` records.
 - Django `Group` membership is used for dispatch and assignment validation.
 - Django admin access remains limited to staff users through the standard Django
   admin site.
@@ -50,6 +51,19 @@ This applies to the documented `/api/` endpoints, including:
 - reference data endpoints
 - profile endpoints
 - `/api/health`
+
+Most REST API endpoints remain available to any active authenticated `User`.
+
+The following management endpoints additionally require a Django `superuser`:
+
+- `POST /api/users`
+- `GET /api/users/{user_id}`
+- `PUT /api/users/{user_id}`
+- `DELETE /api/users/{user_id}`
+- `POST /api/groups`
+- `GET /api/groups/{group_id}`
+- `PUT /api/groups/{group_id}`
+- `DELETE /api/groups/{group_id}`
 
 ### Public healthcheck endpoint
 
@@ -102,16 +116,35 @@ general access-control boundary.
 Being outside a `Group` does not block an authenticated user from opening or
 editing an issue.
 
+## Administrative User and Group Management
+
+The REST API now includes a small administrative surface for superusers.
+
+Implemented management behavior:
+
+- superusers can create, inspect, and update Django `User` records through the
+  REST API
+- superusers can set Django `Group` memberships through the same user and group
+  management endpoints
+- deleting a user through the REST API deactivates that user by setting
+  `is_active` to `False` instead of removing the database row
+- deleting a group through the REST API is rejected while an `Issue` still
+  references that group
+- the general `/api/users` list endpoint returns active users only so
+  integrations resolve assignable users instead of deactivated accounts
+
 ## Django Permissions and Roles
 
 The application exposes Django's `is_staff` and `is_superuser` flags through
-the API, but the user-facing issue workflow does not use additional explicit
+the API. The user-facing issue workflow still does not use additional explicit
 Django permission checks such as per-model `add`, `change`, `delete`, or custom
 permission gates.
 
 In practical terms:
 
 - staff and superuser flags matter for Django admin access
+- superuser also gates the REST API endpoints that manage Django `User` and
+  `Group` records
 - standard authenticated users can still perform the main issue workflow in the
   web UI and REST API
 - no separate application role such as read-only user, dispatcher, or group
@@ -164,6 +197,8 @@ profile as not editable for that caller.
 | View another user's public profile | No | Yes | Yes | Yes |
 | Edit own profile settings | No | Yes | Yes | Yes |
 | Edit another user's profile settings | No | No | No through the user-facing profile flows | No through the user-facing profile flows |
+| Create, update, or deactivate a user through the REST API | No | No | No | Yes |
+| Create, update, or delete a group through the REST API | No | No | No | Yes |
 | Access Django admin | No | No unless marked as staff | Yes | Yes |
 
 ## Important Current Limits
@@ -175,7 +210,8 @@ The implemented permission system currently has these limits:
 - `Group` membership validates assignment choices but does not enforce issue
   visibility
 - the application does not define a separate business permission model beyond
-  authentication, Django admin access, and owner-only profile editing
+  authentication, Django admin access, superuser-only user and group
+  management, and owner-only profile editing
 - API authentication uses username and password over HTTP Basic Auth rather than
   token-based access
 

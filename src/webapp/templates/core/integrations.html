@@ -9,7 +9,7 @@
       <div>
         <p class="app-page-header__eyebrow">{% translate "Extensions" %}</p>
         <h1>{% translate "Integrations" %}</h1>
-        <p>{% translate "Download the bundled n8n package and place it into your n8n custom node directory." %}</p>
+        <p>{% translate "Download the bundled n8n node package or the Python SDK source distribution from this deployment." %}</p>
       </div>
 
     </header>
@@ -30,6 +30,24 @@
           </p>
         {% else %}
           <p>{% translate "The n8n node package is not available in this environment." %}</p>
+        {% endif %}
+      </article>
+
+      <article class="app-surface">
+        <h2>{% translate "Python SDK Package" %}</h2>
+        {% if python_sdk_package %}
+          <dl>
+            <dt>{% translate "Filename" %}</dt>
+            <dd>{{ python_sdk_package.filename }}</dd>
+            <dt>{% translate "Size" %}</dt>
+            <dd>{{ python_sdk_package.size_bytes|filesizeformat }}</dd>
+          </dl>
+          <p>{% translate "Use the download button to retrieve the packaged Python SDK source distribution from this deployment." %}</p>
+          <p>
+            <a href="{% url 'integrations-python-sdk-download' %}" role="button" class="app-inline-icon-link">{% include "includes/icon.html" with name="api" class_name="" %}<span>{% translate "Download Python SDK" %}</span></a>
+          </p>
+        {% else %}
+          <p>{% translate "The Python SDK package is not available in this environment." %}</p>
         {% endif %}
       </article>
 
@@ -60,6 +78,35 @@
         <p>{% translate "Start with the TSM - Reference Data node and run the Health operation before building larger workflows." %}</p>
 
         <p>{% translate "If setup fails, the bundled nodes report clearer messages for invalid Base URLs, unreachable hosts, authentication failures, permission problems, and server-side API errors." %}</p>
+      </article>
+
+      <article class="app-surface">
+        <h2>{% translate "Use the Python SDK" %}</h2>
+        <ol>
+          <li>{% translate "Download the packaged Python SDK source distribution from this page." %}</li>
+          <li>{% translate "Create or activate your own Python virtual environment." %}</li>
+          <li>{% translate "Install the downloaded source distribution with pip in that environment." %}</li>
+          <li>{% translate "Import the SDK client and point it at the base URL of this web application." %}</li>
+        </ol>
+
+        <h3>{% translate "Install in your own environment" %}</h3>
+        {% if python_sdk_package %}
+          <pre><code>python3 -m venv .venv
+. .venv/bin/activate
+      python -m pip install /path/to/{{ python_sdk_package.filename }}</code></pre>
+        {% else %}
+          <pre><code>python3 -m venv .venv
+      . .venv/bin/activate
+      python -m pip install /path/to/ticketsystemmock-0.1.0.tar.gz</code></pre>
+        {% endif %}
+
+        <h3>{% translate "Recommended first check" %}</h3>
+        <p>{% translate "Start with a health request and then fetch the authenticated user to verify connectivity and credentials." %}</p>
+        <pre><code>from ticketsystemmock import TicketSystemClient
+
+with TicketSystemClient("{{ request.scheme }}://{{ request.get_host }}", "username", "password") as client:
+    print(client.system.health().status)
+    print(client.auth.me().username)</code></pre>
       </article>
     </section>
   </section>

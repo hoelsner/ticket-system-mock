@@ -112,7 +112,9 @@ The API includes metadata endpoints, board and dashboard projections, issue
 listing and detail responses, issue mutation operations for create, update,
 archive, comment, and board movement workflows, and user profile endpoints for
 reading and updating language preferences, avatar type preferences, avatar
-images, and the system-user flag.
+images, and the system-user flag. Superusers can also manage Django `User` and
+`Group` records through dedicated REST API endpoints, while the general user
+list remains scoped to active accounts.
 
 ## Product Boundaries
 

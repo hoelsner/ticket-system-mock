@@ -11,6 +11,17 @@ RUN npm run pack:node \
     && cp build/*.tgz /tmp/n8n-node-package/
 
 
+FROM python:3.14-slim AS python_sdk_builder
+
+WORKDIR /app/src/ticketsystemmock
+
+RUN python -m pip install --upgrade pip uv
+
+COPY src/ticketsystemmock /app/src/ticketsystemmock
+
+RUN uv build --sdist /app/src/ticketsystemmock -o /tmp/python-sdk-package --clear --no-build-logs
+
+
 FROM python:3.14-slim
 
 ARG UID=1000
@@ -76,6 +87,7 @@ COPY scripts/fetch_static_files.bash /tmp/fetch_static_files.bash
 COPY --chown=appuser:appuser src/webapp /app/src/webapp
 COPY --chown=appuser:appuser docs/user /app/docs/user
 COPY --from=n8n_node_builder /tmp/n8n-node-package /app/build/integrations
+COPY --from=python_sdk_builder /tmp/python-sdk-package /app/build/integrations
 
 RUN REPO_ROOT=/app bash /tmp/fetch_static_files.bash \
     && mkdir -p /app/build /runtime/static /runtime/media /runtime/certificates /runtime/provisioning /runtime/nginx \

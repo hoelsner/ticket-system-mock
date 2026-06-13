@@ -65,7 +65,7 @@ Use this node when a workflow needs lookup data or a lightweight API check.
 | `Get My Profile` | Return the current user's profile information. |
 | `Get User Profile` | Return the public profile for one user by username. |
 | `List Groups` | Return dispatchable groups from the REST API list response. |
-| `List Users` | Return users, optionally filtered by one group, from the REST API list response. |
+| `List Users` | Return active users, optionally filtered by one group, from the REST API list response. |
 
 ### Important inputs
 
@@ -73,6 +73,8 @@ Use this node when a workflow needs lookup data or a lightweight API check.
 - `Group ID` is optional for `List Users`. Use `0` to return all users.
 - The underlying REST API wraps list results under a root `data` key. The node
   unwraps that list before passing the response to the workflow.
+- Deactivated users are excluded from `List Users`, which keeps lookup results
+  aligned with assignable accounts in the application.
 
 ### Typical workflow pattern
 

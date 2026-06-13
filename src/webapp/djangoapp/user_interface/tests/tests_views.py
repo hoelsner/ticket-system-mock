@@ -272,7 +272,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(response, ">Übersicht<", html=False)
         self.assertContains(response, ">Kanban-Board<", html=False)
 
-    @override_settings(N8N_NODE_PACKAGE_SEARCH_DIRS=[])
+    @override_settings(N8N_NODE_PACKAGE_SEARCH_DIRS=[], PYTHON_SDK_PACKAGE_SEARCH_DIRS=[])
     def test_integrations_page_shows_unavailable_message_when_package_missing(self):
         self.client.force_login(self.user)
 
@@ -281,22 +281,32 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Integrations")
         self.assertContains(response, "The n8n node package is not available in this environment.")
+        self.assertContains(response, "The Python SDK package is not available in this environment.")
         self.assertNotContains(response, reverse("integrations-n8n-download"))
+        self.assertNotContains(response, reverse("integrations-python-sdk-download"))
 
-    def test_integrations_page_lists_bundled_package_and_downloads_it(self):
+    def test_integrations_page_lists_bundled_packages_and_downloads_them(self):
         self.client.force_login(self.user)
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            package_path = Path(temp_dir) / "n8n-nodes-ticket-system-mock-9.9.9.tgz"
-            package_path.write_bytes(b"fake-package-contents")
+            n8n_package_path = Path(temp_dir) / "n8n-nodes-ticket-system-mock-9.9.9.tgz"
+            sdk_package_path = Path(temp_dir) / "ticketsystemmock-0.1.0.tar.gz"
+            n8n_package_path.write_bytes(b"fake-n8n-package-contents")
+            sdk_package_path.write_bytes(b"fake-sdk-package-contents")
 
-            with override_settings(N8N_NODE_PACKAGE_SEARCH_DIRS=[Path(temp_dir)]):
+            with override_settings(
+                N8N_NODE_PACKAGE_SEARCH_DIRS=[Path(temp_dir)],
+                PYTHON_SDK_PACKAGE_SEARCH_DIRS=[Path(temp_dir)],
+            ):
                 page_response = self.client.get(reverse("integrations"))
-                download_response = self.client.get(reverse("integrations-n8n-download"))
+                n8n_download_response = self.client.get(reverse("integrations-n8n-download"))
+                sdk_download_response = self.client.get(reverse("integrations-python-sdk-download"))
 
         self.assertEqual(page_response.status_code, 200)
         self.assertContains(page_response, "n8n-nodes-ticket-system-mock-9.9.9.tgz")
+        self.assertContains(page_response, "ticketsystemmock-0.1.0.tar.gz")
         self.assertContains(page_response, reverse("integrations-n8n-download"))
+        self.assertContains(page_response, reverse("integrations-python-sdk-download"))
         self.assertContains(page_response, "Create the Ticket System Mock API credential in n8n")
         self.assertContains(
             page_response,
@@ -306,12 +316,21 @@ class UserInterfaceTests(TestCase):
             page_response,
             "Start with the TSM - Reference Data node and run the Health operation before building larger workflows.",
         )
-        self.assertEqual(download_response.status_code, 200)
-        self.assertEqual(download_response["Content-Type"], "application/gzip")
+        self.assertContains(page_response, "python3 -m venv .venv")
+        self.assertContains(page_response, "python -m pip install /path/to/ticketsystemmock-0.1.0.tar.gz")
+        self.assertContains(page_response, "with TicketSystemClient")
+        self.assertEqual(n8n_download_response.status_code, 200)
+        self.assertEqual(n8n_download_response["Content-Type"], "application/gzip")
         self.assertIn(
-            'attachment; filename="n8n-nodes-ticket-system-mock-9.9.9.tgz"', download_response["Content-Disposition"]
+            'attachment; filename="n8n-nodes-ticket-system-mock-9.9.9.tgz"', n8n_download_response["Content-Disposition"]
         )
-        self.assertEqual(b"".join(download_response.streaming_content), b"fake-package-contents")
+        self.assertEqual(b"".join(n8n_download_response.streaming_content), b"fake-n8n-package-contents")
+        self.assertEqual(sdk_download_response.status_code, 200)
+        self.assertEqual(sdk_download_response["Content-Type"], "application/gzip")
+        self.assertIn(
+            'attachment; filename="ticketsystemmock-0.1.0.tar.gz"', sdk_download_response["Content-Disposition"]
+        )
+        self.assertEqual(b"".join(sdk_download_response.streaming_content), b"fake-sdk-package-contents")
 
     def test_profile_settings_link_is_available_from_the_shell(self):
         self.client.force_login(self.user)

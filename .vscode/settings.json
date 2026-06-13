@@ -24,6 +24,7 @@
     },
     "python.analysis.extraPaths": [
         "${workspaceFolder}/src/webapp",
+        "${workspaceFolder}/src/ticketsystemmock",
         "${workspaceFolder}/src/webapp/venv/lib/python3.12/site-packages"
     ],
     "files.exclude": {

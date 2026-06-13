@@ -484,6 +484,58 @@ msgstr "Verwenden Sie die Download-Schaltfläche, um das paketierte n8n-Integrat
 msgid "The n8n node package is not available in this environment."
 msgstr "Das n8n-Node-Paket ist in dieser Umgebung nicht verfügbar."
 
+#: djangoapp/user_interface/views.py:252
+msgid "The Python SDK package is not available."
+msgstr "Das Python-SDK-Paket ist nicht verfügbar."
+
+#: templates/core/integrations.html:12
+msgid "Download the bundled n8n node package or the Python SDK source distribution from this deployment."
+msgstr "Laden Sie das gebündelte n8n-Node-Paket oder die Python-SDK-Quelldistribution aus dieser Bereitstellung herunter."
+
+#: templates/core/integrations.html:37
+msgid "Python SDK Package"
+msgstr "Python-SDK-Paket"
+
+#: templates/core/integrations.html:45
+msgid "Use the download button to retrieve the packaged Python SDK source distribution from this deployment."
+msgstr "Verwenden Sie die Download-Schaltfläche, um die paketierte Python-SDK-Quelldistribution aus dieser Bereitstellung abzurufen."
+
+#: templates/core/integrations.html:47
+msgid "Download Python SDK"
+msgstr "Python-SDK herunterladen"
+
+#: templates/core/integrations.html:50
+msgid "The Python SDK package is not available in this environment."
+msgstr "Das Python-SDK-Paket ist in dieser Umgebung nicht verfügbar."
+
+#: templates/core/integrations.html:77
+msgid "Use the Python SDK"
+msgstr "Python-SDK verwenden"
+
+#: templates/core/integrations.html:79
+msgid "Download the packaged Python SDK source distribution from this page."
+msgstr "Laden Sie die paketierte Python-SDK-Quelldistribution von dieser Seite herunter."
+
+#: templates/core/integrations.html:80
+msgid "Create or activate your own Python virtual environment."
+msgstr "Erstellen oder aktivieren Sie Ihre eigene Python-Virtual-Environment."
+
+#: templates/core/integrations.html:81
+msgid "Install the downloaded source distribution with pip in that environment."
+msgstr "Installieren Sie die heruntergeladene Quelldistribution mit pip in dieser Umgebung."
+
+#: templates/core/integrations.html:82
+msgid "Import the SDK client and point it at the base URL of this web application."
+msgstr "Importieren Sie den SDK-Client und richten Sie ihn auf die Basis-URL dieser Webanwendung aus."
+
+#: templates/core/integrations.html:85
+msgid "Install in your own environment"
+msgstr "In Ihrer eigenen Umgebung installieren"
+
+#: templates/core/integrations.html:90
+msgid "Start with a health request and then fetch the authenticated user to verify connectivity and credentials."
+msgstr "Beginnen Sie mit einer Health-Anfrage und rufen Sie dann den authentifizierten Benutzer ab, um Verbindung und Anmeldedaten zu prüfen."
+
 #: templates/core/integrations.html:37
 msgid "How to Use It"
 msgstr "So wird es verwendet"

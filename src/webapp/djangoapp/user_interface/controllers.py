@@ -111,17 +111,18 @@ def build_integrations_context():
     return {
         "active_nav": "integrations",
         "n8n_node_package": get_n8n_node_package(),
+        "python_sdk_package": get_python_sdk_package(),
     }
 
 
-def get_n8n_node_package():
-    for search_dir in settings.N8N_NODE_PACKAGE_SEARCH_DIRS:
+def _get_package(search_dirs, filename_glob):
+    for search_dir in search_dirs:
         candidate_dir = Path(search_dir)
         if not candidate_dir.exists():
             continue
 
         package_files = sorted(
-            candidate_dir.glob("n8n-nodes-ticket-system-mock-*.tgz"),
+            candidate_dir.glob(filename_glob),
             key=lambda package_path: package_path.stat().st_mtime,
             reverse=True,
         )
@@ -136,6 +137,14 @@ def get_n8n_node_package():
         }
 
     return None
+
+
+def get_n8n_node_package():
+    return _get_package(settings.N8N_NODE_PACKAGE_SEARCH_DIRS, "n8n-nodes-ticket-system-mock-*.tgz")
+
+
+def get_python_sdk_package():
+    return _get_package(settings.PYTHON_SDK_PACKAGE_SEARCH_DIRS, "ticketsystemmock-*.tar.gz")
 
 
 def get_user_profile(user):

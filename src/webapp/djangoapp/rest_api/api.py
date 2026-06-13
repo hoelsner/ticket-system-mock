@@ -3,6 +3,7 @@ from io import BytesIO
 
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import Group
+from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, QueryDict
 from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from ninja import NinjaAPI, Query, Schema
@@ -11,12 +12,21 @@ from pydantic import Field
 
 from djangoapp.core.controllers import (
     CollectionController,
+    GroupController,
     IssueAttachmentController,
     IssueCategoryController,
     IssueCommentController,
+    UserController,
 )
 from djangoapp.core.models import Collection, IssueAttachment, IssueCategory, IssueComment
-from djangoapp.rest_api.forms import CollectionForm, IssueAttachmentForm, IssueCategoryForm, IssueCommentUpdateForm
+from djangoapp.rest_api.forms import (
+    CollectionForm,
+    GroupManagementForm,
+    IssueAttachmentForm,
+    IssueCategoryForm,
+    IssueCommentUpdateForm,
+    UserManagementForm,
+)
 from djangoapp.user_interface import controllers
 from djangoapp.user_interface.forms import (
     IssueArchiveForm,
@@ -77,6 +87,31 @@ class UserSummarySchema(Schema):
     avatar_image_url: str | None = Field(
         description="Resolved URL of the configured or default avatar image, when present."
     )
+
+
+class ManagedGroupSchema(GroupSchema):
+    users: list[UserSummarySchema] = Field(description="Users who currently belong to the group.")
+
+
+class ManagedUserSchema(Schema):
+    id: int = Field(description="Unique identifier of the managed user.")
+    username: str = Field(description="Login name of the managed user.")
+    first_name: str = Field(description="Stored first name of the managed user.")
+    last_name: str = Field(description="Stored last name of the managed user.")
+    display_name: str = Field(description="Preferred display name shown for the managed user.")
+    is_active: bool = Field(
+        description="Whether the managed user may authenticate and appear in assignable user lists."
+    )
+    is_staff: bool = Field(description="Whether the managed user may access staff-only administration features.")
+    is_superuser: bool = Field(description="Whether the managed user has unrestricted Django superuser privileges.")
+    language_preference: str = Field(description="Stored language preference code for the managed user's profile.")
+    avatar_type: str = Field(description="Stored avatar type for the managed user's profile.")
+    is_system_user: bool = Field(description="Whether the managed user's profile is flagged as a system user.")
+    avatar_text: str = Field(description="Short fallback text rendered when no avatar image is used.")
+    avatar_image_url: str | None = Field(
+        description="Resolved URL of the configured or default avatar image, when present."
+    )
+    groups: list[GroupSchema] = Field(description="Groups that currently include the managed user.")
 
 
 class GroupListResponseSchema(Schema):
@@ -284,6 +319,27 @@ class UserProfileMutationSchema(Schema):
     profile: UserProfileSchema = Field(description="User profile payload after the mutation completed.")
 
 
+class UserMutationSchema(Schema):
+    status: str = Field(description="Mutation result code for the user operation.")
+    user: ManagedUserSchema = Field(description="Managed user payload after the mutation completed.")
+
+
+class UserDeactivationSchema(Schema):
+    status: str = Field(description="Mutation result code for the user deactivation operation.")
+    user_id: int = Field(description="Identifier of the managed user that was deactivated.")
+    is_active: bool = Field(description="Authentication state of the managed user after the operation completed.")
+
+
+class GroupMutationSchema(Schema):
+    status: str = Field(description="Mutation result code for the group operation.")
+    group: ManagedGroupSchema = Field(description="Managed group payload after the mutation completed.")
+
+
+class GroupDeletionSchema(Schema):
+    status: str = Field(description="Mutation result code for the group deletion operation.")
+    group_id: int = Field(description="Identifier of the deleted group.")
+
+
 def _request_body(description, content_type, properties, required_fields=None):
     schema = {
         "type": "object",
@@ -335,6 +391,103 @@ CATEGORY_REQUEST_BODY = _request_body(
         "is_active": {"type": "boolean", "description": "Whether the issue category may be used for new issues."},
     },
     required_fields=["name", "code"],
+)
+
+
+USER_CREATE_REQUEST_BODY = _request_body(
+    "User data used to create a managed user account.",
+    "application/json",
+    {
+        "username": {"type": "string", "description": "Login name for the user account."},
+        "first_name": {"type": "string", "description": "Stored first name of the user."},
+        "last_name": {"type": "string", "description": "Stored last name of the user."},
+        "password": {"type": "string", "description": "Initial password for the user account."},
+        "is_active": {"type": "boolean", "description": "Whether the user may authenticate."},
+        "is_staff": {
+            "type": "boolean",
+            "description": "Whether the user may access staff-only administration features.",
+        },
+        "is_superuser": {
+            "type": "boolean",
+            "description": "Whether the user should receive unrestricted superuser privileges.",
+        },
+        "language_preference": {
+            "type": "string",
+            "description": "Language preference code for the user profile.",
+            "enum": ["en", "de"],
+        },
+        "avatar_type": {
+            "type": "string",
+            "description": "Avatar mode stored on the user profile.",
+            "enum": ["initials", "image"],
+        },
+        "is_system_user": {
+            "type": "boolean",
+            "description": "Whether the profile should use the system-user avatar behavior.",
+        },
+        "group_ids": {
+            "type": "array",
+            "description": "Identifiers of the groups that should include the user.",
+            "items": {"type": "integer"},
+        },
+    },
+    required_fields=["username", "password"],
+)
+
+
+USER_UPDATE_REQUEST_BODY = _request_body(
+    "User data used to update a managed user account.",
+    "application/json",
+    {
+        "username": {"type": "string", "description": "Login name for the user account."},
+        "first_name": {"type": "string", "description": "Stored first name of the user."},
+        "last_name": {"type": "string", "description": "Stored last name of the user."},
+        "password": {"type": "string", "description": "Optional replacement password for the user account."},
+        "is_active": {"type": "boolean", "description": "Whether the user may authenticate."},
+        "is_staff": {
+            "type": "boolean",
+            "description": "Whether the user may access staff-only administration features.",
+        },
+        "is_superuser": {
+            "type": "boolean",
+            "description": "Whether the user should receive unrestricted superuser privileges.",
+        },
+        "language_preference": {
+            "type": "string",
+            "description": "Language preference code for the user profile.",
+            "enum": ["en", "de"],
+        },
+        "avatar_type": {
+            "type": "string",
+            "description": "Avatar mode stored on the user profile.",
+            "enum": ["initials", "image"],
+        },
+        "is_system_user": {
+            "type": "boolean",
+            "description": "Whether the profile should use the system-user avatar behavior.",
+        },
+        "group_ids": {
+            "type": "array",
+            "description": "Identifiers of the groups that should include the user.",
+            "items": {"type": "integer"},
+        },
+    },
+    required_fields=["username"],
+)
+
+
+GROUP_REQUEST_BODY = _request_body(
+    "Group data used to create or update a managed group.",
+    "application/json",
+    {
+        "name": {"type": "string", "description": "Display name of the managed group."},
+        "user_ids": {
+            "type": "array",
+            "description": "Identifiers of the users that should belong to the group.",
+            "items": {"type": "integer"},
+        },
+    },
+    required_fields=["name"],
 )
 
 
@@ -635,6 +788,16 @@ def current_user_profile(request):
     return _serialize_user_profile(controllers.get_user_profile(request.auth), can_edit=True)
 
 
+def _forbidden_response():
+    return 403, {"error": "Superuser access required."}
+
+
+def _require_superuser(request):
+    if request.auth.is_superuser:
+        return None
+    return _forbidden_response()
+
+
 @api.put(
     "/profile/me",
     response={200: UserProfileMutationSchema, 400: dict},
@@ -688,6 +851,33 @@ def _serialize_group(group):
     return {
         "id": group.pk,
         "name": group.name,
+    }
+
+
+def _serialize_managed_group(group):
+    return {
+        **_serialize_group(group),
+        "users": [_serialize_user(user) for user in group.user_set.order_by("username")],
+    }
+
+
+def _serialize_managed_user(user):
+    profile = controllers.get_user_profile(user)
+    return {
+        "id": user.pk,
+        "username": user.get_username(),
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "display_name": user.get_full_name() or user.get_username(),
+        "is_active": user.is_active,
+        "is_staff": user.is_staff,
+        "is_superuser": user.is_superuser,
+        "language_preference": profile.language_preference,
+        "avatar_type": profile.avatar_type,
+        "is_system_user": profile.is_system_user,
+        "avatar_text": profile.avatar_text,
+        "avatar_image_url": profile.avatar_image_url,
+        "groups": [_serialize_group(group) for group in user.groups.order_by("name")],
     }
 
 
@@ -876,6 +1066,35 @@ def _serialize_dashboard_context(context):
     }
 
 
+def _management_mutation_response(
+    request,
+    *,
+    form_class,
+    mutate,
+    serializer,
+    response_key,
+    created=False,
+    form_kwargs=None,
+):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    payload, error = _request_payload(request)
+    if error is not None:
+        return error
+
+    form = form_class(payload, **(form_kwargs or {}))
+    if not form.is_valid():
+        return _form_error_response(form)
+
+    managed_object = mutate(form.cleaned_data)
+    response = {"status": "created" if created else "updated", response_key: serializer(managed_object)}
+    if created:
+        return 201, response
+    return response
+
+
 def _request_payload(request):
     if _is_json_request(request.content_type):
         return _parse_json_payload(request.body)
@@ -990,6 +1209,82 @@ def groups(request):
     return {"data": [_serialize_group(group) for group in Group.objects.order_by("name")]}
 
 
+@api.post(
+    "/groups",
+    response={201: GroupMutationSchema, 400: dict, 403: dict},
+    summary="Create group",
+    description="Create a new managed group and optionally assign users to it. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=GROUP_REQUEST_BODY,
+)
+def create_group(request):
+    return _management_mutation_response(
+        request,
+        form_class=GroupManagementForm,
+        mutate=GroupController.create,
+        serializer=_serialize_managed_group,
+        response_key="group",
+        created=True,
+    )
+
+
+@api.get(
+    "/groups/{group_id}",
+    response={200: ManagedGroupSchema, 403: dict},
+    summary="Get managed group",
+    description="Return a managed group together with its current memberships. Superuser access is required.",
+    tags=["Administration"],
+)
+def group_detail(request, group_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    group = Group.objects.get(pk=group_id)
+    return _serialize_managed_group(group)
+
+
+@api.put(
+    "/groups/{group_id}",
+    response={200: GroupMutationSchema, 400: dict, 403: dict},
+    summary="Update group",
+    description="Update a managed group and optionally replace its memberships. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=GROUP_REQUEST_BODY,
+)
+def update_group(request, group_id: int):
+    group = Group.objects.get(pk=group_id)
+    return _management_mutation_response(
+        request,
+        form_class=GroupManagementForm,
+        mutate=lambda cleaned_data: GroupController.update(group, cleaned_data),
+        serializer=_serialize_managed_group,
+        response_key="group",
+        form_kwargs={"instance": group},
+    )
+
+
+@api.delete(
+    "/groups/{group_id}",
+    response={200: GroupDeletionSchema, 403: dict, 409: dict},
+    summary="Delete group",
+    description="Delete a managed group. The operation is rejected while issues still reference the group. Superuser access is required.",
+    tags=["Administration"],
+)
+def delete_group(request, group_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    group = Group.objects.get(pk=group_id)
+    try:
+        GroupController.delete(group)
+    except ProtectedError:
+        return 409, {"error": "Group is still assigned to one or more issues."}
+
+    return {"status": "deleted", "group_id": group_id}
+
+
 @api.get(
     "/users",
     response=UserListResponseSchema,
@@ -1002,10 +1297,87 @@ def users(
     group_id: int | None = Query(None, description="Optional group identifier used to limit the returned users."),
 ):
     user_model = get_user_model()
-    queryset = user_model.objects.order_by("username")
+    queryset = user_model.objects.filter(is_active=True).order_by("username")
     if group_id is not None:
         queryset = queryset.filter(groups__id=group_id).distinct()
     return {"data": [_serialize_user(user) for user in queryset]}
+
+
+@api.post(
+    "/users",
+    response={201: UserMutationSchema, 400: dict, 403: dict},
+    summary="Create user",
+    description="Create a new managed user account with profile settings and group memberships. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=USER_CREATE_REQUEST_BODY,
+)
+def create_user(request):
+    return _management_mutation_response(
+        request,
+        form_class=UserManagementForm,
+        mutate=UserController.create,
+        serializer=_serialize_managed_user,
+        response_key="user",
+        created=True,
+        form_kwargs={"require_password": True},
+    )
+
+
+@api.get(
+    "/users/{user_id}",
+    response={200: ManagedUserSchema, 403: dict},
+    summary="Get managed user",
+    description="Return a managed user together with profile settings and current group memberships. Superuser access is required.",
+    tags=["Administration"],
+)
+def user_detail(request, user_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    user_model = get_user_model()
+    user = user_model.objects.get(pk=user_id)
+    return _serialize_managed_user(user)
+
+
+@api.put(
+    "/users/{user_id}",
+    response={200: UserMutationSchema, 400: dict, 403: dict},
+    summary="Update user",
+    description="Update a managed user account, its profile settings, and its group memberships. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=USER_UPDATE_REQUEST_BODY,
+)
+def update_user(request, user_id: int):
+    user_model = get_user_model()
+    user = user_model.objects.get(pk=user_id)
+    controllers.get_user_profile(user)
+    return _management_mutation_response(
+        request,
+        form_class=UserManagementForm,
+        mutate=lambda cleaned_data: UserController.update(user, cleaned_data),
+        serializer=_serialize_managed_user,
+        response_key="user",
+        form_kwargs={"instance": user},
+    )
+
+
+@api.delete(
+    "/users/{user_id}",
+    response={200: UserDeactivationSchema, 403: dict},
+    summary="Deactivate user",
+    description="Deactivate a managed user account without deleting historical issue references. Superuser access is required.",
+    tags=["Administration"],
+)
+def delete_user(request, user_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    user_model = get_user_model()
+    user = user_model.objects.get(pk=user_id)
+    user = UserController.deactivate(user)
+    return {"status": "deactivated", "user_id": user.pk, "is_active": user.is_active}
 
 
 @api.get(

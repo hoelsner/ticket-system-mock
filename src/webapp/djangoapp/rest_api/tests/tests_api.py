@@ -12,6 +12,7 @@ from django.test import RequestFactory, TestCase
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 
+from djangoapp.core.controllers import GroupController, UserController
 from djangoapp.core.models import (
     Collection,
     Issue,
@@ -33,6 +34,7 @@ from djangoapp.rest_api.api import (
     current_user,
     health,
 )
+from djangoapp.rest_api.forms import GroupManagementForm, UserManagementForm
 
 
 class RestApiTests(TestCase):
@@ -67,6 +69,15 @@ class RestApiTests(TestCase):
     def basic_auth_header(self, username="demo", password="demo-password-123"):
         credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
         return {"Authorization": f"Basic {credentials}"}
+
+    def admin_auth_header(self):
+        if not hasattr(self, "admin_user"):
+            self.admin_user = get_user_model().objects.create_superuser(
+                username="admin",
+                password="admin-password-123",
+                email="admin@example.com",
+            )
+        return self.basic_auth_header(username="admin", password="admin-password-123")
 
     def test_api_requires_http_basic_auth(self):
         response = self.client.get("/api/health")
@@ -178,6 +189,13 @@ class RestApiTests(TestCase):
         self.assertEqual(
             schema["components"]["schemas"]["UserProfileSchema"]["properties"]["is_system_user"]["description"],
             "Whether the profile is flagged as a system user.",
+        )
+        self.assertEqual(schema["paths"]["/api/users"]["post"]["tags"], ["Administration"])
+        self.assertEqual(schema["paths"]["/api/groups/{group_id}"]["get"]["tags"], ["Administration"])
+        self.assertEqual(schema["paths"]["/api/users/{user_id}"]["delete"]["summary"], "Deactivate user")
+        self.assertEqual(
+            schema["components"]["schemas"]["ManagedUserSchema"]["properties"]["groups"]["description"],
+            "Groups that currently include the managed user.",
         )
         self.assertEqual(
             schema["components"]["schemas"]["UserProfileSchema"]["properties"]["avatar_type"]["description"],
@@ -570,6 +588,392 @@ class RestApiTests(TestCase):
         self.assertEqual(update_category_invalid_json.json()["error"], "Invalid request payload.")
         self.assertEqual(update_category_invalid_form.status_code, 400)
         self.assertIn("code", update_category_invalid_form.json()["errors"])
+
+    def test_admin_user_and_group_endpoints_surface_invalid_payloads_and_form_errors(self):
+        invalid_user_payload = self.client.post(
+            "/api/users",
+            data="{invalid",
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+        invalid_user_form = self.client.post(
+            "/api/users",
+            data=json.dumps({"username": self.user.username, "password": ""}),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+        invalid_group_payload = self.client.post(
+            "/api/groups",
+            data="{invalid",
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+        invalid_group_form = self.client.post(
+            "/api/groups",
+            data=json.dumps({"name": self.support_group.name}),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(invalid_user_payload.status_code, 400)
+        self.assertEqual(invalid_user_payload.json()["error"], "Invalid request payload.")
+        self.assertEqual(invalid_user_form.status_code, 400)
+        self.assertIn("username", invalid_user_form.json()["errors"])
+        self.assertIn("password", invalid_user_form.json()["errors"])
+
+        self.assertEqual(invalid_group_payload.status_code, 400)
+        self.assertEqual(invalid_group_payload.json()["error"], "Invalid request payload.")
+        self.assertEqual(invalid_group_form.status_code, 400)
+        self.assertIn("name", invalid_group_form.json()["errors"])
+
+    def test_user_and_group_management_forms_and_controllers_cover_optional_paths(self):
+        duplicate_user_form = UserManagementForm({"username": self.user.username})
+        self.assertFalse(duplicate_user_form.is_valid())
+        self.assertIn("username", duplicate_user_form.errors)
+
+        required_password_form = UserManagementForm({"username": "manager"}, require_password=True)
+        self.assertFalse(required_password_form.is_valid())
+        self.assertIn("password", required_password_form.errors)
+
+        promoted_user_form = UserManagementForm(
+            {"username": "manager", "password": "manager-password-123", "is_superuser": "on"},
+            require_password=True,
+        )
+        self.assertTrue(promoted_user_form.is_valid(), promoted_user_form.errors)
+        self.assertTrue(promoted_user_form.cleaned_data["is_staff"])
+
+        managed_user = get_user_model().objects.create_user(
+            username="controller-user",
+            password="initial-password-123",
+            first_name="Controller",
+            last_name="User",
+        )
+        self.support_group.user_set.add(managed_user)
+
+        updated_user = UserController.update(
+            managed_user,
+            {
+                "username": managed_user.username,
+                "first_name": "Updated",
+                "last_name": "User",
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "password": "new-password-123",
+            },
+        )
+
+        self.assertTrue(updated_user.check_password("new-password-123"))
+        self.assertEqual(list(updated_user.groups.values_list("name", flat=True)), [self.support_group.name])
+
+        managed_group = Group.objects.create(name="Escalation")
+        managed_group.user_set.add(self.user)
+        updated_group = GroupController.update(managed_group, {"name": "Escalation Desk"})
+
+        self.assertEqual(updated_group.name, "Escalation Desk")
+        self.assertEqual(list(updated_group.user_set.values_list("username", flat=True)), [self.user.username])
+
+        instance_group_form = GroupManagementForm({"name": managed_group.name}, instance=managed_group)
+        self.assertTrue(instance_group_form.is_valid(), instance_group_form.errors)
+
+    def test_superuser_user_management_endpoints_support_create_read_update_and_deactivate(self):
+        other_group = Group.objects.create(name="Field Operations")
+
+        create_response = self.client.post(
+            "/api/users",
+            data=json.dumps({
+                "username": "coordinator",
+                "first_name": "Case",
+                "last_name": "Coordinator",
+                "password": "coordinator-password-123",
+                "is_active": True,
+                "is_staff": True,
+                "is_superuser": False,
+                "language_preference": "de",
+                "avatar_type": "image",
+                "is_system_user": True,
+                "group_ids": [self.support_group.pk],
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        managed_user = get_user_model().objects.get(username="coordinator")
+        self.assertTrue(managed_user.check_password("coordinator-password-123"))
+        self.assertEqual(create_response.json()["user"]["language_preference"], "de")
+        self.assertTrue(create_response.json()["user"]["is_system_user"])
+        self.assertEqual(create_response.json()["user"]["groups"][0]["name"], self.support_group.name)
+
+        detail_response = self.client.get(
+            f"/api/users/{managed_user.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(detail_response.json()["username"], "coordinator")
+
+        update_response = self.client.put(
+            f"/api/users/{managed_user.pk}",
+            data=json.dumps({
+                "username": "coordinator",
+                "first_name": "Casey",
+                "last_name": "Coordinator",
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "language_preference": "en",
+                "avatar_type": "initials",
+                "is_system_user": False,
+                "group_ids": [other_group.pk],
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        managed_user.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(managed_user.first_name, "Casey")
+        self.assertEqual(managed_user.groups.get().name, other_group.name)
+        self.assertEqual(managed_user.profile.language_preference, "en")
+        self.assertEqual(managed_user.profile.avatar_type, "initials")
+        self.assertFalse(managed_user.profile.is_system_user)
+
+        deactivate_response = self.client.delete(
+            f"/api/users/{managed_user.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        managed_user.refresh_from_db()
+        self.assertEqual(deactivate_response.status_code, 200)
+        self.assertEqual(deactivate_response.json()["status"], "deactivated")
+        self.assertFalse(managed_user.is_active)
+
+        list_response = self.client.get(
+            "/api/users",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertNotIn("coordinator", [item["username"] for item in list_response.json()["data"]])
+
+    def test_superuser_group_management_endpoints_support_create_read_update_and_delete(self):
+        create_response = self.client.post(
+            "/api/groups",
+            data=json.dumps({
+                "name": "Field Operations",
+                "user_ids": [self.user.pk],
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        managed_group = Group.objects.get(name="Field Operations")
+        self.assertEqual(create_response.json()["group"]["users"][0]["username"], self.user.username)
+
+        detail_response = self.client.get(
+            f"/api/groups/{managed_group.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(detail_response.json()["name"], "Field Operations")
+
+        update_response = self.client.put(
+            f"/api/groups/{managed_group.pk}",
+            data=json.dumps({
+                "name": "Field Dispatch",
+                "user_ids": [self.observer.pk],
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        managed_group.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(managed_group.name, "Field Dispatch")
+        self.assertEqual(list(managed_group.user_set.values_list("username", flat=True)), [self.observer.username])
+
+        delete_response = self.client.delete(
+            f"/api/groups/{managed_group.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(delete_response.json()["status"], "deleted")
+        self.assertFalse(Group.objects.filter(pk=managed_group.pk).exists())
+
+    def test_user_and_group_management_requires_superuser(self):
+        baseline_group_name = self.support_group.name
+        create_user_response = self.client.post(
+            "/api/users",
+            data=json.dumps({"username": "blocked", "password": "blocked-password-123"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        get_user_response = self.client.get(
+            f"/api/users/{self.user.pk}",
+            headers=self.basic_auth_header(),
+        )
+        update_user_response = self.client.put(
+            f"/api/users/{self.user.pk}",
+            data=json.dumps({"username": self.user.username}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        delete_user_response = self.client.delete(
+            f"/api/users/{self.user.pk}",
+            headers=self.basic_auth_header(),
+        )
+        create_group_response = self.client.post(
+            "/api/groups",
+            data=json.dumps({"name": "Blocked Group"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        get_group_response = self.client.get(
+            f"/api/groups/{self.support_group.pk}",
+            headers=self.basic_auth_header(),
+        )
+        update_group_response = self.client.put(
+            f"/api/groups/{self.support_group.pk}",
+            data=json.dumps({"name": self.support_group.name}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        delete_group_response = self.client.delete(
+            f"/api/groups/{self.support_group.pk}",
+            headers=self.basic_auth_header(),
+        )
+
+        for response in [
+            create_user_response,
+            get_user_response,
+            update_user_response,
+            delete_user_response,
+            create_group_response,
+            get_group_response,
+            update_group_response,
+            delete_group_response,
+        ]:
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json()["error"], "Superuser access required.")
+
+        self.assertFalse(get_user_model().objects.filter(username="blocked").exists())
+        self.user.refresh_from_db()
+        self.support_group.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+        self.assertEqual(self.support_group.name, baseline_group_name)
+
+    def test_staff_user_without_superuser_flag_cannot_manage_users_or_groups(self):
+        staff_user = get_user_model().objects.create_user(
+            username="staff-operator",
+            password="staff-password-123",
+            first_name="Staff",
+            last_name="Operator",
+            is_staff=True,
+        )
+        baseline_group_name = self.support_group.name
+
+        create_user_response = self.client.post(
+            "/api/users",
+            data=json.dumps({"username": "staff-blocked", "password": "staff-blocked-password-123"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+        update_user_response = self.client.put(
+            f"/api/users/{self.user.pk}",
+            data=json.dumps({"username": self.user.username, "first_name": "Changed"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+        delete_user_response = self.client.delete(
+            f"/api/users/{self.user.pk}",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+        create_group_response = self.client.post(
+            "/api/groups",
+            data=json.dumps({"name": "Staff Blocked Group"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+        update_group_response = self.client.put(
+            f"/api/groups/{self.support_group.pk}",
+            data=json.dumps({"name": "Renamed By Staff"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+        delete_group_response = self.client.delete(
+            f"/api/groups/{self.support_group.pk}",
+            headers=self.basic_auth_header(username="staff-operator", password="staff-password-123"),
+        )
+
+        for response in [
+            create_user_response,
+            update_user_response,
+            delete_user_response,
+            create_group_response,
+            update_group_response,
+            delete_group_response,
+        ]:
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json()["error"], "Superuser access required.")
+
+        self.assertFalse(get_user_model().objects.filter(username="staff-blocked").exists())
+        self.user.refresh_from_db()
+        self.support_group.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Demo")
+        self.assertTrue(self.user.is_active)
+        self.assertEqual(self.support_group.name, baseline_group_name)
+
+    def test_inactive_superuser_cannot_authenticate_to_management_endpoints(self):
+        inactive_admin = get_user_model().objects.create_superuser(
+            username="inactive-admin",
+            password="inactive-admin-password-123",
+            email="inactive-admin@example.com",
+        )
+        inactive_admin.is_active = False
+        inactive_admin.save(update_fields=["is_active"])
+
+        responses = [
+            self.client.get(
+                f"/api/users/{self.user.pk}",
+                headers=self.basic_auth_header(username="inactive-admin", password="inactive-admin-password-123"),
+            ),
+            self.client.post(
+                "/api/groups",
+                data=json.dumps({"name": "Inactive Admin Group"}),
+                content_type="application/json",
+                headers=self.basic_auth_header(username="inactive-admin", password="inactive-admin-password-123"),
+            ),
+        ]
+
+        for response in responses:
+            self.assertEqual(response.status_code, 401)
+
+        self.assertFalse(Group.objects.filter(name="Inactive Admin Group").exists())
+
+    def test_group_delete_rejects_groups_still_assigned_to_issues(self):
+        Issue.objects.create(
+            title="Assigned group issue",
+            description_markdown="Group still referenced by an issue.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.delete(
+            f"/api/groups/{self.support_group.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["error"], "Group is still assigned to one or more issues.")
+        self.assertTrue(Group.objects.filter(pk=self.support_group.pk).exists())
 
     def test_board_and_dashboard_endpoints_return_ui_parity_data(self):
         issue = Issue.objects.create(

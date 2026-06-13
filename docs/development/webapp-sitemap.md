@@ -83,7 +83,14 @@ flowchart TD
   authenticated user's username and privilege flags.
 - `Reference Data`: available at `/api/groups`, `/api/users`,
   `/api/collections`, and `/api/categories` for integration-friendly metadata.
-  These list endpoints return their arrays under the root `data` key.
+  These list endpoints return their arrays under the root `data` key. The
+  `/api/users` list returns active users only so integrations resolve
+  assignable accounts.
+- `Administrative User and Group Management`: available at `POST /api/users`,
+  `GET|PUT|DELETE /api/users/{user_id}`, `POST /api/groups`, and
+  `GET|PUT|DELETE /api/groups/{group_id}`. These endpoints require a superuser.
+  User deletion deactivates the account, while group deletion is rejected when
+  an `Issue` still references that `Group`.
 - `Board Projection`: available at `/api/board` and returns the filtered board
   context used by the user frontend.
 - `Dashboard Projection`: available at `/api/dashboard` and returns the current
@@ -139,7 +146,10 @@ api/
   health
   auth/me
   groups
+  groups/{group_id}
   users
+  users/{user_id}
+  users/{username}/profile
   collections
   categories
   board

@@ -12,7 +12,7 @@
 - `.devcontainer/`: contains devcontainer configurations for local development environments
 - `deploy/`: contains production deployment assets, e.g. Dockerfiles and compose templates
 - `docs/`: contains relevant information and documentation for developers, architects, and users, e.g. markdown files, diagrams, etc.
-- `src/`: root directory for the application components, e.g. the django webapp and the n8n custom node
+- `src/`: root directory for the application components, e.g. the django webapp, the standalone Python SDK, and the n8n custom node
 - `scripts/`: contains executable scripts for various tasks, e.g. cleaning directories, checking code complexity, etc.
 
 ## Working Guidelines

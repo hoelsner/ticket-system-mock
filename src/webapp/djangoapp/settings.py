@@ -192,6 +192,10 @@ N8N_NODE_PACKAGE_SEARCH_DIRS = [
     BASE_DIR.parent / "n8n_node" / "build",
     BASE_DIR.parent.parent / "build" / "integrations",
 ]
+PYTHON_SDK_PACKAGE_SEARCH_DIRS = [
+    BASE_DIR.parent / "ticketsystemmock" / "dist",
+    BASE_DIR.parent.parent / "build" / "integrations",
+]
 
 
 LOGGING = {
