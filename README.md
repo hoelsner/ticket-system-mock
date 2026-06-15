@@ -21,6 +21,8 @@ It currently provides:
 	authenticated Integrations page as a pip-installable source distribution
 - a bundled private n8n node package that can be downloaded from the web
 	application Integrations page and installed into an n8n instance
+- a standalone scenarios area under `scenarios/` for SDK-only reset-and-seed
+	workflows that run from their own Python 3.14 virtual environment
 
 ## Production Deployment with Docker Compose
 
@@ -159,6 +161,18 @@ the custom node locally:
 - [n8n Node Use And Build](docs/development/n8n-node-use-and-build.md)
 - [n8n Local Smoke Test](docs/development/n8n-local-smoke-test.md)
 
+When you need to refresh the local development-server artifacts after validation
+commands such as `make check` or `make test`, run:
+
+```bash
+make update-devserver
+```
+
+This stages the downloadable Python SDK and n8n package into
+`build/integrations/`, refreshes the local n8n development mount under
+`.devcontainer/development/n8n/custom/node_modules/`, and restarts the web
+application.
+
 ## Python SDK
 
 The repository also includes a standalone Python SDK under:
@@ -175,4 +189,25 @@ downloadable source distribution for separate Python environments.
 Use the contributor guide when you need to install, validate, or extend the SDK:
 
 - [Python SDK Use And Validation](docs/development/python-sdk-use-and-validation.md)
+
+## Scenarios
+
+Standalone reset-and-seed scenarios live under:
+
+```text
+scenarios/
+```
+
+Create the dedicated scenarios environment with:
+
+```bash
+cd scenarios
+uv sync --python 3.14
+```
+
+Then run a scenario with the scenarios interpreter, for example:
+
+```bash
+scenarios/.venv/bin/python scenarios/issue-triage-with-n8n/seed.py --help
+```
 

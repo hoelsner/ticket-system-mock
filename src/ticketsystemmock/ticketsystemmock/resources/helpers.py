@@ -7,8 +7,8 @@ def clean_params(params: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in params.items() if value not in (None, "")}
 
 
-def to_data(payload: dict[str, Any]) -> dict[str, Any]:
-    data = {}
+def to_data(payload: dict[str, Any]) -> dict[str, str | list[str]]:
+    data: dict[str, str | list[str]] = {}
     for key, value in payload.items():
         if value is None:
             continue

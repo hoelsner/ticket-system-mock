@@ -1,19 +1,56 @@
+from typing import ClassVar
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from djangoapp.core.models import Collection, IssueAttachment, IssueCategory, IssueComment
+from djangoapp.core.controllers import GroupController
+from djangoapp.core.models import (
+    Collection,
+    IssueAttachment,
+    IssueCategory,
+    IssueComment,
+    WorkflowStateAutoAssignmentRule,
+)
 from djangoapp.user_interface.models import UserProfile
 
 
-class CollectionForm(forms.ModelForm):
+class _PreserveOmittedBooleanModelForm(forms.ModelForm):
+    preserved_boolean_fields: ClassVar[tuple[str, ...]] = ()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.is_bound:
+            return cleaned_data
+
+        for field_name in self.preserved_boolean_fields:
+            if self.add_prefix(field_name) in self.data:
+                continue
+
+            if self.instance.pk:
+                cleaned_data[field_name] = getattr(self.instance, field_name)
+                continue
+
+            model_class = self._meta.model
+            if model_class is None:
+                continue
+            cleaned_data[field_name] = model_class._meta.get_field(field_name).get_default()
+
+        return cleaned_data
+
+
+class CollectionForm(_PreserveOmittedBooleanModelForm):
+    preserved_boolean_fields = ("is_active",)
+
     class Meta:
         model = Collection
         fields = ["name", "prefix", "description", "is_active", "next_issue_sequence"]
 
 
-class IssueCategoryForm(forms.ModelForm):
+class IssueCategoryForm(_PreserveOmittedBooleanModelForm):
+    preserved_boolean_fields = ("is_active",)
+
     class Meta:
         model = IssueCategory
         fields = ["name", "code", "description", "is_active"]
@@ -94,6 +131,7 @@ class UserManagementForm(forms.Form):
 
 class GroupManagementForm(forms.Form):
     name = forms.CharField(max_length=150)
+    description = forms.CharField(required=False)
     user_ids = forms.ModelMultipleChoiceField(queryset=get_user_model().objects.order_by("username"), required=False)
 
     def __init__(self, *args, instance=None, **kwargs):
@@ -101,6 +139,7 @@ class GroupManagementForm(forms.Form):
         super().__init__(*args, **kwargs)
         if instance is not None:
             self.initial.setdefault("name", instance.name)
+            self.initial.setdefault("description", GroupController.get_description(instance))
             self.initial.setdefault("user_ids", instance.user_set.order_by("username").values_list("pk", flat=True))
 
     def clean_name(self):
@@ -111,3 +150,13 @@ class GroupManagementForm(forms.Form):
         if queryset.exists():
             raise forms.ValidationError("A group with that name already exists.")
         return name
+
+
+class WorkflowStateAutoAssignmentRuleForm(forms.ModelForm):
+    class Meta:
+        model = WorkflowStateAutoAssignmentRule
+        fields = ["workflow_state", "group", "user", "is_active"]
+
+
+class InstanceResetForm(forms.Form):
+    confirm_reset = forms.BooleanField(required=True)

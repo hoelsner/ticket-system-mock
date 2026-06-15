@@ -2,6 +2,7 @@ from .board import BoardColumn, BoardResponse
 from .collection import Collection, CollectionListResponse, CollectionMutation
 from .dashboard import DashboardResponse
 from .group import Group, GroupDeletion, GroupListResponse, GroupMutation, ManagedGroup
+from .instance_reset import InstanceResetResult
 from .issue import ArchiveResult, IssueDetail, IssueListResponse, IssueMutation, MoveResult
 from .issue_attachment import IssueAttachment, IssueAttachmentMutation
 from .issue_category import IssueCategory, IssueCategoryListResponse, IssueCategoryMutation
@@ -20,6 +21,12 @@ from .user import (
     UserProfileMutation,
 )
 from .user_summary import UserSummary
+from .workflow_state_auto_assignment_rule import (
+    WorkflowStateAutoAssignmentRule,
+    WorkflowStateAutoAssignmentRuleDeletion,
+    WorkflowStateAutoAssignmentRuleListResponse,
+    WorkflowStateAutoAssignmentRuleMutation,
+)
 
 __all__ = [
     "ArchiveResult",
@@ -35,6 +42,7 @@ __all__ = [
     "GroupListResponse",
     "GroupMutation",
     "HealthResponse",
+    "InstanceResetResult",
     "IssueAttachment",
     "IssueAttachmentMutation",
     "IssueCategory",
@@ -58,4 +66,8 @@ __all__ = [
     "UserProfile",
     "UserProfileMutation",
     "UserSummary",
+    "WorkflowStateAutoAssignmentRule",
+    "WorkflowStateAutoAssignmentRuleDeletion",
+    "WorkflowStateAutoAssignmentRuleListResponse",
+    "WorkflowStateAutoAssignmentRuleMutation",
 ]

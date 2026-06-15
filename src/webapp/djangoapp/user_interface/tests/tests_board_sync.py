@@ -81,6 +81,19 @@ class BoardSyncTests(TestCase):
         self.assertContains(response, "data-kanban-card-wrapper")
         self.assertNotContains(response, "kanban-priority-pane")
 
+    def test_board_fragment_without_matching_issues_still_renders_empty_columns(self):
+        self.create_issue(title="Visible new issue")
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("board-fragment"), {"search": "printer"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-kanban-board-shell")
+        self.assertContains(response, "data-kanban-column")
+        self.assertContains(response, "kanban-column__empty")
+        self.assertNotContains(response, "No matching issues")
+        self.assertNotContains(response, "Visible new issue")
+
     def test_issue_move_view_rejects_invalid_state(self):
         issue = self.create_issue()
         self.client.force_login(self.user)

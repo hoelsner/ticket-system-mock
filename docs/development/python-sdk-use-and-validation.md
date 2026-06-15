@@ -69,6 +69,8 @@ The sync and async clients expose the same high-level resource layout:
 - `comments` for comment add and update helpers
 - `attachments` for attachment add, update, delete, and download helpers
 - `admin.users` and `admin.groups` for superuser-only management endpoints
+- `admin.workflow_state_auto_assignment_rules` for superuser-only workflow rule CRUD
+- `admin.reset_instance(...)` for guarded superuser-only instance reset that preserves the authenticated superuser account
 
 The package also exports typed enums for current API values, including:
 
@@ -80,10 +82,12 @@ The package also exports typed enums for current API values, including:
 
 ## Local Install and Quick Use
 
-Install the package in editable mode from the repository root:
+Create and sync the dedicated Python 3.14 virtual environment inside the SDK
+directory:
 
 ```bash
-python3 -m pip install -e src/ticketsystemmock
+cd src/ticketsystemmock
+uv sync --python 3.14
 ```
 
 Minimal sync example:
@@ -100,6 +104,7 @@ Minimal async example:
 
 ```python
 from ticketsystemmock import AsyncTicketSystemClient
+
 
 async def main():
     async with AsyncTicketSystemClient("http://webapp:8000", "admin", "admin1234") as client:
@@ -118,9 +123,15 @@ async def main():
     Useful commands from the repository root:
 
     ```bash
+    make update-devserver
     make ticketsystemmock-stage-dev-package
     make ticketsystemmock-validate-package
     ```
+
+    Use `make update-devserver` when you want one command that restages all
+    development-server artifacts after `make check` or `make test`, including
+    the SDK download, the downloadable n8n package, the local n8n development
+    mount, and the web application restart.
 
     Use `make ticketsystemmock-stage-dev-package` when you want the local
     development server at `http://webapp:8000/integrations/` to expose the SDK
@@ -132,7 +143,7 @@ async def main():
     their own Python environment with:
 
     ```bash
-    python3 -m venv .venv
+    uv venv --python 3.14 .venv
     . .venv/bin/activate
     python -m pip install /path/to/ticketsystemmock-0.1.0.tar.gz
     ```
@@ -146,15 +157,16 @@ Use these focused commands from the repository root:
 
 ```bash
 make ticketsystemmock-compile
+make ticketsystemmock-mypy-check
 make ticketsystemmock-complexity-check
 make ticketsystemmock-bandit-tests
 make ticketsystemmock-unittest
 make ticketsystemmock-test-coverage
 ```
 
-These scripts create or reuse `src/ticketsystemmock/.venv`, install the SDK into
-that environment, and install the required validation tools for complexity,
-security, and coverage checks.
+These scripts create or reuse `src/ticketsystemmock/.venv` with Python 3.14 via
+`uv`, install the SDK into that environment, and install the required
+validation tools for type checking, complexity, security, and coverage checks.
 
 Current SDK coverage gate:
 
@@ -167,7 +179,7 @@ integration surfaces.
 
 The repository-level targets now include the SDK validation steps:
 
-- `make check` runs SDK compile, complexity, bandit, and unittest checks
+- `make check` runs SDK compile, mypy, complexity, bandit, and unittest checks
 - `make test` runs SDK coverage before the webapp coverage pass
 
 The SDK steps run before the broader webapp test phases so they are still
@@ -201,11 +213,13 @@ Use this sequence when changing the Python SDK:
 
 1. update SDK code only inside `src/ticketsystemmock`
 2. run the focused SDK targets, starting with `make ticketsystemmock-unittest`
-3. run `make ticketsystemmock-complexity-check` and `make ticketsystemmock-bandit-tests` when the change affects implementation structure
+3. run `make ticketsystemmock-mypy-check`, `make ticketsystemmock-complexity-check`, and `make ticketsystemmock-bandit-tests` when the change affects implementation structure
 4. run `make ticketsystemmock-test-coverage` when the change affects shipped SDK behavior
 5. run `make check` and, when appropriate, `make test` to keep the SDK validated as part of the full repository flow
-6. run a live smoke check against `http://webapp:8000` when the change affects auth, transport, or request encoding behavior
-7. update this document and the package `README.md` when the SDK surface or validation contract changes
+6. run `make update-devserver` when the refreshed SDK package should be exposed
+    through the local development server
+7. run a live smoke check against `http://webapp:8000` when the change affects auth, transport, or request encoding behavior
+8. update this document and the package `README.md` when the SDK surface or validation contract changes
 
 ## Related Documents
 

@@ -27,6 +27,6 @@ class IssueSummary(ApiModel):
     closed_at: str | None
     archived_at: str | None
     collection: Collection
-    category: IssueCategory
+    category: IssueCategory | None
     group: Group | None
     user: UserSummary | None

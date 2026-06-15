@@ -9,6 +9,7 @@ from django.test.client import RequestFactory
 from django.urls import reverse
 
 from djangoapp.core.admin import (
+    GroupAdminForm,
     IssueAdmin,
     IssueHistoryEventAdmin,
     IssueStateTransitionAdmin,
@@ -97,6 +98,30 @@ class CoreAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "VPN access request")
+
+    def test_group_admin_change_form_shows_description_and_persists_updates(self):
+        form = GroupAdminForm(instance=self.group)
+
+        self.assertEqual(form.fields["description"].initial, "")
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("admin:auth_group_change", args=[self.group.pk]),
+            {
+                "name": self.group.name,
+                "description": "Handles escalated network cases",
+                "permissions": [],
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.group.refresh_from_db()
+        self.assertEqual(self.group.core_details.description, "Handles escalated network cases")
+
+        updated_form = GroupAdminForm(instance=self.group)
+
+        self.assertEqual(updated_form.fields["description"].initial, "Handles escalated network cases")
 
     def test_issue_admin_save_model_creates_issue_on_add(self):
         admin_instance = IssueAdmin(Issue, self.site)

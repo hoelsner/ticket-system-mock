@@ -1,6 +1,7 @@
 from .attachment_paths import draft_issue_attachment_upload_to, issue_attachment_upload_to
 from .collection import Collection
 from .draft_issue_attachment import DraftIssueAttachment
+from .group_details import GroupDetails
 from .issue import Issue
 from .issue_attachment import IssueAttachment
 from .issue_category import IssueCategory
@@ -22,6 +23,7 @@ from .workflow_state_auto_assignment_rule import WorkflowStateAutoAssignmentRule
 __all__ = [
     "Collection",
     "DraftIssueAttachment",
+    "GroupDetails",
     "Issue",
     "IssueAttachment",
     "IssueCategory",

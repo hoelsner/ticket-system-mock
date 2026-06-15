@@ -76,6 +76,15 @@ class CoreModelTests(TestCase):
         self.assertEqual(second_task.issue_number, "TASK-002")
         self.assertEqual(bug.issue_number, "BUG-001")
 
+    def test_issue_allows_missing_category(self):
+        issue = Issue.objects.create(
+            title="Unclassified outage",
+            description_markdown="Category pending during intake.",
+            collection=self.collection,
+        )
+
+        self.assertIsNone(issue.category)
+
     def test_collection_name_must_be_unique(self):
         duplicate_collection = Collection(
             name=self.collection.name,

@@ -13,6 +13,14 @@ repos:
         always_run: true
         stages:
           - pre-commit
+      - id: make-update-devserver
+        name: make update-devserver
+        entry: make update-devserver
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages:
+          - post-commit
       - id: make-test
         name: make test
         entry: make test

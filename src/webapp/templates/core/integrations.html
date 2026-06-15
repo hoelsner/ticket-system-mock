@@ -91,11 +91,11 @@
 
         <h3>{% translate "Install in your own environment" %}</h3>
         {% if python_sdk_package %}
-          <pre><code>python3 -m venv .venv
+          <pre><code>uv venv --python 3.14 .venv
 . .venv/bin/activate
       python -m pip install /path/to/{{ python_sdk_package.filename }}</code></pre>
         {% else %}
-          <pre><code>python3 -m venv .venv
+          <pre><code>uv venv --python 3.14 .venv
       . .venv/bin/activate
       python -m pip install /path/to/ticketsystemmock-0.1.0.tar.gz</code></pre>
         {% endif %}

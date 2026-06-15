@@ -8,7 +8,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { ticketingApiRequest } from '../../transport/request';
 
@@ -203,8 +203,8 @@ export class IssueAttachment implements INodeType {
 		defaults: {
 			name: 'TSM - Issue Attachment',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'ticketSystemMockApi', required: true }],
 		properties: [operationProperty, issueIdProperty, attachmentIdProperty, ...attachmentProperties],
 	};

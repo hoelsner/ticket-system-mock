@@ -7,8 +7,11 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 package_root="${repo_root}/src/n8n_node"
 stage_root="${repo_root}/.devcontainer/development/n8n/custom/node_modules/n8n-nodes-ticket-system-mock"
 
-rm -rf "${stage_root}"
 mkdir -p "${stage_root}"
+
+# Preserve the bind-mounted directory inode so a running n8n container keeps
+# seeing updated contents instead of an empty, replaced source directory.
+find "${stage_root}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
 pushd "${repo_root}" >/dev/null
 make n8n-node-build

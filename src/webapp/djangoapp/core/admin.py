@@ -1,9 +1,13 @@
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.admin import GroupAdmin as DjangoGroupAdmin
+from django.contrib.auth.models import Group
+from django.utils.translation import gettext_lazy as _
 
 from .controllers import IssueController, WebhookController
 from .models import (
     Collection,
+    GroupDetails,
     Issue,
     IssueAttachment,
     IssueCategory,
@@ -63,6 +67,44 @@ class WebhookEndpointAdminForm(forms.ModelForm):
         if self.instance.pk:
             return self.instance.secret
         return ""
+
+
+class GroupAdminForm(forms.ModelForm):
+    description = forms.CharField(
+        required=False,
+        label=_("description"),
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+
+    class Meta:
+        model = Group
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            details = getattr(self.instance, "core_details", None)
+            self.fields["description"].initial = details.description if details is not None else ""
+
+
+admin.site.unregister(Group)
+
+
+@admin.register(Group)
+class GroupAdmin(DjangoGroupAdmin):
+    form = GroupAdminForm
+    fieldsets = (
+        (None, {"fields": ("name", "permissions")}),
+        (_("Ticket System Mock"), {"fields": ("description",)}),
+    )
+    add_fieldsets = ((None, {"classes": ("wide",), "fields": ("name", "permissions", "description")}),)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        details, _created = GroupDetails.objects.get_or_create(group=obj)
+        details.description = form.cleaned_data["description"]
+        details.save(update_fields=["description"])
+        obj.core_details = details
 
 
 class IssueAttachmentInline(admin.TabularInline):
@@ -344,10 +386,9 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
     search_fields = ("name", "target_url", "description")
     readonly_fields = ("last_delivery_status", "last_delivery_attempt_at", "created_at", "updated_at")
 
+    @admin.display(description="subscribed event types")
     def subscribed_event_types_summary(self, obj):
         return obj.subscribed_event_types_display
-
-    subscribed_event_types_summary.short_description = "subscribed event types"
 
 
 @admin.register(WebhookEvent)

@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS n8n_node_builder
+FROM node:22-bookworm-slim AS n8n_node_builder
 
 WORKDIR /app/src/n8n_node
 

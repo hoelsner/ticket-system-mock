@@ -290,6 +290,7 @@ _TODO.md
 !.raw/**/.gitkeep
 /data
 /src/webapp/covreport
+/src/n8n_node/covreport
 /src/ticketsystemmock/covreport
 .queue
 /src/webapp/runtime

@@ -19,7 +19,7 @@ ensure_virtualenv() {
         return 0
     fi
 
-    python3 -m venv "$venv_dir"
+    uv venv --python 3.14 "$venv_dir"
 }
 
 ensure_package_dependencies() {
@@ -31,11 +31,11 @@ ensure_package_dependencies() {
 }
 
 ensure_dev_tools() {
-    if "$python_bin" -c "import bandit, coverage, radon" >/dev/null 2>&1; then
+    if "$python_bin" -c "import bandit, coverage, mypy, radon" >/dev/null 2>&1; then
         return 0
     fi
 
-    "$python_bin" -m pip install -q bandit coverage radon
+    "$python_bin" -m pip install -q bandit coverage mypy radon
 }
 
 prepare_environment() {

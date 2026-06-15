@@ -14,6 +14,7 @@ When working with the running development server in this repository, follow thes
 
 - assume the development server is already running in the background unless there is evidence that it is unavailable
 - restart the background webapp service with `make webapp-restart-devserver` when server-side code or runtime state appears stale
+- use `make update-devserver` after integration-facing changes to the webapp, SDK, or n8n node so the staged local artifacts are refreshed together before browser or workflow verification
 - use `docker compose logs webapp` to confirm startup, inspect tracebacks, and diagnose wrong behavior in the running service
 
 ## Static Asset Verification
@@ -37,4 +38,5 @@ When working with the running development server in this repository, follow thes
 - first confirm the target URL is reachable from the current environment
 - then confirm the rendered HTML references the expected asset or route
 - then verify the referenced URL returns the expected HTTP status and content type
+- when the local n8n custom node appears stale after a rebuild or restage, prefer refreshing staged artifacts with `make update-devserver` before changing application code
 - only after those checks should you change Django settings, templates, or static asset placement

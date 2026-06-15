@@ -38,7 +38,11 @@ urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("integrations/", IntegrationsView.as_view(), name="integrations"),
     path("integrations/n8n-node/download/", N8nNodePackageDownloadView.as_view(), name="integrations-n8n-download"),
-    path("integrations/python-sdk/download/", PythonSdkPackageDownloadView.as_view(), name="integrations-python-sdk-download"),
+    path(
+        "integrations/python-sdk/download/",
+        PythonSdkPackageDownloadView.as_view(),
+        name="integrations-python-sdk-download",
+    ),
     path("profile/", UserProfileSettingsView.as_view(), name="profile-settings"),
     path("users/<str:username>/", UserProfileDetailView.as_view(), name="user-profile-detail"),
     path("issues/create/", IssueCreateView.as_view(), name="issue-create"),

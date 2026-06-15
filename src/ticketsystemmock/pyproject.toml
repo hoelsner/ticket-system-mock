@@ -18,3 +18,11 @@ package-dir = {"" = "."}
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ticketsystemmock*"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["ticketsystemmock", "tests"]
+exclude = "(^\\.venv/|^covreport/|^ticketsystemmock\\.egg-info/)"
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true

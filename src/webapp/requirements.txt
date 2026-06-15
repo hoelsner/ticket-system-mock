@@ -9,14 +9,26 @@ django==6.0.5
     #   -r requirements.in
     #   django-cotton
     #   django-ninja
+    #   django-stubs
+    #   django-stubs-ext
 django-cotton==2.7.2
     # via -r requirements.in
 django-ninja==1.6.2
     # via -r requirements.in
+django-stubs==5.2.9
+    # via -r requirements.in
+django-stubs-ext==6.0.5
+    # via django-stubs
 gunicorn==26.0.0
     # via -r requirements.in
+mypy==1.18.2
+    # via -r requirements.in
+mypy-extensions==1.1.0
+    # via mypy
 packaging==26.2
     # via gunicorn
+pathspec==1.1.1
+    # via mypy
 psycopg==3.3.4
     # via -r requirements.in
 psycopg-binary==3.3.4
@@ -31,8 +43,13 @@ redis==7.4.0
     # via -r requirements.in
 sqlparse==0.5.5
     # via django
+types-pyyaml==6.0.12.20260518
+    # via django-stubs
 typing-extensions==4.15.0
     # via
+    #   django-stubs
+    #   django-stubs-ext
+    #   mypy
     #   pydantic
     #   pydantic-core
     #   typing-inspection

@@ -190,3 +190,58 @@ test('IssuePollTrigger emits newly changed issues and can load full issue detail
 	assert.equal(staticData.lastUpdatedAt, '2026-06-10T11:00:00Z');
 	assert.deepEqual(staticData.lastIssueIds, [7]);
 });
+
+test('IssuePollTrigger returns null when there are no newly changed issues after the watermark', async () => {
+	const trigger = new IssuePollTrigger();
+	const { context, staticData } = createPollContext({
+		staticData: {
+			lastUpdatedAt: '2026-06-10T11:00:00Z',
+			lastIssueIds: [7],
+		},
+		parameters: {
+			search: '',
+			assignee: '',
+			priority: '',
+			collection: '',
+			category: '',
+			workflowStateFilter: '',
+			workflowStateLabel: '',
+			loadFullIssueDetail: false,
+		},
+		requestHandler() {
+			return { data: [{ id: 7, updated_at: '2026-06-10T11:00:00Z' }] };
+		},
+	});
+
+	const response = await trigger.poll.call(context);
+	assert.equal(response, null);
+	assert.equal(staticData.lastUpdatedAt, '2026-06-10T11:00:00Z');
+	assert.deepEqual(staticData.lastIssueIds, [7]);
+});
+
+test('IssuePollTrigger wraps unknown poll failures in NodeOperationError', async () => {
+	const trigger = new IssuePollTrigger();
+	const { context } = createPollContext({
+		parameters: {
+			search: '',
+			assignee: '',
+			priority: '',
+			collection: '',
+			category: '',
+			workflowStateFilter: '',
+			workflowStateLabel: '',
+			loadFullIssueDetail: false,
+		},
+		requestHandler() {
+			throw new Error('poll exploded');
+		},
+	});
+
+	await assert.rejects(
+		trigger.poll.call(context),
+		(error) => {
+			assert.match(error.message, /poll exploded/);
+			return true;
+		},
+	);
+});

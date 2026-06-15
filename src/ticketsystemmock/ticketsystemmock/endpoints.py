@@ -5,11 +5,13 @@ AUTH_ME = f"{API_PREFIX}/auth/me"
 PROFILE_ME = f"{API_PREFIX}/profile/me"
 USERS = f"{API_PREFIX}/users"
 GROUPS = f"{API_PREFIX}/groups"
+WORKFLOW_STATE_AUTO_ASSIGNMENT_RULES = f"{API_PREFIX}/workflow-state-auto-assignment-rules"
 COLLECTIONS = f"{API_PREFIX}/collections"
 CATEGORIES = f"{API_PREFIX}/categories"
 BOARD = f"{API_PREFIX}/board"
 DASHBOARD = f"{API_PREFIX}/dashboard"
 ISSUES = f"{API_PREFIX}/issues"
+RESET_INSTANCE = f"{API_PREFIX}/instance-reset"
 
 
 def user_detail(user_id: int) -> str:
@@ -22,6 +24,10 @@ def user_profile(username: str) -> str:
 
 def group_detail(group_id: int) -> str:
     return f"{GROUPS}/{group_id}"
+
+
+def workflow_state_auto_assignment_rule_detail(rule_id: int) -> str:
+    return f"{WORKFLOW_STATE_AUTO_ASSIGNMENT_RULES}/{rule_id}"
 
 
 def collection_detail(collection_id: int) -> str:

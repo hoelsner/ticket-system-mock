@@ -6,7 +6,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { apiPaths } from '../../transport/api.constants';
 import { ticketingApiRequest, unwrapDataArrayResponse } from '../../transport/request';
@@ -116,8 +116,8 @@ export class Collection implements INodeType {
 		version: 1,
 		description: 'Read and mutate collection reference data in Ticket System Mock.',
 		defaults: { name: 'TSM - Collection' },
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'ticketSystemMockApi', required: true }],
 		properties: [operationProperty, collectionIdProperty, ...collectionMutationProperties],
 	};

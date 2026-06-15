@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ticket-system-mock-scenarios"
+version = "0.1.0"
+description = "Standalone scenario scripts for Ticket System Mock"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "click==8.4.1",
+    "ticketsystemmock",
+]
+
+[tool.uv.sources]
+ticketsystemmock = { path = "../src/ticketsystemmock", editable = true }

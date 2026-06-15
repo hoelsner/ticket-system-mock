@@ -15,12 +15,19 @@ from django.utils import timezone
 from djangoapp.core.controllers import GroupController, UserController
 from djangoapp.core.models import (
     Collection,
+    DraftIssueAttachment,
     Issue,
+    IssueAttachment,
     IssueCategory,
     IssueComment,
+    IssueCommentMention,
+    IssueDescriptionTemplate,
     IssueHistoryEvent,
     IssuePriority,
     IssueStateTransition,
+    WebhookEndpoint,
+    WebhookEvent,
+    WebhookEventType,
     WorkflowState,
     WorkflowStateAutoAssignmentRule,
 )
@@ -157,7 +164,17 @@ class RestApiTests(TestCase):
             schema["paths"]["/api/issues"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"][
                 "required"
             ],
-            ["title", "collection", "category", "priority"],
+            ["title", "collection", "priority"],
+        )
+        self.assertEqual(
+            schema["paths"]["/api/issues/{issue_id}"]["put"]["requestBody"]["content"]["multipart/form-data"]["schema"][
+                "required"
+            ],
+            ["title", "collection", "priority", "workflow_state"],
+        )
+        self.assertEqual(
+            schema["components"]["schemas"]["IssueSummarySchema"]["properties"]["category"]["description"],
+            "Issue category assigned to the issue, if available.",
         )
         self.assertEqual(
             schema["paths"]["/api/issues/{issue_id}/move"]["post"]["requestBody"]["content"]["application/json"][
@@ -196,6 +213,10 @@ class RestApiTests(TestCase):
         self.assertEqual(
             schema["components"]["schemas"]["ManagedUserSchema"]["properties"]["groups"]["description"],
             "Groups that currently include the managed user.",
+        )
+        self.assertEqual(
+            schema["components"]["schemas"]["GroupSchema"]["properties"]["description"]["description"],
+            "Operational purpose or notes for the group.",
         )
         self.assertEqual(
             schema["components"]["schemas"]["UserProfileSchema"]["properties"]["avatar_type"]["description"],
@@ -329,6 +350,7 @@ class RestApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"][0]["name"], "Network Operations")
+        self.assertEqual(response.json()["data"][0]["description"], "")
 
         response = self.client.get(
             "/api/users",
@@ -418,6 +440,39 @@ class RestApiTests(TestCase):
         self.assertFalse(created_collection.is_active)
         self.assertEqual(created_collection.next_issue_sequence, 7)
 
+    def test_collection_endpoints_preserve_is_active_when_omitted(self):
+        create_response = self.client.post(
+            "/api/collections",
+            data=json.dumps({
+                "name": "Operations",
+                "prefix": "OPS",
+                "description": "Operations queue",
+                "next_issue_sequence": 1,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        created_collection = Collection.objects.get(prefix="OPS")
+        self.assertTrue(created_collection.is_active)
+
+        update_response = self.client.put(
+            f"/api/collections/{created_collection.pk}",
+            data=json.dumps({
+                "name": "Operations Renamed",
+                "prefix": "OPS",
+                "description": "Renamed operations queue",
+                "next_issue_sequence": 2,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        created_collection.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertTrue(created_collection.is_active)
+
     def test_collection_endpoints_reject_duplicate_names(self):
         existing_collection = Collection.objects.create(name="Incident", prefix="INC")
 
@@ -485,6 +540,37 @@ class RestApiTests(TestCase):
         self.assertEqual(update_response.status_code, 200)
         self.assertEqual(created_category.name, "Security Operations")
         self.assertFalse(created_category.is_active)
+
+    def test_category_endpoints_preserve_is_active_when_omitted(self):
+        create_response = self.client.post(
+            "/api/categories",
+            data=json.dumps({
+                "name": "Automation",
+                "code": "AUTO",
+                "description": "Automation issues",
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        created_category = IssueCategory.objects.get(code="AUTO")
+        self.assertTrue(created_category.is_active)
+
+        update_response = self.client.put(
+            f"/api/categories/{created_category.pk}",
+            data=json.dumps({
+                "name": "Automation Updated",
+                "code": "AUTO",
+                "description": "Updated automation issues",
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        created_category.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertTrue(created_category.is_active)
 
     def test_category_endpoints_reject_duplicate_names(self):
         existing_category = IssueCategory.objects.create(name="Security", code="SEC")
@@ -668,12 +754,19 @@ class RestApiTests(TestCase):
 
         managed_group = Group.objects.create(name="Escalation")
         managed_group.user_set.add(self.user)
-        updated_group = GroupController.update(managed_group, {"name": "Escalation Desk"})
+        updated_group = GroupController.update(
+            managed_group,
+            {"name": "Escalation Desk", "description": "Escalation handling"},
+        )
 
         self.assertEqual(updated_group.name, "Escalation Desk")
         self.assertEqual(list(updated_group.user_set.values_list("username", flat=True)), [self.user.username])
+        self.assertEqual(GroupController.get_description(updated_group), "Escalation handling")
 
-        instance_group_form = GroupManagementForm({"name": managed_group.name}, instance=managed_group)
+        instance_group_form = GroupManagementForm(
+            {"name": managed_group.name, "description": "Escalation handling"},
+            instance=managed_group,
+        )
         self.assertTrue(instance_group_form.is_valid(), instance_group_form.errors)
 
     def test_superuser_user_management_endpoints_support_create_read_update_and_deactivate(self):
@@ -762,6 +855,7 @@ class RestApiTests(TestCase):
             "/api/groups",
             data=json.dumps({
                 "name": "Field Operations",
+                "description": "Field dispatch team",
                 "user_ids": [self.user.pk],
             }),
             content_type="application/json",
@@ -771,6 +865,7 @@ class RestApiTests(TestCase):
         self.assertEqual(create_response.status_code, 201)
         managed_group = Group.objects.get(name="Field Operations")
         self.assertEqual(create_response.json()["group"]["users"][0]["username"], self.user.username)
+        self.assertEqual(create_response.json()["group"]["description"], "Field dispatch team")
 
         detail_response = self.client.get(
             f"/api/groups/{managed_group.pk}",
@@ -779,11 +874,13 @@ class RestApiTests(TestCase):
 
         self.assertEqual(detail_response.status_code, 200)
         self.assertEqual(detail_response.json()["name"], "Field Operations")
+        self.assertEqual(detail_response.json()["description"], "Field dispatch team")
 
         update_response = self.client.put(
             f"/api/groups/{managed_group.pk}",
             data=json.dumps({
                 "name": "Field Dispatch",
+                "description": "Updated field dispatch team",
                 "user_ids": [self.observer.pk],
             }),
             content_type="application/json",
@@ -794,6 +891,8 @@ class RestApiTests(TestCase):
         self.assertEqual(update_response.status_code, 200)
         self.assertEqual(managed_group.name, "Field Dispatch")
         self.assertEqual(list(managed_group.user_set.values_list("username", flat=True)), [self.observer.username])
+        self.assertEqual(update_response.json()["group"]["description"], "Updated field dispatch team")
+        self.assertEqual(GroupController.get_description(managed_group), "Updated field dispatch team")
 
         delete_response = self.client.delete(
             f"/api/groups/{managed_group.pk}",
@@ -803,6 +902,268 @@ class RestApiTests(TestCase):
         self.assertEqual(delete_response.status_code, 200)
         self.assertEqual(delete_response.json()["status"], "deleted")
         self.assertFalse(Group.objects.filter(pk=managed_group.pk).exists())
+
+    def test_superuser_workflow_rule_endpoints_support_create_read_update_and_delete(self):
+        other_group = Group.objects.create(name="Field Operations")
+        other_group.user_set.add(self.observer)
+
+        create_response = self.client.post(
+            "/api/workflow-state-auto-assignment-rules",
+            data=json.dumps({
+                "workflow_state": WorkflowState.ASSIGNED,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_active": True,
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        rule = WorkflowStateAutoAssignmentRule.objects.get(workflow_state=WorkflowState.ASSIGNED)
+        self.assertEqual(create_response.json()["rule"]["group"]["name"], self.support_group.name)
+        self.assertEqual(create_response.json()["rule"]["user"]["username"], self.user.username)
+
+        list_response = self.client.get(
+            "/api/workflow-state-auto-assignment-rules",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(list_response.json()["data"][0]["workflow_state"], WorkflowState.ASSIGNED)
+
+        detail_response = self.client.get(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(detail_response.json()["workflow_state_label"], "Assigned")
+
+        update_response = self.client.put(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            data=json.dumps({
+                "workflow_state": WorkflowState.WAITING,
+                "group": other_group.pk,
+                "user": self.observer.pk,
+                "is_active": False,
+            }),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        rule.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(rule.workflow_state, WorkflowState.WAITING)
+        self.assertEqual(rule.group, other_group)
+        self.assertEqual(rule.user, self.observer)
+        self.assertFalse(rule.is_active)
+
+        delete_response = self.client.delete(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(delete_response.json()["status"], "deleted")
+        self.assertFalse(WorkflowStateAutoAssignmentRule.objects.filter(pk=rule.pk).exists())
+
+    def test_workflow_rule_management_requires_superuser(self):
+        rule = WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=self.support_group,
+            user=self.user,
+        )
+
+        create_response = self.client.post(
+            "/api/workflow-state-auto-assignment-rules",
+            data=json.dumps({
+                "workflow_state": WorkflowState.WAITING,
+                "group": self.support_group.pk,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        list_response = self.client.get(
+            "/api/workflow-state-auto-assignment-rules",
+            headers=self.basic_auth_header(),
+        )
+        detail_response = self.client.get(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            headers=self.basic_auth_header(),
+        )
+        update_response = self.client.put(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            data=json.dumps({
+                "workflow_state": WorkflowState.ASSIGNED,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_active": True,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        delete_response = self.client.delete(
+            f"/api/workflow-state-auto-assignment-rules/{rule.pk}",
+            headers=self.basic_auth_header(),
+        )
+
+        for response in [
+            create_response,
+            list_response,
+            detail_response,
+            update_response,
+            delete_response,
+        ]:
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json()["error"], "Superuser access required.")
+
+        rule.refresh_from_db()
+        self.assertEqual(rule.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(rule.group, self.support_group)
+        self.assertEqual(rule.user, self.user)
+
+    def test_superuser_instance_reset_endpoint_clears_instance_data_and_preserves_authenticated_user(self):
+        self.admin_auth_header()
+        managed_user = get_user_model().objects.create_user(
+            username="managed-user",
+            password="managed-password-123",
+            first_name="Managed",
+            last_name="User",
+        )
+        managed_group = Group.objects.create(name="Field Operations")
+        managed_group.user_set.add(managed_user)
+        managed_collection = Collection.objects.create(
+            name="Managed Collection",
+            prefix="MGD",
+            description="Managed collection.",
+        )
+        managed_category = IssueCategory.objects.create(
+            name="Managed Category",
+            code="MANAGED",
+            description="Managed category.",
+        )
+        managed_issue = Issue.objects.create(
+            title="Managed issue",
+            description_markdown="Managed description.",
+            collection=managed_collection,
+            category=managed_category,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.HIGH,
+            group=managed_group,
+            user=managed_user,
+        )
+        managed_comment = IssueComment.objects.create(
+            issue=managed_issue,
+            author_user=managed_user,
+            body="Managed comment.",
+        )
+        IssueCommentMention.objects.create(
+            issue_comment=managed_comment,
+            mentioned_user=self.user,
+            mentioned_as=self.user.username,
+        )
+        IssueAttachment.objects.create(
+            issue=managed_issue,
+            file=SimpleUploadedFile("trace.txt", b"trace-bytes", content_type="text/plain"),
+            original_filename="trace.txt",
+            content_type="text/plain",
+            file_size=11,
+            description="Trace output",
+            uploaded_by_user=managed_user,
+        )
+        IssueHistoryEvent.objects.create(
+            issue=managed_issue,
+            event_type=IssueHistoryEvent.FIELD_CHANGED,
+            field_name="priority",
+            old_value="MEDIUM",
+            new_value="HIGH",
+            changed_by_user=managed_user,
+        )
+        IssueStateTransition.objects.create(
+            issue=managed_issue,
+            from_state=WorkflowState.NEW,
+            to_state=WorkflowState.ASSIGNED,
+            changed_by_user=managed_user,
+            reason="Managed transition.",
+        )
+        WebhookEvent.objects.create(
+            event_type=WebhookEventType.ISSUE_UPDATED,
+            issue=managed_issue,
+            payload={"event": WebhookEventType.ISSUE_UPDATED},
+        )
+        WorkflowStateAutoAssignmentRule.objects.create(
+            workflow_state=WorkflowState.WAITING,
+            group=managed_group,
+            user=managed_user,
+        )
+        WebhookEndpoint.objects.create(
+            name="Managed Endpoint",
+            target_url="https://example.test/webhook",
+            subscribed_event_types=[WebhookEventType.ISSUE_UPDATED],
+        )
+        IssueDescriptionTemplate.objects.create(
+            name="Managed Template",
+            description_markdown="Managed template.",
+            collection=managed_collection,
+        )
+        DraftIssueAttachment.objects.create(
+            draft_token="managed-draft-token",
+            file=SimpleUploadedFile("draft.txt", b"draft-bytes", content_type="text/plain"),
+            original_filename="draft.txt",
+            content_type="text/plain",
+            file_size=11,
+            description="Draft output",
+            uploaded_by_user=managed_user,
+        )
+
+        response = self.client.post(
+            "/api/instance-reset",
+            data=json.dumps({"confirm_reset": True}),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "reset")
+        self.assertEqual(response.json()["preserved_user_id"], self.admin_user.pk)
+        self.assertTrue(get_user_model().objects.filter(pk=self.admin_user.pk).exists())
+        self.assertFalse(get_user_model().objects.filter(pk=managed_user.pk).exists())
+        self.assertFalse(Group.objects.filter(pk=managed_group.pk).exists())
+        self.assertFalse(Collection.objects.filter(pk=managed_collection.pk).exists())
+        self.assertFalse(IssueCategory.objects.filter(pk=managed_category.pk).exists())
+        self.assertFalse(Issue.objects.filter(pk=managed_issue.pk).exists())
+        self.assertEqual(IssueComment.objects.count(), 0)
+        self.assertEqual(IssueAttachment.objects.count(), 0)
+        self.assertEqual(IssueCommentMention.objects.count(), 0)
+        self.assertEqual(IssueHistoryEvent.objects.count(), 0)
+        self.assertEqual(IssueStateTransition.objects.count(), 0)
+        self.assertEqual(WebhookEvent.objects.count(), 0)
+        self.assertEqual(WorkflowStateAutoAssignmentRule.objects.count(), 0)
+        self.assertEqual(WebhookEndpoint.objects.count(), 0)
+        self.assertEqual(IssueDescriptionTemplate.objects.count(), 0)
+        self.assertEqual(DraftIssueAttachment.objects.count(), 0)
+
+    def test_instance_reset_requires_superuser_and_confirmation(self):
+        self.admin_auth_header()
+
+        forbidden_response = self.client.post(
+            "/api/instance-reset",
+            data=json.dumps({"confirm_reset": True}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+        invalid_response = self.client.post(
+            "/api/instance-reset",
+            data=json.dumps({"confirm_reset": False}),
+            content_type="application/json",
+            headers=self.admin_auth_header(),
+        )
+
+        self.assertEqual(forbidden_response.status_code, 403)
+        self.assertEqual(forbidden_response.json()["error"], "Superuser access required.")
+        self.assertEqual(invalid_response.status_code, 400)
+        self.assertIn("confirm_reset", invalid_response.json()["errors"])
 
     def test_user_and_group_management_requires_superuser(self):
         baseline_group_name = self.support_group.name
@@ -1360,6 +1721,28 @@ class RestApiTests(TestCase):
         self.assertEqual(Issue.objects.count(), 1)
         self.assertTrue(Issue.objects.get().is_escalated)
 
+    def test_create_issue_endpoint_allows_null_category(self):
+        response = self.client.post(
+            "/api/issues",
+            data=json.dumps({
+                "title": "Primary uplink outage",
+                "description_markdown": "Core switch unreachable from branch office.",
+                "collection": self.collection.pk,
+                "category": None,
+                "priority": IssuePriority.HIGH,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_escalated": False,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        issue = Issue.objects.get()
+        self.assertIsNone(issue.category)
+        self.assertIsNone(response.json()["issue"]["category"])
+
     def test_create_issue_endpoint_accepts_multipart_attachments(self):
         response = self.client.post(
             "/api/issues",
@@ -1384,6 +1767,67 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.attachments.count(), 1)
         self.assertEqual(issue.attachments.get().original_filename, "switch-logs.txt")
         self.assertEqual(response.json()["issue"]["attachments"][0]["original_filename"], "switch-logs.txt")
+
+    def test_create_issue_endpoint_accepts_minimum_and_maximum_payloads(self):
+        cases = (
+            {
+                "name": "minimum",
+                "payload": {
+                    "title": "Minimal REST issue",
+                    "collection": self.collection.pk,
+                    "priority": IssuePriority.MEDIUM,
+                },
+                "expected": {
+                    "description_markdown": "",
+                    "category": None,
+                    "group": None,
+                    "user": None,
+                    "is_escalated": False,
+                    "workflow_state": WorkflowState.NEW,
+                },
+            },
+            {
+                "name": "maximum",
+                "payload": {
+                    "title": "Maximum REST issue",
+                    "description_markdown": "Observed during backup window.",
+                    "collection": self.collection.pk,
+                    "category": self.category.pk,
+                    "priority": IssuePriority.CRITICAL,
+                    "group": self.support_group.pk,
+                    "user": self.user.pk,
+                    "is_escalated": True,
+                    "workflow_state": WorkflowState.ASSIGNED,
+                },
+                "expected": {
+                    "description_markdown": "Observed during backup window.",
+                    "category": self.category,
+                    "group": self.support_group,
+                    "user": self.user,
+                    "is_escalated": True,
+                    "workflow_state": WorkflowState.ASSIGNED,
+                },
+            },
+        )
+
+        for case in cases:
+            with self.subTest(case=case["name"]):
+                response = self.client.post(
+                    "/api/issues",
+                    data=json.dumps(case["payload"]),
+                    content_type="application/json",
+                    headers=self.basic_auth_header(),
+                )
+
+                issue = Issue.objects.get(title=case["payload"]["title"])
+
+                self.assertEqual(response.status_code, 201)
+                self.assertEqual(issue.description_markdown, case["expected"]["description_markdown"])
+                self.assertEqual(issue.category, case["expected"]["category"])
+                self.assertEqual(issue.group, case["expected"]["group"])
+                self.assertEqual(issue.user, case["expected"]["user"])
+                self.assertEqual(issue.is_escalated, case["expected"]["is_escalated"])
+                self.assertEqual(issue.workflow_state, case["expected"]["workflow_state"])
 
     def test_update_issue_endpoint_applies_workflow_transition(self):
         issue = Issue.objects.create(
@@ -1530,6 +1974,119 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.category_id, self.category.pk)
         self.assertEqual(issue.priority, IssuePriority.HIGH)
 
+    def test_update_issue_endpoint_keeps_null_category_when_omitted(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=None,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "title": "Primary uplink outage updated",
+                "workflow_state": WorkflowState.TRIAGE,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.title, "Primary uplink outage updated")
+        self.assertEqual(issue.workflow_state, WorkflowState.TRIAGE)
+        self.assertIsNone(issue.category)
+        self.assertIsNone(response.json()["issue"]["category"])
+
+    def test_update_issue_endpoint_clears_assigned_user_when_only_group_changes(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+        escalation_group = Group.objects.create(name="Escalation")
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "group": escalation_group.pk,
+                "workflow_state": WorkflowState.NEW,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.group, escalation_group)
+        self.assertIsNone(issue.user)
+
+    def test_update_issue_endpoint_accepts_user_without_requiring_group_in_payload(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        response = self.client.put(
+            f"/api/issues/{issue.pk}",
+            data=json.dumps({
+                "user": self.observer.pk,
+                "workflow_state": WorkflowState.NEW,
+            }),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        issue.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(issue.group, self.support_group)
+        self.assertEqual(issue.user, self.observer)
+
+    def test_update_issue_endpoint_publishes_board_sync_event(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        with patch("djangoapp.rest_api.api.board_event_broker.publish") as publish_mock:
+            response = self.client.put(
+                f"/api/issues/{issue.pk}",
+                data=json.dumps({
+                    "title": "Primary uplink outage updated",
+                    "workflow_state": WorkflowState.NEW,
+                }),
+                content_type="application/json",
+                headers=self.basic_auth_header(),
+            )
+
+        self.assertEqual(response.status_code, 200)
+        publish_mock.assert_called_once_with("kanban.board.updated", {"scope": "board"})
+
     def test_update_issue_endpoint_accepts_multipart_attachments(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -1568,6 +2125,92 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.attachments.get().original_filename, "capture.pcap")
         self.assertEqual(response.json()["issue"]["attachments"][0]["original_filename"], "capture.pcap")
 
+    def test_update_issue_endpoint_accepts_minimum_and_maximum_payloads(self):
+        cases = (
+            {
+                "name": "minimum",
+                "issue": {
+                    "title": "Minimal update issue",
+                    "description_markdown": "",
+                    "category": None,
+                    "priority": IssuePriority.MEDIUM,
+                    "workflow_state": WorkflowState.NEW,
+                },
+                "payload": {
+                    "title": "Minimal update issue renamed",
+                },
+                "expected": {
+                    "title": "Minimal update issue renamed",
+                    "description_markdown": "",
+                    "category": None,
+                    "group": None,
+                    "user": None,
+                    "is_escalated": False,
+                    "workflow_state": WorkflowState.NEW,
+                },
+            },
+            {
+                "name": "maximum",
+                "issue": {
+                    "title": "Maximum update issue",
+                    "description_markdown": "Original description.",
+                    "category": None,
+                    "priority": IssuePriority.MEDIUM,
+                    "workflow_state": WorkflowState.NEW,
+                },
+                "payload": {
+                    "title": "Maximum update issue",
+                    "description_markdown": "Assigned to network operations.",
+                    "collection": self.collection.pk,
+                    "category": self.category.pk,
+                    "priority": IssuePriority.CRITICAL,
+                    "group": self.support_group.pk,
+                    "user": self.user.pk,
+                    "is_escalated": True,
+                    "workflow_state": WorkflowState.ASSIGNED,
+                    "transition_reason": "Triaged and dispatched.",
+                },
+                "expected": {
+                    "title": "Maximum update issue",
+                    "description_markdown": "Assigned to network operations.",
+                    "category": self.category,
+                    "group": self.support_group,
+                    "user": self.user,
+                    "is_escalated": True,
+                    "workflow_state": WorkflowState.ASSIGNED,
+                },
+            },
+        )
+
+        for case in cases:
+            with self.subTest(case=case["name"]):
+                issue = Issue.objects.create(
+                    title=case["issue"]["title"],
+                    description_markdown=case["issue"]["description_markdown"],
+                    collection=self.collection,
+                    category=case["issue"]["category"],
+                    priority=case["issue"]["priority"],
+                    workflow_state=case["issue"]["workflow_state"],
+                )
+
+                response = self.client.put(
+                    f"/api/issues/{issue.pk}",
+                    data=json.dumps(case["payload"]),
+                    content_type="application/json",
+                    headers=self.basic_auth_header(),
+                )
+
+                issue.refresh_from_db()
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(issue.title, case["expected"]["title"])
+                self.assertEqual(issue.description_markdown, case["expected"]["description_markdown"])
+                self.assertEqual(issue.category, case["expected"]["category"])
+                self.assertEqual(issue.group, case["expected"]["group"])
+                self.assertEqual(issue.user, case["expected"]["user"])
+                self.assertEqual(issue.is_escalated, case["expected"]["is_escalated"])
+                self.assertEqual(issue.workflow_state, case["expected"]["workflow_state"])
+
     def test_comment_endpoint_accepts_multipart_attachments(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -1597,6 +2240,133 @@ class RestApiTests(TestCase):
         self.assertEqual(issue.attachments.count(), 1)
         self.assertEqual(issue.attachments.get().original_filename, "trace.txt")
         self.assertEqual(response.json()["issue"]["attachments"][0]["original_filename"], "trace.txt")
+
+    def test_archive_comment_attachment_and_attachment_delete_endpoints_accept_minimum_and_maximum_data(self):
+        issue = Issue.objects.create(
+            title="Primary uplink outage",
+            description_markdown="Core switch unreachable from branch office.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        minimum_archive_response = self.client.post(
+            f"/api/issues/{issue.pk}/archive",
+            data=json.dumps({"confirm_archive": True}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(minimum_archive_response.status_code, 200)
+
+        rich_issue = Issue.objects.create(
+            title="Maximum archive issue",
+            description_markdown="Observed during backup window.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.CRITICAL,
+            is_escalated=True,
+        )
+
+        maximum_archive_response = self.client.post(
+            f"/api/issues/{rich_issue.pk}/archive",
+            data=json.dumps({"confirm_archive": True}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        rich_issue.refresh_from_db()
+        self.assertEqual(maximum_archive_response.status_code, 200)
+        self.assertIsNotNone(rich_issue.archived_at)
+
+        comment_issue = Issue.objects.create(
+            title="Comment matrix issue",
+            description_markdown="Needs notes.",
+            collection=self.collection,
+            category=self.category,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        minimum_comment_response = self.client.post(
+            f"/api/issues/{comment_issue.pk}/comments",
+            data=json.dumps({"body": "Investigating now.", "visibility": "INTERNAL"}),
+            content_type="application/json",
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(minimum_comment_response.status_code, 201)
+        self.assertEqual(comment_issue.comments.count(), 1)
+
+        maximum_comment_response = self.client.post(
+            f"/api/issues/{comment_issue.pk}/comments",
+            data={
+                "body": "Looping in {{user:observer}} with logs attached.",
+                "visibility": "CUSTOMER_VISIBLE",
+                "attachment_description": "Traceroute output",
+                "attachment_file": SimpleUploadedFile("trace.txt", b"hop1\nhop2", content_type="text/plain"),
+            },
+            headers=self.basic_auth_header(),
+        )
+
+        comment_issue.refresh_from_db()
+        self.assertEqual(maximum_comment_response.status_code, 201)
+        self.assertEqual(comment_issue.comments.count(), 2)
+        self.assertEqual(comment_issue.attachments.count(), 1)
+
+        attachment_issue = Issue.objects.create(
+            title="Attachment matrix issue",
+            description_markdown="Needs evidence.",
+            collection=self.collection,
+            category=self.category,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.HIGH,
+        )
+
+        minimum_attachment_response = self.client.post(
+            f"/api/issues/{attachment_issue.pk}/attachments",
+            data={
+                "file": SimpleUploadedFile("minimal.txt", b"minimal", content_type="text/plain"),
+            },
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(minimum_attachment_response.status_code, 201)
+        minimum_attachment = attachment_issue.attachments.get(original_filename="minimal.txt")
+        self.assertEqual(minimum_attachment.description, "")
+
+        maximum_attachment_response = self.client.post(
+            f"/api/issues/{attachment_issue.pk}/attachments",
+            data={
+                "description": "Detailed packet capture",
+                "file": SimpleUploadedFile("maximum.txt", b"maximum", content_type="text/plain"),
+            },
+            headers=self.basic_auth_header(),
+        )
+
+        self.assertEqual(maximum_attachment_response.status_code, 201)
+        maximum_attachment = attachment_issue.attachments.get(original_filename="maximum.txt")
+        self.assertEqual(maximum_attachment.description, "Detailed packet capture")
+
+        delete_minimum_response = self.client.delete(
+            f"/api/issues/{attachment_issue.pk}/attachments/{minimum_attachment.pk}",
+            headers=self.basic_auth_header(),
+        )
+        delete_maximum_response = self.client.delete(
+            f"/api/issues/{attachment_issue.pk}/attachments/{maximum_attachment.pk}",
+            headers=self.basic_auth_header(),
+        )
+
+        attachment_issue.refresh_from_db()
+        self.assertEqual(delete_minimum_response.status_code, 200)
+        self.assertEqual(delete_maximum_response.status_code, 200)
+        self.assertEqual(attachment_issue.attachments.count(), 0)
 
     def test_comment_move_and_archive_endpoints_mutate_issue(self):
         issue = Issue.objects.create(
@@ -1836,6 +2606,14 @@ class RestApiTests(TestCase):
             workflow_state=WorkflowState.NEW,
             priority=IssuePriority.HIGH,
         )
+        field_group = Group.objects.create(name="Field Operations")
+        field_user = get_user_model().objects.create_user(
+            username="field-agent",
+            password="demo-password-123",
+            first_name="Farah",
+            last_name="Field",
+        )
+        field_group.user_set.add(field_user)
 
         update_response = self.client.put(
             f"/api/issues/{issue.pk}",
@@ -1845,7 +2623,7 @@ class RestApiTests(TestCase):
                 "collection": self.collection.pk,
                 "category": self.category.pk,
                 "priority": IssuePriority.HIGH,
-                "user": self.user.pk,
+                "user": field_user.pk,
                 "workflow_state": WorkflowState.NEW,
                 "transition_reason": "",
             }),
@@ -1878,7 +2656,7 @@ class RestApiTests(TestCase):
         )
 
         self.assertEqual(update_response.status_code, 400)
-        self.assertIn("group", update_response.json()["errors"])
+        self.assertIn("user", update_response.json()["errors"])
         self.assertEqual(archive_response.status_code, 400)
         self.assertIn("confirm_archive", archive_response.json()["errors"])
         self.assertEqual(invalid_comment_response.status_code, 400)

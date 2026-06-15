@@ -6,7 +6,7 @@ import type {
 	IWebhookFunctions,
 	IWebhookResponseData,
 } from 'n8n-workflow';
-import { NodeConnectionType } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 const eventTypeOptions = [
 	{ name: 'Issue Created', value: 'issue.created' },
@@ -21,7 +21,7 @@ const properties: INodeProperties[] = [
 		displayName: 'Webhook Path',
 		name: 'webhookPath',
 		type: 'string',
-		default: 'it-operation-ticketing',
+		default: 'ticketsystemmock',
 		required: true,
 		description: 'Path segment used by n8n for the receive-only webhook endpoint.',
 	},
@@ -52,7 +52,7 @@ export class IssueWebhookTrigger implements INodeType {
 			name: 'TSM - Issue Webhook Trigger',
 		},
 		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'ticketSystemMockApi', required: true }],
 		webhooks: [
 			{

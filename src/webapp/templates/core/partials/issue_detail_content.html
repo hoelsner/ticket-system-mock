@@ -13,7 +13,7 @@
       <div class="issue-detail-view__summary-strip" aria-label="{% translate 'Issue summary' %}">
         <span class="issue-detail-view__summary-item">{{ issue.get_workflow_state_display }}</span>
         <span class="issue-detail-view__summary-item">{{ issue.get_priority_display }}</span>
-        <span class="issue-detail-view__summary-item">{{ issue.category.name }}</span>
+        <span class="issue-detail-view__summary-item">{% if issue.category %}{{ issue.category.name }}{% else %}{% translate "Not categorized" %}{% endif %}</span>
       </div>
     </div>
 
@@ -171,7 +171,7 @@
           </div>
           <div>
             <p class="app-page-header__eyebrow">{% translate "Category" %}</p>
-            <p class="issue-detail-summary__value">{{ issue.category.name }}</p>
+            <p class="issue-detail-summary__value">{% if issue.category %}{{ issue.category.name }}{% else %}{% translate "Not categorized" %}{% endif %}</p>
           </div>
           <div>
             <p class="app-page-header__eyebrow">{% translate "Associated team" %}</p>

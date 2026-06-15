@@ -33,6 +33,8 @@ class Issue(models.Model):
     category = models.ForeignKey(
         "core.IssueCategory",
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="issues",
     )
     priority = models.CharField(

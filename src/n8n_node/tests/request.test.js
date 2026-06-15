@@ -105,6 +105,34 @@ test('ticketingApiRequest rejects an invalid base URL with actionable guidance',
 	assert.equal(getCapturedCall(), undefined);
 });
 
+test('ticketingApiRequest rejects an empty base URL with actionable guidance', async () => {
+	const { context } = createRequestContext('', async () => {
+		throw new Error('request should not be attempted');
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /missing a Base URL/i);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest rejects a non-http protocol in the base URL', async () => {
+	const { context } = createRequestContext('ftp://example.test', async () => {
+		throw new Error('request should not be attempted');
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /must start with http:\/\/ or https:\/\//);
+			return true;
+		},
+	);
+});
+
 test('ticketingApiRequest explains connection refused failures', async () => {
 	const { context } = createRequestContext('http://webapp:8000', async () => {
 		const error = new Error('connect ECONNREFUSED 172.18.0.3:8000');
@@ -118,6 +146,23 @@ test('ticketingApiRequest explains connection refused failures', async () => {
 			assert.match(error.message, /could not connect to http:\/\/webapp:8000/i);
 			assert.match(error.message, /server refused the connection/i);
 			assert.match(error.message, /reachable from n8n/i);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest explains timeouts', async () => {
+	const { context } = createRequestContext('http://example.test', async () => {
+		const error = new Error('socket timed out');
+		error.code = 'ETIMEDOUT';
+		return Promise.reject(error);
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /timed out/i);
+			assert.match(error.message, /network reachability/i);
 			return true;
 		},
 	);
@@ -160,6 +205,82 @@ test('ticketingApiRequest explains forbidden responses', async () => {
 		(error) => {
 			assert.match(error.message, /403 Forbidden/);
 			assert.match(error.message, /does not have permission/i);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest explains not found responses', async () => {
+	const { context } = createRequestContext('http://example.test', async () => {
+		throw {
+			statusCode: 404,
+			response: {
+				statusCode: 404,
+				body: { detail: 'No such issue' },
+			},
+		};
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues/999'),
+		(error) => {
+			assert.match(error.message, /404 Not Found/);
+			assert.match(error.message, /Base URL/i);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest falls back to an unknown-reason message when no details are available', async () => {
+	const { context } = createRequestContext('http://example.test', async () => {
+		return Promise.reject({});
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /unknown reason/i);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest reads a title field from structured error payloads', async () => {
+	const { context } = createRequestContext('http://example.test', async () => {
+		throw {
+			statusCode: '429',
+			response: {
+				statusCode: 429,
+				body: { title: 'Rate limited' },
+			},
+		};
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /429/);
+			assert.match(error.message, /Rate limited/);
+			return true;
+		},
+	);
+});
+
+test('ticketingApiRequest uses the generic HTTP message when no error detail is available', async () => {
+	const { context } = createRequestContext('http://example.test', async () => {
+		throw {
+			statusCode: 400,
+			response: {
+				statusCode: 400,
+				body: {},
+			},
+		};
+	});
+
+	await assert.rejects(
+		ticketingApiRequest(context, 'GET', '/api/issues'),
+		(error) => {
+			assert.match(error.message, /failed with 400\./);
 			return true;
 		},
 	);

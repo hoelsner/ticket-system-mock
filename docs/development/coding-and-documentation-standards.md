@@ -94,11 +94,13 @@ Documentation quality is part of code review. Reviewers should check whether:
 
 1. Make the code change.
 2. Update the relevant tests or validation steps.
-3. Update developer, user, or architecture documentation if the change affects
+3. Run the focused validation commands for the changed surface, including the
+  relevant type-check target when working in a Python project.
+4. Update developer, user, or architecture documentation if the change affects
   behavior, operation, or design.
-4. If the change affects the REST API, review `/api/docs` and `/api/openapi.json`
+5. If the change affects the REST API, review `/api/docs` and `/api/openapi.json`
   and update the generated documentation inputs in `djangoapp.rest_api.api`.
-5. Review the result for duplicated or outdated explanations.
+6. Review the result for duplicated or outdated explanations.
 
 If the webapp was changed, verify the n8n node implementation and extend them if needed.
 

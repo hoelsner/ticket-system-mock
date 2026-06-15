@@ -7,7 +7,7 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
-import { NodeConnectionType } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 import { apiPaths, type ReferenceDataOperation } from '../../transport/api.constants';
 import { ticketingApiRequest, unwrapDataArrayResponse } from '../../transport/request';
@@ -142,8 +142,8 @@ export class ReferenceData implements INodeType {
 		defaults: {
 			name: 'TSM - Reference Data',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'ticketSystemMockApi',

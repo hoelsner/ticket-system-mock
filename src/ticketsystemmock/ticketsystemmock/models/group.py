@@ -10,6 +10,7 @@ from .user_summary import UserSummary
 class Group(ApiModel):
     id: int
     name: str
+    description: str
 
 
 @dataclass(slots=True)

@@ -6,7 +6,7 @@ import type {
 	INodeTypeDescription,
 	IPollFunctions,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { ticketingApiRequest, unwrapDataArrayResponse } from '../../transport/request';
 
@@ -162,7 +162,7 @@ export class IssuePollTrigger implements INodeType {
 			name: 'TSM - Issue Poll Trigger',
 		},
 		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionTypes.Main],
 		polling: true,
 		credentials: [{ name: 'ticketSystemMockApi', required: true }],
 		properties: filterProperties,

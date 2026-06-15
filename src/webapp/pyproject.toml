@@ -1,0 +1,15 @@
+[tool.mypy]
+python_version = "3.14"
+plugins = ["mypy_django_plugin.main"]
+files = ["djangoapp", "manage.py"]
+exclude = "(^\\.venv/|^__pycache__/|^covreport/|^djangoapp/.*/migrations/|^fixtures/|^locale/|^runtime/|^static/|^templates/)"
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["cotton.*", "yaml.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "djangoapp.settings"

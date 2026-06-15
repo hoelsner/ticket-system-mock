@@ -263,6 +263,7 @@ class N8nNodePackageDownloadView(AppLoginRequiredMixin, View):
             unavailable_message="The n8n integration package is not available.",
         )
 
+
 class PythonSdkPackageDownloadView(AppLoginRequiredMixin, View):
     http_method_names = ["get"]
 

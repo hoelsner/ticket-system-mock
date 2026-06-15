@@ -2,7 +2,7 @@
 
 ## General Guidelines
 
-- each main directory (`.devcontainer/`, `deploy/`, `docs/`, `src/`) contains an `AGENTS.md` file that defines directory specific guidelines and rules.
+- each main directory (`.devcontainer/`, `deploy/`, `docs/`, `scenarios/`, `src/`) contains an `AGENTS.md` file that defines directory specific guidelines and rules.
 - these files are meant to be concise and actionable, providing clear guidance on how to structure and maintain the respective directory.
 - they are not meant to be exhaustive, but rather to capture the most important principles and rules that should be followed when working with the code and assets in the respective directory and subdirectories
 - read the UBIQUITOUS_LANGUAGE.md file to understand the domain and the terminology used in the project
@@ -12,6 +12,7 @@
 - `.devcontainer/`: contains devcontainer configurations for local development environments
 - `deploy/`: contains production deployment assets, e.g. Dockerfiles and compose templates
 - `docs/`: contains relevant information and documentation for developers, architects, and users, e.g. markdown files, diagrams, etc.
+- `scenarios/`: contains standalone scenario packages, each with its own README, assets, and SDK-only seeding script
 - `src/`: root directory for the application components, e.g. the django webapp, the standalone Python SDK, and the n8n custom node
 - `scripts/`: contains executable scripts for various tasks, e.g. cleaning directories, checking code complexity, etc.
 
@@ -33,3 +34,4 @@
 
 - the application is based on python 3.14
 - `uv` is used as the package manager and to create virtual environments
+- keep separate Python 3.14 virtual environments for `src/webapp/.venv`, `src/ticketsystemmock/.venv`, and `scenarios/.venv`

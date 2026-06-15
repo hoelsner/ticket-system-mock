@@ -41,17 +41,21 @@ def raise_for_response(method: str, path: str, response: httpx.Response) -> None
         payload = response.text
 
     message = _error_message(method, path, payload)
-    kwargs = {"status_code": response.status_code, "payload": payload}
 
     if response.status_code == 401:
-        raise AuthenticationError(message, **kwargs)
+        raise AuthenticationError(message, status_code=response.status_code, payload=payload)
     if response.status_code == 403:
-        raise AuthorizationError(message, **kwargs)
+        raise AuthorizationError(message, status_code=response.status_code, payload=payload)
     if response.status_code == 409:
-        raise ConflictError(message, **kwargs)
+        raise ConflictError(message, status_code=response.status_code, payload=payload)
     if isinstance(payload, dict) and "errors" in payload:
-        raise ValidationError(message, errors=payload["errors"], **kwargs)
-    raise ApiError(message, **kwargs)
+        raise ValidationError(
+            message,
+            status_code=response.status_code,
+            payload=payload,
+            errors=payload["errors"],
+        )
+    raise ApiError(message, status_code=response.status_code, payload=payload)
 
 
 @dataclass(slots=True)

@@ -13,21 +13,33 @@ from pydantic import Field
 from djangoapp.core.controllers import (
     CollectionController,
     GroupController,
+    InstanceResetController,
     IssueAttachmentController,
     IssueCategoryController,
     IssueCommentController,
     UserController,
+    WorkflowStateAutoAssignmentRuleController,
 )
-from djangoapp.core.models import Collection, IssueAttachment, IssueCategory, IssueComment
+from djangoapp.core.models import (
+    Collection,
+    IssueAttachment,
+    IssueCategory,
+    IssueComment,
+    WorkflowState,
+    WorkflowStateAutoAssignmentRule,
+)
 from djangoapp.rest_api.forms import (
     CollectionForm,
     GroupManagementForm,
+    InstanceResetForm,
     IssueAttachmentForm,
     IssueCategoryForm,
     IssueCommentUpdateForm,
     UserManagementForm,
+    WorkflowStateAutoAssignmentRuleForm,
 )
 from djangoapp.user_interface import controllers
+from djangoapp.user_interface.board_events import board_event_broker
 from djangoapp.user_interface.forms import (
     IssueArchiveForm,
     IssueCommentForm,
@@ -61,6 +73,7 @@ class ChoiceSchema(Schema):
 class GroupSchema(Schema):
     id: int = Field(description="Unique identifier of the group.")
     name: str = Field(description="Display name of the group that can own issues.")
+    description: str = Field(description="Operational purpose or notes for the group.")
 
 
 class CollectionSchema(Schema):
@@ -116,6 +129,27 @@ class ManagedUserSchema(Schema):
 
 class GroupListResponseSchema(Schema):
     data: list[GroupSchema] = Field(description="Groups that can be used to dispatch or assign issues.")
+
+
+class WorkflowStateAutoAssignmentRuleSchema(Schema):
+    id: int = Field(description="Unique identifier of the workflow state auto-assignment rule.")
+    workflow_state: str = Field(description="Workflow state code that triggers this rule.")
+    workflow_state_label: str = Field(description="Human-readable label of the workflow state that triggers this rule.")
+    group: GroupSchema = Field(description="Group assigned when the workflow state is applied.")
+    user: UserSummarySchema | None = Field(description="Optional user assigned when the workflow state is applied.")
+    is_active: bool = Field(description="Whether the workflow state auto-assignment rule is currently active.")
+    created_at: str = Field(
+        description="Timestamp when the workflow state auto-assignment rule was created, encoded as ISO 8601."
+    )
+    updated_at: str = Field(
+        description="Timestamp when the workflow state auto-assignment rule was last updated, encoded as ISO 8601."
+    )
+
+
+class WorkflowStateAutoAssignmentRuleListResponseSchema(Schema):
+    data: list[WorkflowStateAutoAssignmentRuleSchema] = Field(
+        description="Workflow state auto-assignment rules configured for the instance."
+    )
 
 
 class CollectionListResponseSchema(Schema):
@@ -214,7 +248,7 @@ class IssueSummarySchema(Schema):
     closed_at: str | None = Field(description="Timestamp when the issue was closed, if available.")
     archived_at: str | None = Field(description="Timestamp when the issue was archived, if available.")
     collection: CollectionSchema = Field(description="Collection that owns the issue number sequence.")
-    category: IssueCategorySchema = Field(description="Issue category assigned to the issue.")
+    category: IssueCategorySchema | None = Field(description="Issue category assigned to the issue, if available.")
     group: GroupSchema | None = Field(description="Group currently associated with the issue for dispatching, if any.")
     user: UserSummarySchema | None = Field(description="User currently assigned to the issue, if any.")
 
@@ -338,6 +372,28 @@ class GroupMutationSchema(Schema):
 class GroupDeletionSchema(Schema):
     status: str = Field(description="Mutation result code for the group deletion operation.")
     group_id: int = Field(description="Identifier of the deleted group.")
+
+
+class WorkflowStateAutoAssignmentRuleMutationSchema(Schema):
+    status: str = Field(description="Mutation result code for the workflow state auto-assignment rule operation.")
+    rule: WorkflowStateAutoAssignmentRuleSchema = Field(
+        description="Workflow state auto-assignment rule payload after the mutation completed."
+    )
+
+
+class WorkflowStateAutoAssignmentRuleDeletionSchema(Schema):
+    status: str = Field(
+        description="Mutation result code for the workflow state auto-assignment rule deletion operation."
+    )
+    rule_id: int = Field(description="Identifier of the deleted workflow state auto-assignment rule.")
+
+
+class InstanceResetStatusSchema(Schema):
+    status: str = Field(description="Mutation result code for the instance reset operation.")
+    preserved_user_id: int = Field(
+        description="Identifier of the authenticated superuser account preserved by the reset."
+    )
+    deleted_counts: dict[str, int] = Field(description="Counts of deleted instance records grouped by entity type.")
 
 
 def _request_body(description, content_type, properties, required_fields=None):
@@ -481,6 +537,7 @@ GROUP_REQUEST_BODY = _request_body(
     "application/json",
     {
         "name": {"type": "string", "description": "Display name of the managed group."},
+        "description": {"type": "string", "description": "Operational purpose or notes for the managed group."},
         "user_ids": {
             "type": "array",
             "description": "Identifiers of the users that should belong to the group.",
@@ -488,6 +545,45 @@ GROUP_REQUEST_BODY = _request_body(
         },
     },
     required_fields=["name"],
+)
+
+
+WORKFLOW_STATE_AUTO_ASSIGNMENT_RULE_REQUEST_BODY = _request_body(
+    "Workflow state auto-assignment rule data used to create or update a rule.",
+    "application/json",
+    {
+        "workflow_state": {
+            "type": "string",
+            "description": "Workflow state code that should trigger the rule.",
+            "enum": [value for value, _label in WorkflowState.choices],
+        },
+        "group": {
+            "type": "integer",
+            "description": "Identifier of the group that should be assigned when the rule matches.",
+        },
+        "user": {
+            "type": "integer",
+            "description": "Optional identifier of the user that should be assigned when the rule matches.",
+        },
+        "is_active": {
+            "type": "boolean",
+            "description": "Whether the workflow state auto-assignment rule is active.",
+        },
+    },
+    required_fields=["workflow_state", "group"],
+)
+
+
+INSTANCE_RESET_REQUEST_BODY = _request_body(
+    "Confirmation payload required before resetting instance data while preserving the authenticated superuser account.",
+    "application/json",
+    {
+        "confirm_reset": {
+            "type": "boolean",
+            "description": "Must be true to confirm that instance data should be deleted.",
+        }
+    },
+    required_fields=["confirm_reset"],
 )
 
 
@@ -501,7 +597,11 @@ ISSUE_CREATE_REQUEST_BODY = _request_body(
             "type": "integer",
             "description": "Identifier of the collection that will own the issue number.",
         },
-        "category": {"type": "integer", "description": "Identifier of the issue category assigned to the issue."},
+        "category": {
+            "type": "integer",
+            "nullable": True,
+            "description": "Identifier of the issue category assigned to the issue, when present.",
+        },
         "priority": {
             "type": "string",
             "description": "Priority code to assign to the issue.",
@@ -524,7 +624,7 @@ ISSUE_CREATE_REQUEST_BODY = _request_body(
             "description": "Optional draft token that links previously staged attachment uploads.",
         },
     },
-    required_fields=["title", "collection", "category", "priority"],
+    required_fields=["title", "collection", "priority"],
 )
 
 
@@ -572,7 +672,7 @@ ISSUE_UPDATE_REQUEST_BODY = _request_body(
             "description": "Description for the attachment supplied in the same request.",
         },
     },
-    required_fields=["title", "collection", "category", "priority", "workflow_state"],
+    required_fields=["title", "collection", "priority", "workflow_state"],
 )
 
 
@@ -670,9 +770,8 @@ def _issue_update_payload(payload, issue):
     }
     merged_payload.update(payload)
 
-    if "user" in payload and "group" not in payload:
-        if payload["user"] not in (None, ""):
-            merged_payload["group"] = ""
+    if "group" in payload and "user" not in payload:
+        merged_payload["user"] = ""
 
     return merged_payload
 
@@ -851,6 +950,20 @@ def _serialize_group(group):
     return {
         "id": group.pk,
         "name": group.name,
+        "description": GroupController.get_description(group),
+    }
+
+
+def _serialize_workflow_state_auto_assignment_rule(rule):
+    return {
+        "id": rule.pk,
+        "workflow_state": rule.workflow_state,
+        "workflow_state_label": str(rule.get_workflow_state_display()),
+        "group": _serialize_group(rule.group),
+        "user": _serialize_optional_relation(rule.user, _serialize_user),
+        "is_active": rule.is_active,
+        "created_at": rule.created_at.isoformat(),
+        "updated_at": rule.updated_at.isoformat(),
     }
 
 
@@ -963,7 +1076,7 @@ def _serialize_issue(issue):
         "is_escalated": issue.is_escalated,
         **timestamps,
         "collection": _serialize_collection(issue.collection),
-        "category": _serialize_category(issue.category),
+        "category": _serialize_optional_relation(issue.category, _serialize_category),
         "group": _serialize_optional_relation(issue.group, _serialize_group),
         "user": _serialize_optional_relation(issue.user, _serialize_user),
     }
@@ -1301,6 +1414,128 @@ def users(
     if group_id is not None:
         queryset = queryset.filter(groups__id=group_id).distinct()
     return {"data": [_serialize_user(user) for user in queryset]}
+
+
+@api.get(
+    "/workflow-state-auto-assignment-rules",
+    response={200: WorkflowStateAutoAssignmentRuleListResponseSchema, 403: dict},
+    summary="List workflow state auto-assignment rules",
+    description="Return configured workflow state auto-assignment rules under the root data key. Superuser access is required.",
+    tags=["Administration"],
+)
+def workflow_state_auto_assignment_rules(request):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    return {
+        "data": [
+            _serialize_workflow_state_auto_assignment_rule(rule)
+            for rule in WorkflowStateAutoAssignmentRule.objects.select_related("group", "user").order_by(
+                "workflow_state"
+            )
+        ]
+    }
+
+
+@api.post(
+    "/instance-reset",
+    response={200: InstanceResetStatusSchema, 400: dict, 403: dict},
+    summary="Reset instance data",
+    description="Delete instance data while preserving the authenticated superuser account. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=INSTANCE_RESET_REQUEST_BODY,
+)
+def reset_instance(request):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    payload, error = _request_payload(request)
+    if error is not None:
+        return error
+
+    form = InstanceResetForm(payload)
+    if not form.is_valid():
+        return _form_error_response(form)
+
+    return {
+        "status": "reset",
+        "preserved_user_id": request.auth.pk,
+        "deleted_counts": InstanceResetController.reset(request.auth),
+    }
+
+
+@api.post(
+    "/workflow-state-auto-assignment-rules",
+    response={201: WorkflowStateAutoAssignmentRuleMutationSchema, 400: dict, 403: dict},
+    summary="Create workflow state auto-assignment rule",
+    description="Create a workflow state auto-assignment rule that assigns a group and optional user when an issue enters a workflow state. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=WORKFLOW_STATE_AUTO_ASSIGNMENT_RULE_REQUEST_BODY,
+)
+def create_workflow_state_auto_assignment_rule(request):
+    return _management_mutation_response(
+        request,
+        form_class=WorkflowStateAutoAssignmentRuleForm,
+        mutate=WorkflowStateAutoAssignmentRuleController.create,
+        serializer=_serialize_workflow_state_auto_assignment_rule,
+        response_key="rule",
+        created=True,
+    )
+
+
+@api.get(
+    "/workflow-state-auto-assignment-rules/{rule_id}",
+    response={200: WorkflowStateAutoAssignmentRuleSchema, 403: dict},
+    summary="Get workflow state auto-assignment rule",
+    description="Return one workflow state auto-assignment rule. Superuser access is required.",
+    tags=["Administration"],
+)
+def workflow_state_auto_assignment_rule_detail(request, rule_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    rule = WorkflowStateAutoAssignmentRule.objects.select_related("group", "user").get(pk=rule_id)
+    return _serialize_workflow_state_auto_assignment_rule(rule)
+
+
+@api.put(
+    "/workflow-state-auto-assignment-rules/{rule_id}",
+    response={200: WorkflowStateAutoAssignmentRuleMutationSchema, 400: dict, 403: dict},
+    summary="Update workflow state auto-assignment rule",
+    description="Update a workflow state auto-assignment rule. Superuser access is required.",
+    tags=["Administration"],
+    openapi_extra=WORKFLOW_STATE_AUTO_ASSIGNMENT_RULE_REQUEST_BODY,
+)
+def update_workflow_state_auto_assignment_rule(request, rule_id: int):
+    rule = WorkflowStateAutoAssignmentRule.objects.get(pk=rule_id)
+    return _management_mutation_response(
+        request,
+        form_class=WorkflowStateAutoAssignmentRuleForm,
+        mutate=lambda cleaned_data: WorkflowStateAutoAssignmentRuleController.update(rule, cleaned_data),
+        serializer=_serialize_workflow_state_auto_assignment_rule,
+        response_key="rule",
+        form_kwargs={"instance": rule},
+    )
+
+
+@api.delete(
+    "/workflow-state-auto-assignment-rules/{rule_id}",
+    response={200: WorkflowStateAutoAssignmentRuleDeletionSchema, 403: dict},
+    summary="Delete workflow state auto-assignment rule",
+    description="Delete a workflow state auto-assignment rule. Superuser access is required.",
+    tags=["Administration"],
+)
+def delete_workflow_state_auto_assignment_rule(request, rule_id: int):
+    forbidden = _require_superuser(request)
+    if forbidden is not None:
+        return forbidden
+
+    rule = WorkflowStateAutoAssignmentRule.objects.get(pk=rule_id)
+    WorkflowStateAutoAssignmentRuleController.delete(rule)
+    return {"status": "deleted", "rule_id": rule_id}
 
 
 @api.post(
@@ -1658,6 +1893,7 @@ def update_issue(request, issue_id: int):
         return _form_error_response(form)
 
     updated_issue = controllers.update_issue(issue, form.cleaned_data, request.auth)
+    board_event_broker.publish("kanban.board.updated", {"scope": "board"})
     refreshed_issue = controllers.get_issue(updated_issue.pk)
     return {"status": "updated", "issue": _serialize_issue_detail(refreshed_issue)}
 

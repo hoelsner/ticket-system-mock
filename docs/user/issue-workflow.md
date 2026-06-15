@@ -43,6 +43,10 @@ Kanban path.
    A user or integration system creates an `Issue` with a title and markdown
    `Issue Description`.
 
+   The `Issue Category` is optional during creation. If the creator does not
+   know the correct category yet, the issue can be recorded first and
+   classified during triage.
+
    In the create form, the user can start from a predefined description
    template when one is available for the selected `Collection`, `Issue
    Category`, or both. The inserted template remains editable before the issue

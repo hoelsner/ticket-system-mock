@@ -194,15 +194,19 @@ The `Create` operation accepts the main Issue fields:
 
 - title
 - markdown description
-- collection ID
-- category ID
+- collection ID or collection name
+- optional category ID or category name
 - priority
-- optional group ID
-- optional user ID
+- optional group ID or group name
+- optional user ID or username
 - escalation flag
 - workflow state
 
-Use `Group ID = 0` or `User ID = 0` when no group or assignee should be stored.
+Use either the numeric identifier field or the matching name field for each
+reference value. Do not supply both for the same reference.
+
+Use `Category ID = 0`, `Group ID = 0`, or `User ID = 0` when no category,
+group, or assignee should be stored.
 
 ### Update operation
 
@@ -212,13 +216,17 @@ Only the fields you explicitly add are sent to the API.
 That means you can:
 
 - change only the title
-- reassign only the group or user
+- reassign only the group or user by ID or by name
 - toggle only the escalation flag
 - move the workflow state with a transition reason
 - clear the group or user by setting the value to `0`
 
 This is a sparse `PUT` pattern, not a full object replacement.
 Omitted fields remain unchanged on the Issue.
+
+When you add `Collection Name`, `Category Name`, `Group Name`, or `Username`
+inside `Update Fields`, the node resolves that value to the matching numeric ID
+before sending the API request.
 
 ### Archive operation
 

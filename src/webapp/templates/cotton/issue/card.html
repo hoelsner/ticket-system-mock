@@ -61,7 +61,7 @@
         </div>
         <div class="issue-card__meta-item">
           <span class="issue-card__meta-label">{% translate "Category" %}</span>
-          <span>{{ issue.category.name }}</span>
+          <span>{% if issue.category %}{{ issue.category.name }}{% else %}{% translate "Not categorized" %}{% endif %}</span>
         </div>
         <div class="issue-card__meta-item">
           <span class="issue-card__meta-label">{% translate "Associated team" %}</span>
@@ -160,7 +160,7 @@
         </div>
         <div class="issue-card__meta-item">
           <span class="issue-card__meta-label">{% translate "Category" %}</span>
-          <span>{{ issue.category.name }}</span>
+          <span>{% if issue.category %}{{ issue.category.name }}{% else %}{% translate "Not categorized" %}{% endif %}</span>
         </div>
         <div class="issue-card__meta-item">
           <span class="issue-card__meta-label">{% translate "Associated team" %}</span>

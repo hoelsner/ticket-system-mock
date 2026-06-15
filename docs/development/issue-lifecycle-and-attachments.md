@@ -9,6 +9,9 @@ issue lifecycle, attachment handling, comment mentions, and audit behavior.
 
 Use `workflow_state` as the one authoritative lifecycle field for an `Issue`.
 
+At creation time, `category` is optional. Intake flows may persist an `Issue`
+without a category and defer classification until triage.
+
 ```text
 NEW
 -> TRIAGE

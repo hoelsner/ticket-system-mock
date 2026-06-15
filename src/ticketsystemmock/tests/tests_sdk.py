@@ -6,14 +6,22 @@ import unittest
 from dataclasses import dataclass
 
 import httpx
-
-from ticketsystemmock import AvatarType, CommentVisibility, IssuePriority, LanguagePreference, WorkflowState
 from ticketsystemmock.client import AsyncTicketSystemClient, TicketSystemClient
-from ticketsystemmock.exceptions import ApiError, AuthenticationError, AuthorizationError, ConflictError, ValidationError
+from ticketsystemmock.exceptions import (
+    ApiError,
+    AuthenticationError,
+    AuthorizationError,
+    ConflictError,
+    ValidationError,
+)
+from ticketsystemmock.models import IssueAttachment, IssueSummary
 from ticketsystemmock.models.base import ApiModel, _convert_value
 from ticketsystemmock.resources import __all__ as resource_exports
 from ticketsystemmock.transport import normalize_base_url
-from ticketsystemmock.models import IssueAttachment
+
+from ticketsystemmock import AvatarType, CommentVisibility, IssuePriority, LanguagePreference, WorkflowState
+
+_DEFAULT_CATEGORY = object()
 
 
 def make_sync_client(handler):
@@ -59,10 +67,12 @@ def make_category(*, category_id: int = 2, name: str = "Network", code: str = "N
 
 
 def make_group(*, group_id: int = 3, name: str = "Network Operations"):
-    return {"id": group_id, "name": name}
+    return {"id": group_id, "name": name, "description": f"{name} description"}
 
 
-def make_issue_summary(*, issue_id: int = 5, workflow_state: str = "NEW", group=None, user=None):
+def make_issue_summary(
+    *, issue_id: int = 5, workflow_state: str = "NEW", category=_DEFAULT_CATEGORY, group=None, user=None
+):
     return {
         "id": issue_id,
         "issue_number": f"TASK-{issue_id}",
@@ -80,7 +90,7 @@ def make_issue_summary(*, issue_id: int = 5, workflow_state: str = "NEW", group=
         "closed_at": None,
         "archived_at": None,
         "collection": make_collection(),
-        "category": make_category(),
+        "category": make_category() if category is _DEFAULT_CATEGORY else category,
         "group": group,
         "user": user,
     }
@@ -159,7 +169,28 @@ def make_managed_group(*, group_id: int = 3, name: str = "Network Operations"):
     return {
         "id": group_id,
         "name": name,
+        "description": f"{name} description",
         "users": [make_user_summary(user_id=8, username="coordinator", display_name="Case Coordinator")],
+    }
+
+
+def make_workflow_state_auto_assignment_rule(
+    *,
+    rule_id: int = 2,
+    workflow_state: str = "ASSIGNED",
+    group=None,
+    user=None,
+    is_active: bool = True,
+):
+    return {
+        "id": rule_id,
+        "workflow_state": workflow_state,
+        "workflow_state_label": workflow_state.replace("_", " ").title(),
+        "group": group or make_group(),
+        "user": user or make_user_summary(user_id=8, username="coordinator", display_name="Case Coordinator"),
+        "is_active": is_active,
+        "created_at": "2026-06-13T10:00:00+00:00",
+        "updated_at": "2026-06-13T10:05:00+00:00",
     }
 
 
@@ -187,47 +218,55 @@ class TicketSystemSdkTests(unittest.TestCase):
         def handler(request):
             self.assertEqual(request.headers["authorization"], "Basic ZGVtbzpwYXNzd29yZA==")
             if request.url.path == "/api/auth/me":
-                return httpx.Response(200, json={
-                    "id": 1,
-                    "username": "demo",
-                    "display_name": "Demo User",
-                    "is_staff": False,
-                    "is_superuser": False,
-                })
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": 1,
+                        "username": "demo",
+                        "display_name": "Demo User",
+                        "is_staff": False,
+                        "is_superuser": False,
+                    },
+                )
 
             self.assertEqual(request.url.path, "/api/issues")
             self.assertEqual(request.url.params["search"], "router")
-            return httpx.Response(200, json={
-                "data": [{
-                    "id": 5,
-                    "issue_number": "TASK-5",
-                    "title": "Router outage",
-                    "description_markdown": "Details",
-                    "priority": "HIGH",
-                    "priority_label": "High",
-                    "workflow_state": "NEW",
-                    "workflow_state_label": "New",
-                    "board_position": 0,
-                    "is_escalated": True,
-                    "created_at": "2026-06-13T10:00:00+00:00",
-                    "updated_at": "2026-06-13T10:05:00+00:00",
-                    "resolved_at": None,
-                    "closed_at": None,
-                    "archived_at": None,
-                    "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
-                    "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
-                    "group": {"id": 3, "name": "Network Operations"},
-                    "user": {
-                        "id": 4,
-                        "username": "demo",
-                        "display_name": "Demo User",
-                        "avatar_type": "initials",
-                        "is_system_user": False,
-                        "avatar_text": "DU",
-                        "avatar_image_url": None,
-                    },
-                }]
-            })
+            return httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 5,
+                            "issue_number": "TASK-5",
+                            "title": "Router outage",
+                            "description_markdown": "Details",
+                            "priority": "HIGH",
+                            "priority_label": "High",
+                            "workflow_state": "NEW",
+                            "workflow_state_label": "New",
+                            "board_position": 0,
+                            "is_escalated": True,
+                            "created_at": "2026-06-13T10:00:00+00:00",
+                            "updated_at": "2026-06-13T10:05:00+00:00",
+                            "resolved_at": None,
+                            "closed_at": None,
+                            "archived_at": None,
+                            "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
+                            "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
+                            "group": {"id": 3, "name": "Network Operations"},
+                            "user": {
+                                "id": 4,
+                                "username": "demo",
+                                "display_name": "Demo User",
+                                "avatar_type": "initials",
+                                "is_system_user": False,
+                                "avatar_text": "DU",
+                                "avatar_image_url": None,
+                            },
+                        }
+                    ]
+                },
+            )
 
         sdk = make_sync_client(handler)
         self.assertEqual(sdk.auth.me().username, "demo")
@@ -248,6 +287,11 @@ class TicketSystemSdkTests(unittest.TestCase):
             sdk.issues.create(collection=1, category=2, priority="HIGH", files={"attachment_file": ("a.txt", b"x")})
         self.assertIn("title", raised.exception.errors)
         sdk.close()
+
+    def test_issue_summary_allows_missing_category(self):
+        summary = IssueSummary.from_dict(make_issue_summary(category=None))
+
+        self.assertIsNone(summary.category)
 
     def test_sync_admin_errors_are_typed(self):
         responses = {
@@ -293,7 +337,284 @@ class TicketSystemSdkTests(unittest.TestCase):
         def handler(request):
             if request.url.path == "/api/issues/5/comments":
                 self.assertEqual(request.method, "POST")
-                return httpx.Response(201, json={
+                return httpx.Response(
+                    201,
+                    json={
+                        "status": "comment-added",
+                        "issue": {
+                            "id": 5,
+                            "issue_number": "TASK-5",
+                            "title": "Router outage",
+                            "description_markdown": "Details",
+                            "priority": "HIGH",
+                            "priority_label": "High",
+                            "workflow_state": "NEW",
+                            "workflow_state_label": "New",
+                            "board_position": 0,
+                            "is_escalated": False,
+                            "created_at": "2026-06-13T10:00:00+00:00",
+                            "updated_at": "2026-06-13T10:05:00+00:00",
+                            "resolved_at": None,
+                            "closed_at": None,
+                            "archived_at": None,
+                            "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
+                            "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
+                            "group": None,
+                            "user": None,
+                            "attachments": [],
+                            "comments": [],
+                            "history": [],
+                            "transitions": [],
+                        },
+                    },
+                )
+
+            self.assertEqual(request.url.path, "/api/issues/5/attachments/7/download")
+            return httpx.Response(200, content=b"file-bytes")
+
+        sdk = make_sync_client(handler)
+        comment_result = sdk.comments.add(5, body="hello", visibility="INTERNAL")
+        self.assertEqual(comment_result.status, "comment-added")
+        attachment_bytes = sdk.attachments.download(5, 7)
+        self.assertEqual(attachment_bytes, b"file-bytes")
+        sdk.close()
+
+    def test_admin_mutations_use_json_and_parse_responses(self):
+        responses = iter([
+            httpx.Response(
+                201,
+                json={
+                    "status": "created",
+                    "user": {
+                        "id": 8,
+                        "username": "coordinator",
+                        "first_name": "Case",
+                        "last_name": "Coordinator",
+                        "display_name": "Case Coordinator",
+                        "is_active": True,
+                        "is_staff": True,
+                        "is_superuser": False,
+                        "language_preference": "de",
+                        "avatar_type": "image",
+                        "is_system_user": True,
+                        "avatar_text": "CC",
+                        "avatar_image_url": None,
+                        "groups": [{"id": 3, "name": "Network Operations"}],
+                    },
+                },
+            ),
+            httpx.Response(
+                200,
+                json={
+                    "status": "updated",
+                    "group": {
+                        "id": 3,
+                        "name": "Escalation Desk",
+                        "users": [
+                            {
+                                "id": 8,
+                                "username": "coordinator",
+                                "display_name": "Case Coordinator",
+                                "avatar_type": "image",
+                                "is_system_user": True,
+                                "avatar_text": "CC",
+                                "avatar_image_url": None,
+                            }
+                        ],
+                    },
+                },
+            ),
+        ])
+
+        def handler(request):
+            body = json.loads(request.content.decode())
+            self.assertEqual(request.headers["content-type"], "application/json")
+            if request.url.path == "/api/users":
+                self.assertEqual(request.method, "POST")
+                self.assertEqual(body["username"], "coordinator")
+                self.assertEqual(body["group_ids"], [3])
+            else:
+                self.assertEqual(request.method, "PUT")
+                self.assertEqual(request.url.path, "/api/groups/3")
+                self.assertEqual(body["name"], "Escalation Desk")
+                self.assertEqual(body["user_ids"], [8])
+            return next(responses)
+
+        sdk = make_sync_client(handler)
+        created_user = sdk.admin.users.create(username="coordinator", password="secret", group_ids=[3])
+        self.assertEqual(created_user.user.username, "coordinator")
+        updated_group = sdk.admin.groups.update(3, name="Escalation Desk", user_ids=[8])
+        self.assertEqual(updated_group.group.name, "Escalation Desk")
+        self.assertEqual(updated_group.group.users[0].username, "coordinator")
+        sdk.close()
+
+    def test_admin_workflow_rule_mutations_use_json_and_parse_responses(self):
+        responses = iter([
+            httpx.Response(200, json={"data": [make_workflow_state_auto_assignment_rule()]}),
+            httpx.Response(
+                201,
+                json={
+                    "status": "created",
+                    "rule": make_workflow_state_auto_assignment_rule(),
+                },
+            ),
+            httpx.Response(200, json=make_workflow_state_auto_assignment_rule()),
+            httpx.Response(
+                200,
+                json={
+                    "status": "updated",
+                    "rule": make_workflow_state_auto_assignment_rule(workflow_state="WAITING", is_active=False),
+                },
+            ),
+            httpx.Response(200, json={"status": "deleted", "rule_id": 2}),
+        ])
+
+        def handler(request):
+            body = json.loads(request.content.decode()) if request.content else None
+            if request.url.path == "/api/workflow-state-auto-assignment-rules":
+                if request.method == "GET":
+                    return next(responses)
+                self.assertEqual(request.method, "POST")
+                self.assertEqual(body["workflow_state"], "ASSIGNED")
+                self.assertEqual(body["group"], 3)
+                self.assertEqual(body["user"], 8)
+                self.assertTrue(body["is_active"])
+                return next(responses)
+
+            self.assertEqual(request.url.path, "/api/workflow-state-auto-assignment-rules/2")
+            if request.method == "GET":
+                return next(responses)
+            if request.method == "PUT":
+                self.assertEqual(body["workflow_state"], "WAITING")
+                self.assertFalse(body["is_active"])
+                return next(responses)
+            self.assertEqual(request.method, "DELETE")
+            return next(responses)
+
+        sdk = make_sync_client(handler)
+        self.assertEqual(sdk.admin.workflow_state_auto_assignment_rules.list()[0].workflow_state, "ASSIGNED")
+        created_rule = sdk.admin.workflow_state_auto_assignment_rules.create(
+            workflow_state=WorkflowState.ASSIGNED,
+            group=3,
+            user=8,
+            is_active=True,
+        )
+        self.assertEqual(created_rule.rule.group.name, "Network Operations")
+        self.assertEqual(sdk.admin.workflow_state_auto_assignment_rules.get(2).workflow_state_label, "Assigned")
+        updated_rule = sdk.admin.workflow_state_auto_assignment_rules.update(
+            2,
+            workflow_state=WorkflowState.WAITING,
+            group=3,
+            user=8,
+            is_active=False,
+        )
+        self.assertEqual(updated_rule.rule.workflow_state, "WAITING")
+        self.assertEqual(sdk.admin.workflow_state_auto_assignment_rules.delete(2).rule_id, 2)
+        sdk.close()
+
+    def test_admin_instance_reset_uses_json_and_parses_response(self):
+        def handler(request):
+            self.assertEqual(request.method, "POST")
+            self.assertEqual(request.url.path, "/api/instance-reset")
+            self.assertEqual(json.loads(request.content.decode()), {"confirm_reset": True})
+            return httpx.Response(
+                200,
+                json={
+                    "status": "reset",
+                    "preserved_user_id": 1,
+                    "deleted_counts": {"issues": 4, "users": 2},
+                },
+            )
+
+        sdk = make_sync_client(handler)
+        reset_result = sdk.admin.reset_instance(confirm_reset=True)
+        self.assertEqual(reset_result.status, "reset")
+        self.assertEqual(reset_result.preserved_user_id, 1)
+        self.assertEqual(reset_result.deleted_counts["issues"], 4)
+        sdk.close()
+
+    def test_issue_update_partial_and_comment_update_use_expected_payload_types(self):
+        responses = iter([
+            httpx.Response(
+                200,
+                json={
+                    "status": "updated",
+                    "issue": {
+                        "id": 5,
+                        "issue_number": "TASK-5",
+                        "title": "Router outage",
+                        "description_markdown": "Details",
+                        "priority": "HIGH",
+                        "priority_label": "High",
+                        "workflow_state": "IN_PROGRESS",
+                        "workflow_state_label": "In Progress",
+                        "board_position": 0,
+                        "is_escalated": False,
+                        "created_at": "2026-06-13T10:00:00+00:00",
+                        "updated_at": "2026-06-13T10:05:00+00:00",
+                        "resolved_at": None,
+                        "closed_at": None,
+                        "archived_at": None,
+                        "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
+                        "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
+                        "group": None,
+                        "user": None,
+                        "attachments": [],
+                        "comments": [],
+                        "history": [],
+                        "transitions": [],
+                    },
+                },
+            ),
+            httpx.Response(
+                200,
+                json={
+                    "status": "updated",
+                    "comment": {
+                        "id": 4,
+                        "body": "updated body",
+                        "visibility": "INTERNAL",
+                        "visibility_label": "Internal",
+                        "created_at": "2026-06-13T10:05:00+00:00",
+                        "author_user": {
+                            "id": 1,
+                            "username": "demo",
+                            "display_name": "Demo User",
+                            "avatar_type": "initials",
+                            "is_system_user": False,
+                            "avatar_text": "DU",
+                            "avatar_image_url": None,
+                        },
+                    },
+                },
+            ),
+        ])
+
+        def handler(request):
+            if request.url.path == "/api/issues/5":
+                self.assertEqual(request.method, "PUT")
+                self.assertEqual(request.headers["content-type"], "application/x-www-form-urlencoded")
+                self.assertEqual(request.content.decode(), "workflow_state=IN_PROGRESS")
+            else:
+                self.assertEqual(request.url.path, "/api/issues/5/comments/4")
+                self.assertEqual(request.method, "PUT")
+                self.assertEqual(request.headers["content-type"], "application/json")
+                body = json.loads(request.content.decode())
+                self.assertEqual(body, {"body": "updated body", "visibility": "INTERNAL"})
+            return next(responses)
+
+        sdk = make_sync_client(handler)
+        updated_issue = sdk.issues.update(5, workflow_state="IN_PROGRESS")
+        self.assertEqual(updated_issue.issue.workflow_state, "IN_PROGRESS")
+        updated_comment = sdk.comments.update(5, 4, body="updated body", visibility="INTERNAL")
+        self.assertEqual(updated_comment.comment.body, "updated body")
+        sdk.close()
+
+    def test_comment_and_attachment_upload_facades_use_multipart_routes(self):
+        responses = iter([
+            httpx.Response(
+                201,
+                json={
                     "status": "comment-added",
                     "issue": {
                         "id": 5,
@@ -320,201 +641,32 @@ class TicketSystemSdkTests(unittest.TestCase):
                         "history": [],
                         "transitions": [],
                     },
-                })
-
-            self.assertEqual(request.url.path, "/api/issues/5/attachments/7/download")
-            return httpx.Response(200, content=b"file-bytes")
-
-        sdk = make_sync_client(handler)
-        comment_result = sdk.comments.add(5, body="hello", visibility="INTERNAL")
-        self.assertEqual(comment_result.status, "comment-added")
-        attachment_bytes = sdk.attachments.download(5, 7)
-        self.assertEqual(attachment_bytes, b"file-bytes")
-        sdk.close()
-
-    def test_admin_mutations_use_json_and_parse_responses(self):
-        responses = iter([
-            httpx.Response(201, json={
-                "status": "created",
-                "user": {
-                    "id": 8,
-                    "username": "coordinator",
-                    "first_name": "Case",
-                    "last_name": "Coordinator",
-                    "display_name": "Case Coordinator",
-                    "is_active": True,
-                    "is_staff": True,
-                    "is_superuser": False,
-                    "language_preference": "de",
-                    "avatar_type": "image",
-                    "is_system_user": True,
-                    "avatar_text": "CC",
-                    "avatar_image_url": None,
-                    "groups": [{"id": 3, "name": "Network Operations"}],
                 },
-            }),
-            httpx.Response(200, json={
-                "status": "updated",
-                "group": {
-                    "id": 3,
-                    "name": "Escalation Desk",
-                    "users": [{
-                        "id": 8,
-                        "username": "coordinator",
-                        "display_name": "Case Coordinator",
-                        "avatar_type": "image",
-                        "is_system_user": True,
-                        "avatar_text": "CC",
-                        "avatar_image_url": None,
-                    }],
-                },
-            }),
-        ])
-
-        def handler(request):
-            body = json.loads(request.content.decode())
-            self.assertEqual(request.headers["content-type"], "application/json")
-            if request.url.path == "/api/users":
-                self.assertEqual(request.method, "POST")
-                self.assertEqual(body["username"], "coordinator")
-                self.assertEqual(body["group_ids"], [3])
-            else:
-                self.assertEqual(request.method, "PUT")
-                self.assertEqual(request.url.path, "/api/groups/3")
-                self.assertEqual(body["name"], "Escalation Desk")
-                self.assertEqual(body["user_ids"], [8])
-            return next(responses)
-
-        sdk = make_sync_client(handler)
-        created_user = sdk.admin.users.create(username="coordinator", password="secret", group_ids=[3])
-        self.assertEqual(created_user.user.username, "coordinator")
-        updated_group = sdk.admin.groups.update(3, name="Escalation Desk", user_ids=[8])
-        self.assertEqual(updated_group.group.name, "Escalation Desk")
-        self.assertEqual(updated_group.group.users[0].username, "coordinator")
-        sdk.close()
-
-    def test_issue_update_partial_and_comment_update_use_expected_payload_types(self):
-        responses = iter([
-            httpx.Response(200, json={
-                "status": "updated",
-                "issue": {
-                    "id": 5,
-                    "issue_number": "TASK-5",
-                    "title": "Router outage",
-                    "description_markdown": "Details",
-                    "priority": "HIGH",
-                    "priority_label": "High",
-                    "workflow_state": "IN_PROGRESS",
-                    "workflow_state_label": "In Progress",
-                    "board_position": 0,
-                    "is_escalated": False,
-                    "created_at": "2026-06-13T10:00:00+00:00",
-                    "updated_at": "2026-06-13T10:05:00+00:00",
-                    "resolved_at": None,
-                    "closed_at": None,
-                    "archived_at": None,
-                    "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
-                    "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
-                    "group": None,
-                    "user": None,
-                    "attachments": [],
-                    "comments": [],
-                    "history": [],
-                    "transitions": [],
-                },
-            }),
-            httpx.Response(200, json={
-                "status": "updated",
-                "comment": {
-                    "id": 4,
-                    "body": "updated body",
-                    "visibility": "INTERNAL",
-                    "visibility_label": "Internal",
-                    "created_at": "2026-06-13T10:05:00+00:00",
-                    "author_user": {
-                        "id": 1,
-                        "username": "demo",
-                        "display_name": "Demo User",
-                        "avatar_type": "initials",
-                        "is_system_user": False,
-                        "avatar_text": "DU",
-                        "avatar_image_url": None,
+            ),
+            httpx.Response(
+                201,
+                json={
+                    "status": "created",
+                    "attachment": {
+                        "id": 7,
+                        "original_filename": "trace.txt",
+                        "description": "Traceroute output",
+                        "content_type": "text/plain",
+                        "file_size": 9,
+                        "uploaded_at": "2026-06-13T10:06:00+00:00",
+                        "file_url": "/api/issues/5/attachments/7/download",
+                        "uploaded_by_user": {
+                            "id": 1,
+                            "username": "demo",
+                            "display_name": "Demo User",
+                            "avatar_type": "initials",
+                            "is_system_user": False,
+                            "avatar_text": "DU",
+                            "avatar_image_url": None,
+                        },
                     },
                 },
-            }),
-        ])
-
-        def handler(request):
-            if request.url.path == "/api/issues/5":
-                self.assertEqual(request.method, "PUT")
-                self.assertEqual(request.headers["content-type"], "application/x-www-form-urlencoded")
-                self.assertEqual(request.content.decode(), "workflow_state=IN_PROGRESS")
-            else:
-                self.assertEqual(request.url.path, "/api/issues/5/comments/4")
-                self.assertEqual(request.method, "PUT")
-                self.assertEqual(request.headers["content-type"], "application/json")
-                body = json.loads(request.content.decode())
-                self.assertEqual(body, {"body": "updated body", "visibility": "INTERNAL"})
-            return next(responses)
-
-        sdk = make_sync_client(handler)
-        updated_issue = sdk.issues.update(5, workflow_state="IN_PROGRESS")
-        self.assertEqual(updated_issue.issue.workflow_state, "IN_PROGRESS")
-        updated_comment = sdk.comments.update(5, 4, body="updated body", visibility="INTERNAL")
-        self.assertEqual(updated_comment.comment.body, "updated body")
-        sdk.close()
-
-    def test_comment_and_attachment_upload_facades_use_multipart_routes(self):
-        responses = iter([
-            httpx.Response(201, json={
-                "status": "comment-added",
-                "issue": {
-                    "id": 5,
-                    "issue_number": "TASK-5",
-                    "title": "Router outage",
-                    "description_markdown": "Details",
-                    "priority": "HIGH",
-                    "priority_label": "High",
-                    "workflow_state": "NEW",
-                    "workflow_state_label": "New",
-                    "board_position": 0,
-                    "is_escalated": False,
-                    "created_at": "2026-06-13T10:00:00+00:00",
-                    "updated_at": "2026-06-13T10:05:00+00:00",
-                    "resolved_at": None,
-                    "closed_at": None,
-                    "archived_at": None,
-                    "collection": {"id": 1, "name": "Tasks", "prefix": "TASK", "description": "Ops"},
-                    "category": {"id": 2, "name": "Network", "code": "NETWORK", "description": "Net"},
-                    "group": None,
-                    "user": None,
-                    "attachments": [],
-                    "comments": [],
-                    "history": [],
-                    "transitions": [],
-                },
-            }),
-            httpx.Response(201, json={
-                "status": "created",
-                "attachment": {
-                    "id": 7,
-                    "original_filename": "trace.txt",
-                    "description": "Traceroute output",
-                    "content_type": "text/plain",
-                    "file_size": 9,
-                    "uploaded_at": "2026-06-13T10:06:00+00:00",
-                    "file_url": "/api/issues/5/attachments/7/download",
-                    "uploaded_by_user": {
-                        "id": 1,
-                        "username": "demo",
-                        "display_name": "Demo User",
-                        "avatar_type": "initials",
-                        "is_system_user": False,
-                        "avatar_text": "DU",
-                        "avatar_image_url": None,
-                    },
-                },
-            }),
+            ),
         ])
 
         def handler(request):
@@ -552,12 +704,15 @@ class TicketSystemSdkTests(unittest.TestCase):
 
                 self.assertEqual(request.url.path, "/api/issues/9/move")
                 self.assertEqual(request.method, "POST")
-                return httpx.Response(200, json={
-                    "status": "ok",
-                    "issue_id": 9,
-                    "workflow_state": "IN_PROGRESS",
-                    "board_position": 2,
-                })
+                return httpx.Response(
+                    200,
+                    json={
+                        "status": "ok",
+                        "issue_id": 9,
+                        "workflow_state": "IN_PROGRESS",
+                        "board_position": 2,
+                    },
+                )
 
             sdk = make_async_client(handler)
             health = await sdk.system.health()
@@ -586,41 +741,53 @@ class TicketSystemSdkTests(unittest.TestCase):
                 case ("GET", "/api/board"):
                     self.assertEqual(request.url.params["group_id"], "3")
                     self.assertEqual(request.url.params["search"], "router")
-                    return httpx.Response(200, json={
-                        "search_query": "router",
-                        "selected_assignee": "",
-                        "selected_priority": "",
-                        "selected_collection": "",
-                        "selected_category": "",
-                        "selected_group": "3",
-                        "selected_is_escalated": None,
-                        "selected_updated_within_seconds": None,
-                        "assignee_options": [make_user_summary()],
-                        "priority_options": [{"value": "HIGH", "label": "High"}],
-                        "collection_options": [make_collection()],
-                        "category_options": [make_category()],
-                        "board_columns": [{
-                            "value": "NEW",
-                            "label": "New",
-                            "is_open": True,
-                            "issue_count": 1,
-                            "issues": [make_issue_summary(group=make_group(), user=make_user_summary())],
-                        }],
-                        "board_issue_count": 1,
-                    })
+                    return httpx.Response(
+                        200,
+                        json={
+                            "search_query": "router",
+                            "selected_assignee": "",
+                            "selected_priority": "",
+                            "selected_collection": "",
+                            "selected_category": "",
+                            "selected_group": "3",
+                            "selected_is_escalated": None,
+                            "selected_updated_within_seconds": None,
+                            "assignee_options": [make_user_summary()],
+                            "priority_options": [{"value": "HIGH", "label": "High"}],
+                            "collection_options": [make_collection()],
+                            "category_options": [make_category()],
+                            "board_columns": [
+                                {
+                                    "value": "NEW",
+                                    "label": "New",
+                                    "is_open": True,
+                                    "issue_count": 1,
+                                    "issues": [make_issue_summary(group=make_group(), user=make_user_summary())],
+                                }
+                            ],
+                            "board_issue_count": 1,
+                        },
+                    )
                 case ("GET", "/api/dashboard"):
-                    return httpx.Response(200, json={
-                        "assigned_issues": [make_issue_summary(user=make_user_summary())],
-                        "mentioned_comments": [{
-                            "id": 6,
-                            "issue": make_issue_summary(issue_id=6),
-                            "body": "Ping @demo",
-                            "visibility": "INTERNAL",
-                            "visibility_label": "Internal",
-                            "created_at": "2026-06-13T10:08:00+00:00",
-                            "author_user": make_user_summary(user_id=9, username="lead", display_name="Team Lead"),
-                        }],
-                    })
+                    return httpx.Response(
+                        200,
+                        json={
+                            "assigned_issues": [make_issue_summary(user=make_user_summary())],
+                            "mentioned_comments": [
+                                {
+                                    "id": 6,
+                                    "issue": make_issue_summary(issue_id=6),
+                                    "body": "Ping @demo",
+                                    "visibility": "INTERNAL",
+                                    "visibility_label": "Internal",
+                                    "created_at": "2026-06-13T10:08:00+00:00",
+                                    "author_user": make_user_summary(
+                                        user_id=9, username="lead", display_name="Team Lead"
+                                    ),
+                                }
+                            ],
+                        },
+                    )
                 case ("GET", "/api/groups"):
                     return httpx.Response(200, json={"data": [make_group()]})
                 case ("GET", "/api/users"):
@@ -632,21 +799,39 @@ class TicketSystemSdkTests(unittest.TestCase):
                     return httpx.Response(200, json={"data": [make_category()]})
                 case ("POST", "/api/collections"):
                     self.assertEqual(json.loads(request.content.decode()), {"name": "Services", "prefix": "SRV"})
-                    return httpx.Response(201, json={"status": "created", "collection": make_collection(collection_id=9, name="Services")})
+                    return httpx.Response(
+                        201, json={"status": "created", "collection": make_collection(collection_id=9, name="Services")}
+                    )
                 case ("PUT", "/api/collections/9"):
                     self.assertEqual(json.loads(request.content.decode()), {"description": "Updated collection"})
-                    return httpx.Response(200, json={"status": "updated", "collection": make_collection(collection_id=9, name="Services")})
+                    return httpx.Response(
+                        200, json={"status": "updated", "collection": make_collection(collection_id=9, name="Services")}
+                    )
                 case ("POST", "/api/categories"):
                     self.assertEqual(json.loads(request.content.decode()), {"name": "Incidents", "code": "INC"})
-                    return httpx.Response(201, json={"status": "created", "category": make_category(category_id=7, name="Incidents", code="INC")})
+                    return httpx.Response(
+                        201,
+                        json={
+                            "status": "created",
+                            "category": make_category(category_id=7, name="Incidents", code="INC"),
+                        },
+                    )
                 case ("PUT", "/api/categories/7"):
                     self.assertEqual(json.loads(request.content.decode()), {"description": "Updated category"})
-                    return httpx.Response(200, json={"status": "updated", "category": make_category(category_id=7, name="Incidents", code="INC")})
+                    return httpx.Response(
+                        200,
+                        json={
+                            "status": "updated",
+                            "category": make_category(category_id=7, name="Incidents", code="INC"),
+                        },
+                    )
                 case ("GET", "/api/issues/11"):
                     return httpx.Response(200, json=make_issue_detail(issue_id=11))
                 case ("POST", "/api/issues/11/archive"):
                     self.assertEqual(json.loads(request.content.decode()), {"confirm_archive": False})
-                    return httpx.Response(200, json={"status": "archived", "issue_id": 11, "archived_at": "2026-06-13T10:10:00+00:00"})
+                    return httpx.Response(
+                        200, json={"status": "archived", "issue_id": 11, "archived_at": "2026-06-13T10:10:00+00:00"}
+                    )
                 case ("PUT", "/api/issues/11/attachments/7"):
                     self.assertEqual(request.content.decode(), "description=Updated+trace")
                     return httpx.Response(200, json={"status": "updated", "attachment": make_attachment()})
@@ -661,7 +846,9 @@ class TicketSystemSdkTests(unittest.TestCase):
                     return httpx.Response(200, json={"status": "deactivated", "user_id": 8, "is_active": False})
                 case ("POST", "/api/groups"):
                     self.assertEqual(json.loads(request.content.decode()), {"name": "Escalation Desk", "user_ids": [8]})
-                    return httpx.Response(201, json={"status": "created", "group": make_managed_group(name="Escalation Desk")})
+                    return httpx.Response(
+                        201, json={"status": "created", "group": make_managed_group(name="Escalation Desk")}
+                    )
                 case ("GET", "/api/groups/3"):
                     return httpx.Response(200, json=make_managed_group())
                 case ("DELETE", "/api/groups/3"):
@@ -699,7 +886,9 @@ class TicketSystemSdkTests(unittest.TestCase):
             self.assertEqual(sdk.admin.users.get(8).username, "coordinator")
             self.assertEqual(sdk.admin.users.update(8, display_name="Updated Coordinator").status, "updated")
             self.assertFalse(sdk.admin.users.deactivate(8).is_active)
-            self.assertEqual(sdk.admin.groups.create(name="Escalation Desk", user_ids=[8]).group.name, "Escalation Desk")
+            self.assertEqual(
+                sdk.admin.groups.create(name="Escalation Desk", user_ids=[8]).group.name, "Escalation Desk"
+            )
             self.assertEqual(sdk.admin.groups.get(3).users[0].username, "coordinator")
             self.assertEqual(sdk.admin.groups.delete(3).group_id, 3)
 
@@ -708,35 +897,41 @@ class TicketSystemSdkTests(unittest.TestCase):
             def handler(request):
                 match (request.method, request.url.path):
                     case ("GET", "/api/auth/me"):
-                        return httpx.Response(200, json={
-                            "id": 1,
-                            "username": "demo",
-                            "display_name": "Demo User",
-                            "is_staff": False,
-                            "is_superuser": False,
-                        })
+                        return httpx.Response(
+                            200,
+                            json={
+                                "id": 1,
+                                "username": "demo",
+                                "display_name": "Demo User",
+                                "is_staff": False,
+                                "is_superuser": False,
+                            },
+                        )
                     case ("GET", "/api/profile/me"):
                         return httpx.Response(200, json=make_profile())
                     case ("PUT", "/api/profile/me"):
                         self.assertEqual(request.content.decode(), "avatar_type=initials")
                         return httpx.Response(200, json={"status": "updated", "profile": make_profile()})
                     case ("GET", "/api/board"):
-                        return httpx.Response(200, json={
-                            "search_query": "",
-                            "selected_assignee": "",
-                            "selected_priority": "HIGH",
-                            "selected_collection": "",
-                            "selected_category": "",
-                            "selected_group": None,
-                            "selected_is_escalated": "true",
-                            "selected_updated_within_seconds": "3600",
-                            "assignee_options": [make_user_summary()],
-                            "priority_options": [{"value": "HIGH", "label": "High"}],
-                            "collection_options": [make_collection()],
-                            "category_options": [make_category()],
-                            "board_columns": [],
-                            "board_issue_count": 0,
-                        })
+                        return httpx.Response(
+                            200,
+                            json={
+                                "search_query": "",
+                                "selected_assignee": "",
+                                "selected_priority": "HIGH",
+                                "selected_collection": "",
+                                "selected_category": "",
+                                "selected_group": None,
+                                "selected_is_escalated": "true",
+                                "selected_updated_within_seconds": "3600",
+                                "assignee_options": [make_user_summary()],
+                                "priority_options": [{"value": "HIGH", "label": "High"}],
+                                "collection_options": [make_collection()],
+                                "category_options": [make_category()],
+                                "board_columns": [],
+                                "board_issue_count": 0,
+                            },
+                        )
                     case ("GET", "/api/dashboard"):
                         return httpx.Response(200, json={"assigned_issues": [], "mentioned_comments": []})
                     case ("GET", "/api/groups"):
@@ -748,13 +943,31 @@ class TicketSystemSdkTests(unittest.TestCase):
                     case ("GET", "/api/categories"):
                         return httpx.Response(200, json={"data": [make_category()]})
                     case ("POST", "/api/collections"):
-                        return httpx.Response(201, json={"status": "created", "collection": make_collection(collection_id=12, name="Backlog")})
+                        return httpx.Response(
+                            201,
+                            json={"status": "created", "collection": make_collection(collection_id=12, name="Backlog")},
+                        )
                     case ("PUT", "/api/collections/12"):
-                        return httpx.Response(200, json={"status": "updated", "collection": make_collection(collection_id=12, name="Backlog")})
+                        return httpx.Response(
+                            200,
+                            json={"status": "updated", "collection": make_collection(collection_id=12, name="Backlog")},
+                        )
                     case ("POST", "/api/categories"):
-                        return httpx.Response(201, json={"status": "created", "category": make_category(category_id=13, name="Change", code="CHG")})
+                        return httpx.Response(
+                            201,
+                            json={
+                                "status": "created",
+                                "category": make_category(category_id=13, name="Change", code="CHG"),
+                            },
+                        )
                     case ("PUT", "/api/categories/13"):
-                        return httpx.Response(200, json={"status": "updated", "category": make_category(category_id=13, name="Change", code="CHG")})
+                        return httpx.Response(
+                            200,
+                            json={
+                                "status": "updated",
+                                "category": make_category(category_id=13, name="Change", code="CHG"),
+                            },
+                        )
                     case ("GET", "/api/issues"):
                         return httpx.Response(200, json={"data": [make_issue_summary(user=make_user_summary())]})
                     case ("GET", "/api/issues/5"):
@@ -762,9 +975,13 @@ class TicketSystemSdkTests(unittest.TestCase):
                     case ("POST", "/api/issues"):
                         return httpx.Response(201, json={"status": "created", "issue": make_issue_detail()})
                     case ("PUT", "/api/issues/5"):
-                        return httpx.Response(200, json={"status": "updated", "issue": make_issue_detail(workflow_state="IN_PROGRESS")})
+                        return httpx.Response(
+                            200, json={"status": "updated", "issue": make_issue_detail(workflow_state="IN_PROGRESS")}
+                        )
                     case ("POST", "/api/issues/5/archive"):
-                        return httpx.Response(200, json={"status": "archived", "issue_id": 5, "archived_at": "2026-06-13T10:10:00+00:00"})
+                        return httpx.Response(
+                            200, json={"status": "archived", "issue_id": 5, "archived_at": "2026-06-13T10:10:00+00:00"}
+                        )
                     case ("POST", "/api/issues/5/comments"):
                         return httpx.Response(201, json={"status": "comment-added", "issue": make_issue_detail()})
                     case ("PUT", "/api/issues/5/comments/4"):
@@ -790,9 +1007,40 @@ class TicketSystemSdkTests(unittest.TestCase):
                     case ("GET", "/api/groups/3"):
                         return httpx.Response(200, json=make_managed_group())
                     case ("PUT", "/api/groups/3"):
-                        return httpx.Response(200, json={"status": "updated", "group": make_managed_group(name="Escalation Desk")})
+                        return httpx.Response(
+                            200, json={"status": "updated", "group": make_managed_group(name="Escalation Desk")}
+                        )
                     case ("DELETE", "/api/groups/3"):
                         return httpx.Response(200, json={"status": "deleted", "group_id": 3})
+                    case ("GET", "/api/workflow-state-auto-assignment-rules"):
+                        return httpx.Response(200, json={"data": [make_workflow_state_auto_assignment_rule()]})
+                    case ("POST", "/api/workflow-state-auto-assignment-rules"):
+                        return httpx.Response(
+                            201, json={"status": "created", "rule": make_workflow_state_auto_assignment_rule()}
+                        )
+                    case ("GET", "/api/workflow-state-auto-assignment-rules/2"):
+                        return httpx.Response(200, json=make_workflow_state_auto_assignment_rule())
+                    case ("PUT", "/api/workflow-state-auto-assignment-rules/2"):
+                        return httpx.Response(
+                            200,
+                            json={
+                                "status": "updated",
+                                "rule": make_workflow_state_auto_assignment_rule(
+                                    workflow_state="WAITING", is_active=False
+                                ),
+                            },
+                        )
+                    case ("DELETE", "/api/workflow-state-auto-assignment-rules/2"):
+                        return httpx.Response(200, json={"status": "deleted", "rule_id": 2})
+                    case ("POST", "/api/instance-reset"):
+                        return httpx.Response(
+                            200,
+                            json={
+                                "status": "reset",
+                                "preserved_user_id": 1,
+                                "deleted_counts": {"issues": 4, "users": 2},
+                            },
+                        )
                 raise AssertionError(f"Unexpected async request: {request.method} {request.url}")
 
             async with make_async_client(handler) as sdk:
@@ -811,8 +1059,12 @@ class TicketSystemSdkTests(unittest.TestCase):
                 self.assertEqual((await sdk.reference.update_category(13, description="Later")).category.id, 13)
                 self.assertEqual((await sdk.issues.list())[0].issue_number, "TASK-5")
                 self.assertEqual((await sdk.issues.get(5)).issue_number, "TASK-5")
-                self.assertEqual((await sdk.issues.create(title="Router outage", collection=1, category=2)).status, "created")
-                self.assertEqual((await sdk.issues.update(5, workflow_state="IN_PROGRESS")).issue.workflow_state, "IN_PROGRESS")
+                self.assertEqual(
+                    (await sdk.issues.create(title="Router outage", collection=1, category=2)).status, "created"
+                )
+                self.assertEqual(
+                    (await sdk.issues.update(5, workflow_state="IN_PROGRESS")).issue.workflow_state, "IN_PROGRESS"
+                )
                 self.assertEqual((await sdk.issues.archive(5)).issue_id, 5)
                 self.assertEqual((await sdk.comments.add(5, body="async comment")).status, "comment-added")
                 self.assertEqual((await sdk.comments.update(5, 4, body="updated body")).comment.id, 4)
@@ -826,8 +1078,30 @@ class TicketSystemSdkTests(unittest.TestCase):
                 self.assertFalse((await sdk.admin.users.deactivate(8)).is_active)
                 self.assertEqual((await sdk.admin.groups.create(name="Escalation Desk")).group.id, 3)
                 self.assertEqual((await sdk.admin.groups.get(3)).users[0].username, "coordinator")
-                self.assertEqual((await sdk.admin.groups.update(3, name="Escalation Desk")).group.name, "Escalation Desk")
+                self.assertEqual(
+                    (await sdk.admin.groups.update(3, name="Escalation Desk")).group.name, "Escalation Desk"
+                )
                 self.assertEqual((await sdk.admin.groups.delete(3)).group_id, 3)
+                self.assertEqual(
+                    (await sdk.admin.workflow_state_auto_assignment_rules.list())[0].workflow_state, "ASSIGNED"
+                )
+                self.assertEqual(
+                    (
+                        await sdk.admin.workflow_state_auto_assignment_rules.create(workflow_state="ASSIGNED", group=3)
+                    ).rule.id,
+                    2,
+                )
+                self.assertEqual((await sdk.admin.workflow_state_auto_assignment_rules.get(2)).group.id, 3)
+                self.assertEqual(
+                    (
+                        await sdk.admin.workflow_state_auto_assignment_rules.update(
+                            2, workflow_state="WAITING", group=3
+                        )
+                    ).rule.workflow_state,
+                    "WAITING",
+                )
+                self.assertEqual((await sdk.admin.workflow_state_auto_assignment_rules.delete(2)).rule_id, 2)
+                self.assertEqual((await sdk.admin.reset_instance(confirm_reset=True)).deleted_counts["issues"], 4)
 
         asyncio.run(runner())
 
@@ -840,12 +1114,16 @@ class TicketSystemSdkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "absolute http or https URL"):
             normalize_base_url("/relative/path")
 
-        response = httpx.Response(401, json={"error": "Bad credentials"}, request=httpx.Request("GET", "http://example.test/api/auth/me"))
+        response = httpx.Response(
+            401, json={"error": "Bad credentials"}, request=httpx.Request("GET", "http://example.test/api/auth/me")
+        )
         with self.assertRaises(AuthenticationError) as auth_error:
             make_sync_client(lambda request: response).auth.me()
         self.assertEqual(auth_error.exception.status_code, 401)
 
-        text_response = httpx.Response(500, text="boom", request=httpx.Request("GET", "http://example.test/api/issues/5"))
+        text_response = httpx.Response(
+            500, text="boom", request=httpx.Request("GET", "http://example.test/api/issues/5")
+        )
         with self.assertRaises(ApiError) as api_error:
             make_sync_client(lambda request: text_response).issues.get(5)
         self.assertEqual(str(api_error.exception), "Ticket System Mock API request GET /api/issues/5 failed.")

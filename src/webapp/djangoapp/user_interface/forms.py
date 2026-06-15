@@ -113,6 +113,7 @@ class IssueCreateForm(IssueBaseForm):
 
     def __init__(self, *args, show_workflow_state=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["category"].required = False
         self.description_template_queryset = list(
             IssueDescriptionTemplate.objects
             .filter(is_active=True)
@@ -150,6 +151,7 @@ class IssueUpdateForm(IssueBaseForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["category"].required = False
         if self.instance.pk:
             self.fields["workflow_state"].initial = self.instance.workflow_state
 

@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import fields, is_dataclass
-from typing import Any, get_args, get_origin, get_type_hints
+from typing import Any, TypeVar, cast, get_args, get_origin, get_type_hints
+
+ApiModelType = TypeVar("ApiModelType", bound="ApiModel")
 
 
 class ApiModel:
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]):
+    def from_dict(cls: type[ApiModelType], payload: dict[str, Any]) -> ApiModelType:
         type_hints = get_type_hints(cls)
-        values = {}
-        for field in fields(cls):
+        values: dict[str, Any] = {}
+        for field in fields(cast(Any, cls)):
             values[field.name] = _convert_value(type_hints[field.name], payload.get(field.name))
         return cls(**values)
 
@@ -27,7 +29,7 @@ def _convert_optional(annotation: Any, value: Any):
 
 
 def _convert_dataclass(annotation: Any, value: Any):
-    if isinstance(annotation, type) and is_dataclass(annotation):
+    if isinstance(annotation, type) and is_dataclass(annotation) and issubclass(annotation, ApiModel):
         return annotation.from_dict(value)
     return value
 

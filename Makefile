@@ -1,23 +1,30 @@
-check: clean validate-bash validate-yaml webapp-compile webapp-complexity-check webapp-bandit-tests ticketsystemmock-compile ticketsystemmock-complexity-check ticketsystemmock-bandit-tests ticketsystemmock-unittest ticketsystemmock-validate-package webapp-unittest n8n-node-test n8n-node-validate-package
-test: clean ticketsystemmock-test-coverage webapp-test-coverage
+check: clean validate-bash validate-yaml webapp-compile webapp-mypy-check webapp-complexity-check webapp-bandit-tests ticketsystemmock-compile ticketsystemmock-mypy-check ticketsystemmock-complexity-check ticketsystemmock-bandit-tests ticketsystemmock-unittest ticketsystemmock-validate-package webapp-unittest n8n-node-build n8n-node-lint n8n-node-test n8n-node-validate-package
+test: clean ticketsystemmock-test-coverage webapp-test-coverage n8n-node-test-coverage
+update-devserver: ticketsystemmock-stage-dev-package
+	@./scripts/build_n8n_for_devserver.bash
+	@$(MAKE) n8n-node-stage-dev-package
+	@$(MAKE) webapp-restart-devserver
 
 n8n-node-build:
-	@cd src/n8n_node && npm run build
+	@bash ./scripts/n8n_node/compile.bash
+
+n8n-node-lint:
+	@bash ./scripts/n8n_node/lint.bash
+
+n8n-node-audit:
+	@bash ./scripts/n8n_node/audit.bash
 
 n8n-node-stage-dev-package:
 	@./scripts/build_n8n_dev_package.bash
 
 n8n-node-test:
-	@printf "running n8n node tests... "; \
-	tmpfile=$$(mktemp); \
-	if cd src/n8n_node && npm test > "$$tmpfile" 2>&1; then \
-		rm -f "$$tmpfile"; \
-		echo "OK"; \
-	else \
-		cat "$$tmpfile"; \
-		rm -f "$$tmpfile"; \
-		exit 1; \
-	fi
+	@bash ./scripts/n8n_node/unittest.bash
+
+n8n-node-test-coverage:
+	@bash ./scripts/n8n_node/test_coverage.bash
+
+n8n-node-test-coverage-python-threshold:
+	@bash ./scripts/n8n_node/test_coverage_python_threshold.bash
 
 n8n-node-pack:
 	@cd src/n8n_node && npm run pack:node
@@ -52,6 +59,9 @@ validate-yaml:
 webapp-compile:
 	@./scripts/webapp/compile.bash
 
+webapp-mypy-check:
+	@./scripts/webapp/mypy.bash
+
 webapp-complexity-check:
 	@./scripts/webapp/complexity.bash
 
@@ -69,6 +79,9 @@ ticketsystemmock-unittest:
 
 ticketsystemmock-compile:
 	@./scripts/ticketsystemmock/compile.bash
+
+ticketsystemmock-mypy-check:
+	@./scripts/ticketsystemmock/mypy.bash
 
 ticketsystemmock-complexity-check:
 	@./scripts/ticketsystemmock/complexity.bash

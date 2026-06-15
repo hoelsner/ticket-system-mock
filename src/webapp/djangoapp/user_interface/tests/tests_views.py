@@ -316,13 +316,14 @@ class UserInterfaceTests(TestCase):
             page_response,
             "Start with the TSM - Reference Data node and run the Health operation before building larger workflows.",
         )
-        self.assertContains(page_response, "python3 -m venv .venv")
+        self.assertContains(page_response, "uv venv --python 3.14 .venv")
         self.assertContains(page_response, "python -m pip install /path/to/ticketsystemmock-0.1.0.tar.gz")
         self.assertContains(page_response, "with TicketSystemClient")
         self.assertEqual(n8n_download_response.status_code, 200)
         self.assertEqual(n8n_download_response["Content-Type"], "application/gzip")
         self.assertIn(
-            'attachment; filename="n8n-nodes-ticket-system-mock-9.9.9.tgz"', n8n_download_response["Content-Disposition"]
+            'attachment; filename="n8n-nodes-ticket-system-mock-9.9.9.tgz"',
+            n8n_download_response["Content-Disposition"],
         )
         self.assertEqual(b"".join(n8n_download_response.streaming_content), b"fake-n8n-package-contents")
         self.assertEqual(sdk_download_response.status_code, 200)
@@ -1074,6 +1075,59 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(issue.attachments.count(), 1)
         self.assertContains(response, f"Issue {issue.issue_number} was created.")
 
+    def test_issue_create_view_accepts_minimum_and_maximum_payloads(self):
+        self.client.force_login(self.user)
+
+        minimum_response = self.client.post(
+            reverse("issue-create"),
+            {
+                "title": "Minimal UI issue",
+                "description_markdown": "",
+                "collection": self.collection.pk,
+                "category": "",
+                "priority": IssuePriority.MEDIUM,
+                "group": "",
+                "user": "",
+                "attachment_description": "",
+            },
+            follow=True,
+        )
+
+        minimum_issue = Issue.objects.get(title="Minimal UI issue")
+        self.assertEqual(minimum_response.status_code, 200)
+        self.assertIsNone(minimum_issue.category)
+        self.assertIsNone(minimum_issue.group)
+        self.assertIsNone(minimum_issue.user)
+        self.assertFalse(minimum_issue.is_escalated)
+        self.assertEqual(minimum_issue.workflow_state, WorkflowState.NEW)
+
+        maximum_response = self.client.post(
+            reverse("issue-create"),
+            {
+                "title": "Maximum UI issue",
+                "description_markdown": "Observed during backup window.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.CRITICAL,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_escalated": "on",
+                "attachment_file": SimpleUploadedFile("maximum.txt", b"evidence"),
+                "attachment_description": "Detailed evidence",
+            },
+            follow=True,
+        )
+
+        maximum_issue = Issue.objects.get(title="Maximum UI issue")
+        self.assertEqual(maximum_response.status_code, 200)
+        self.assertEqual(maximum_issue.category, self.category)
+        self.assertEqual(maximum_issue.group, self.support_group)
+        self.assertEqual(maximum_issue.user, self.user)
+        self.assertTrue(maximum_issue.is_escalated)
+        self.assertEqual(maximum_issue.workflow_state, WorkflowState.ASSIGNED)
+        self.assertEqual(maximum_issue.attachments.count(), 1)
+
     def test_issue_create_view_persists_edited_description_instead_of_template_body(self):
         template = IssueDescriptionTemplate.objects.create(
             name="Database incident",
@@ -1452,6 +1506,22 @@ class UserInterfaceTests(TestCase):
         self.assertTrue(attachment_form.is_valid())
         self.assertEqual(len(attachment_form.cleaned_data["attachment_file"]), 2)
 
+    def test_issue_create_form_allows_blank_category(self):
+        form = IssueCreateForm(
+            data={
+                "title": "Database latency spike",
+                "description_markdown": "Observed during backup window.",
+                "collection": self.collection.pk,
+                "category": "",
+                "priority": IssuePriority.HIGH,
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["category"])
+
     def test_draft_attachment_upload_and_preview_work_for_issue_create_page(self):
         self.client.force_login(self.user)
         self.client.get(reverse("issue-create"))
@@ -1548,6 +1618,76 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(issue.state_transitions.count(), 1)
         self.assertEqual(issue.state_transitions.get().reason, "Triaged and dispatched.")
         self.assertContains(response, f"Issue {issue.issue_number} was updated.")
+
+    def test_issue_update_view_accepts_minimum_and_maximum_payloads(self):
+        self.client.force_login(self.user)
+
+        minimum_issue = Issue.objects.create(
+            title="Minimal update issue",
+            description_markdown="",
+            collection=self.collection,
+            category=None,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+
+        minimum_response = self.client.post(
+            reverse("issue-update", args=[minimum_issue.pk]),
+            {
+                "title": "Minimal update issue renamed",
+                "description_markdown": "",
+                "collection": self.collection.pk,
+                "category": "",
+                "priority": IssuePriority.MEDIUM,
+                "workflow_state": WorkflowState.NEW,
+                "transition_reason": "",
+                "group": "",
+                "user": "",
+                "attachment_description": "",
+            },
+            follow=True,
+        )
+
+        minimum_issue.refresh_from_db()
+        self.assertEqual(minimum_response.status_code, 200)
+        self.assertEqual(minimum_issue.title, "Minimal update issue renamed")
+        self.assertIsNone(minimum_issue.category)
+
+        maximum_issue = Issue.objects.create(
+            title="Maximum update issue",
+            description_markdown="Original description.",
+            collection=self.collection,
+            category=None,
+            workflow_state=WorkflowState.NEW,
+            priority=IssuePriority.MEDIUM,
+        )
+
+        maximum_response = self.client.post(
+            reverse("issue-update", args=[maximum_issue.pk]),
+            {
+                "title": "Maximum update issue",
+                "description_markdown": "Assigned to network operations.",
+                "collection": self.collection.pk,
+                "category": self.category.pk,
+                "priority": IssuePriority.CRITICAL,
+                "workflow_state": WorkflowState.ASSIGNED,
+                "transition_reason": "Triaged and dispatched.",
+                "group": self.support_group.pk,
+                "user": self.user.pk,
+                "is_escalated": "on",
+                "attachment_file": SimpleUploadedFile("maximum-update.txt", b"evidence"),
+                "attachment_description": "Detailed evidence",
+            },
+            follow=True,
+        )
+
+        maximum_issue.refresh_from_db()
+        self.assertEqual(maximum_response.status_code, 200)
+        self.assertEqual(maximum_issue.category, self.category)
+        self.assertEqual(maximum_issue.group, self.support_group)
+        self.assertEqual(maximum_issue.user, self.user)
+        self.assertTrue(maximum_issue.is_escalated)
+        self.assertEqual(maximum_issue.attachments.count(), 1)
 
     def test_issue_update_view_applies_workflow_state_auto_assignment_rule(self):
         issue = Issue.objects.create(
@@ -1695,6 +1835,81 @@ class UserInterfaceTests(TestCase):
         self.assertEqual(comment.mentions.get().mentioned_as, "observer")
         self.assertContains(response, f"A new issue comment was added to {issue.issue_number}.")
 
+    def test_issue_comment_create_view_accepts_minimum_and_maximum_payloads(self):
+        issue = Issue.objects.create(
+            title="Comment matrix issue",
+            description_markdown="Needs notes.",
+            collection=self.collection,
+            category=self.category,
+        )
+        self.client.force_login(self.user)
+
+        minimum_response = self.client.post(
+            reverse("issue-comment-create", args=[issue.pk]),
+            {
+                "body": "Investigating now.",
+                "visibility": "INTERNAL",
+                "attachment_description": "",
+            },
+            follow=True,
+        )
+
+        maximum_response = self.client.post(
+            reverse("issue-comment-create", args=[issue.pk]),
+            {
+                "body": "Looping in {{user:observer}} with logs attached.",
+                "visibility": "CUSTOMER_VISIBLE",
+                "attachment_description": "Traceroute output",
+                "attachment_file": SimpleUploadedFile("trace.txt", b"hop1\nhop2", content_type="text/plain"),
+            },
+            follow=True,
+        )
+
+        issue.refresh_from_db()
+        self.assertEqual(minimum_response.status_code, 200)
+        self.assertEqual(maximum_response.status_code, 200)
+        self.assertEqual(issue.comments.count(), 2)
+        self.assertEqual(issue.attachments.count(), 1)
+
+    def test_issue_archive_view_accepts_minimum_and_maximum_payloads(self):
+        minimum_issue = Issue.objects.create(
+            title="Minimal archive issue",
+            description_markdown="",
+            collection=self.collection,
+            category=None,
+            workflow_state=WorkflowState.NEW,
+        )
+        maximum_issue = Issue.objects.create(
+            title="Maximum archive issue",
+            description_markdown="Observed during backup window.",
+            collection=self.collection,
+            category=self.category,
+            group=self.support_group,
+            user=self.user,
+            workflow_state=WorkflowState.ASSIGNED,
+            priority=IssuePriority.CRITICAL,
+            is_escalated=True,
+        )
+        self.client.force_login(self.user)
+
+        minimum_response = self.client.post(
+            reverse("issue-archive", args=[minimum_issue.pk]),
+            {"confirm_archive": "on"},
+            follow=True,
+        )
+        maximum_response = self.client.post(
+            reverse("issue-archive", args=[maximum_issue.pk]),
+            {"confirm_archive": "on"},
+            follow=True,
+        )
+
+        minimum_issue.refresh_from_db()
+        maximum_issue.refresh_from_db()
+        self.assertEqual(minimum_response.status_code, 200)
+        self.assertEqual(maximum_response.status_code, 200)
+        self.assertIsNotNone(minimum_issue.archived_at)
+        self.assertIsNotNone(maximum_issue.archived_at)
+
     def test_issue_attachment_delete_view_removes_attachment_and_records_history(self):
         issue = Issue.objects.create(
             title="Primary uplink outage",
@@ -1728,6 +1943,47 @@ class UserInterfaceTests(TestCase):
         self.assertContains(
             response, f"Attachment {attachment.original_filename} was removed from {issue.issue_number}."
         )
+
+    def test_issue_attachment_delete_view_accepts_minimum_and_maximum_attachment_shapes(self):
+        issue = Issue.objects.create(
+            title="Attachment matrix issue",
+            description_markdown="Needs evidence.",
+            collection=self.collection,
+            category=self.category,
+        )
+        minimum_attachment = IssueAttachment.objects.create(
+            issue=issue,
+            file=SimpleUploadedFile("minimal.txt", b"minimal"),
+            original_filename="minimal.txt",
+            content_type="",
+            file_size=7,
+            description="",
+            uploaded_by_user=self.user,
+        )
+        maximum_attachment = IssueAttachment.objects.create(
+            issue=issue,
+            file=SimpleUploadedFile("maximum.txt", b"maximum", content_type="text/plain"),
+            original_filename="maximum.txt",
+            content_type="text/plain",
+            file_size=7,
+            description="Detailed evidence",
+            uploaded_by_user=self.user,
+        )
+        self.client.force_login(self.user)
+
+        minimum_response = self.client.post(
+            reverse("issue-attachment-delete", args=[issue.pk, minimum_attachment.pk]),
+            follow=True,
+        )
+        maximum_response = self.client.post(
+            reverse("issue-attachment-delete", args=[issue.pk, maximum_attachment.pk]),
+            follow=True,
+        )
+
+        issue.refresh_from_db()
+        self.assertEqual(minimum_response.status_code, 200)
+        self.assertEqual(maximum_response.status_code, 200)
+        self.assertEqual(issue.attachments.count(), 0)
 
     def test_issue_archive_view_archives_issue(self):
         issue = Issue.objects.create(
