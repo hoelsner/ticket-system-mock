@@ -26,8 +26,24 @@ from .transport import AsyncTransport, SyncTransport
 
 
 class TicketSystemClient:
-    def __init__(self, base_url: str, username: str, password: str, *, timeout: float = 10.0, client=None):
-        self._transport = SyncTransport(base_url, username, password, timeout=timeout, client=client)
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        *,
+        timeout: float = 10.0,
+        ssl_verify: bool = True,
+        client=None,
+    ):
+        self._transport = SyncTransport(
+            base_url,
+            username,
+            password,
+            timeout=timeout,
+            ssl_verify=ssl_verify,
+            client=client,
+        )
         self.system = SyncSystemResource(self._transport)
         self.auth = SyncAuthResource(self._transport)
         self.profiles = SyncProfilesResource(self._transport)
@@ -51,8 +67,24 @@ class TicketSystemClient:
 
 
 class AsyncTicketSystemClient:
-    def __init__(self, base_url: str, username: str, password: str, *, timeout: float = 10.0, client=None):
-        self._transport = AsyncTransport(base_url, username, password, timeout=timeout, client=client)
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        *,
+        timeout: float = 10.0,
+        ssl_verify: bool = True,
+        client=None,
+    ):
+        self._transport = AsyncTransport(
+            base_url,
+            username,
+            password,
+            timeout=timeout,
+            ssl_verify=ssl_verify,
+            client=client,
+        )
         self.system = AsyncSystemResource(self._transport)
         self.auth = AsyncAuthResource(self._transport)
         self.profiles = AsyncProfilesResource(self._transport)

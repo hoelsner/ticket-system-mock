@@ -67,13 +67,23 @@ class RequestConfig:
 
 
 class SyncTransport:
-    def __init__(self, base_url: str, username: str, password: str, *, timeout: float = 10.0, client=None):
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        *,
+        timeout: float = 10.0,
+        ssl_verify: bool = True,
+        client=None,
+    ):
         self.base_url = normalize_base_url(base_url)
         if client is None:
             self._client = httpx.Client(
                 base_url=self.base_url,
                 auth=(username, password),
                 timeout=timeout,
+                verify=ssl_verify,
             )
         else:
             client.auth = (username, password)
@@ -97,13 +107,23 @@ class SyncTransport:
 
 
 class AsyncTransport:
-    def __init__(self, base_url: str, username: str, password: str, *, timeout: float = 10.0, client=None):
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        *,
+        timeout: float = 10.0,
+        ssl_verify: bool = True,
+        client=None,
+    ):
         self.base_url = normalize_base_url(base_url)
         if client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 auth=(username, password),
                 timeout=timeout,
+                verify=ssl_verify,
             )
         else:
             client.auth = (username, password)

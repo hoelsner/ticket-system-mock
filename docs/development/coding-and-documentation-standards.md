@@ -33,6 +33,9 @@ system design instead of mixing audiences in one document.
 
 ## Coding Standards
 
+- with python, use type annotations for function signatures and mypy for static type checking
+- with python, use docstrings for all public functions, classes, and modules, following the Google style guide for docstrings
+- with python, follow PEP 8 style guidelines for code formatting
 - Use descriptive names for variables, functions, classes, files, and modules.
 - Keep functions focused on one task.
 - Organize code into logical layers with clear responsibilities.

@@ -4,6 +4,7 @@ import asyncio
 import json
 import unittest
 from dataclasses import dataclass
+from unittest.mock import patch
 
 import httpx
 from ticketsystemmock.client import AsyncTicketSystemClient, TicketSystemClient
@@ -1138,6 +1139,28 @@ class TicketSystemSdkTests(unittest.TestCase):
         self.assertEqual(model.values, [1, 2, 3])
         self.assertEqual(model.metadata, {"env": "test"})
         self.assertEqual(_convert_value(int | str, 7), 7)
+
+    def test_sync_client_passes_ssl_verify_to_httpx_client(self):
+        with patch("ticketsystemmock.transport.httpx.Client") as client_factory:
+            TicketSystemClient("https://example.test", "demo", "password", ssl_verify=False)
+
+        client_factory.assert_called_once_with(
+            base_url="https://example.test",
+            auth=("demo", "password"),
+            timeout=10.0,
+            verify=False,
+        )
+
+    def test_async_client_passes_ssl_verify_to_httpx_client(self):
+        with patch("ticketsystemmock.transport.httpx.AsyncClient") as client_factory:
+            AsyncTicketSystemClient("https://example.test", "demo", "password", ssl_verify=False)
+
+        client_factory.assert_called_once_with(
+            base_url="https://example.test",
+            auth=("demo", "password"),
+            timeout=10.0,
+            verify=False,
+        )
 
     def test_package_exports_match_expected_public_surface(self):
         self.assertIn("AsyncAdminResource", resource_exports)

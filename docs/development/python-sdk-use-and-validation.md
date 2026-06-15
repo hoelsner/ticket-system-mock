@@ -100,6 +100,14 @@ with TicketSystemClient("http://webapp:8000", "admin", "admin1234") as client:
     issues = client.issues.list(priority=IssuePriority.HIGH, workflow_state=WorkflowState.NEW)
 ```
 
+For local self-signed HTTPS test instances, pass `ssl_verify=False` when the
+SDK should skip certificate validation:
+
+```python
+with TicketSystemClient("https://localhost:8443", "admin", "admin1234", ssl_verify=False) as client:
+    print(client.system.health().status)
+```
+
 Minimal async example:
 
 ```python
