@@ -2286,10 +2286,10 @@ main.container {
 }
 
 .top-navigation__logo {
-  width: 2rem;
+  width: auto;
   height: 2rem;
   flex: 0 0 auto;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 0.6rem;
   background: color-mix(in srgb, var(--pico-card-background-color) 88%, var(--pico-primary-background) 12%);
 }

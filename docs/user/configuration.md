@@ -16,6 +16,8 @@ the default value applied when a variable is not provided.
 | `DJANGO_TIME_ZONE` | `UTC` | Sets the Django application time zone. |
 | `DJANGO_LOG_LEVEL` | `DEBUG` when `DJANGO_DEBUG=True`, otherwise `INFO` | Sets the Django logging level used by the basic stdout logging configuration. |
 | `PRODUCT_DISPLAY_NAME` | `Ticket System Mock` | Provides the default product name used by the frontend, admin, and branding fallback behavior. |
+| `DJANGO_SESSION_COOKIE_NAME` | `ticket-system-mock-sessionid` | Sets the browser cookie name used for Django session authentication so this application does not collide with other apps on the same host. |
+| `DJANGO_CSRF_COOKIE_NAME` | `ticket-system-mock-csrftoken` | Sets the browser cookie name used for Django's CSRF token so this application does not collide with other apps on the same host. |
 | `DJANGO_STATIC_ROOT` | `src/webapp/runtime/static` | Sets the filesystem path where Django writes collected static files. |
 | `DJANGO_MEDIA_ROOT` | `src/webapp/runtime/media` | Sets the filesystem path where Django stores media files. |
 | `POSTGRES_DB` | `itoticketing` | Sets the PostgreSQL database name used by the Web Application. |
@@ -103,6 +105,8 @@ DJANGO_ALLOWED_HOSTS=*
 DJANGO_TIME_ZONE=UTC
 DJANGO_LOG_LEVEL=DEBUG
 PRODUCT_DISPLAY_NAME=Ticket System Mock
+DJANGO_SESSION_COOKIE_NAME=ticket-system-mock-sessionid
+DJANGO_CSRF_COOKIE_NAME=ticket-system-mock-csrftoken
 DJANGO_STATIC_ROOT=/app/runtime/static
 DJANGO_MEDIA_ROOT=/app/runtime/media
 POSTGRES_DB=itoticketing

@@ -9,6 +9,8 @@ x-webapp-environment: &webapp-environment
   DJANGO_LOG_LEVEL: "${DJANGO_LOG_LEVEL:-INFO}"
   SERVICE_BASE_URL: "${SERVICE_BASE_URL:-https://localhost:8443}"
   DJANGO_CSRF_TRUSTED_ORIGINS: "${DJANGO_CSRF_TRUSTED_ORIGINS:-https://localhost:8443}"
+  DJANGO_SESSION_COOKIE_NAME: "${DJANGO_SESSION_COOKIE_NAME:-ticket-system-mock-sessionid}"
+  DJANGO_CSRF_COOKIE_NAME: "${DJANGO_CSRF_COOKIE_NAME:-ticket-system-mock-csrftoken}"
   DJANGO_RUNTIME_ROOT: "/runtime"
   DJANGO_STATIC_ROOT: "/runtime/static"
   DJANGO_MEDIA_ROOT: "/runtime/media"

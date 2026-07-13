@@ -252,6 +252,159 @@ test('Issue create operation stores a null category when no category reference i
 	assert.equal(capturedRequest.requestOptions.body.category, null);
 });
 
+test('Issue create operation accepts numeric IDs provided as strings', async () => {
+	const node = new Issue();
+	let capturedRequest;
+
+	const context = {
+		getInputData() {
+			return [{}];
+		},
+		getNodeParameter(name, itemIndex, defaultValue) {
+			assert.equal(itemIndex, 0);
+			const parameters = {
+				operation: 'create',
+				title: 'Edge router outage',
+				descriptionMarkdown: 'Customers cannot reach the branch office.',
+				collectionId: '2',
+				categoryId: '8',
+				issuePriority: 'CRITICAL',
+				groupId: '0',
+				userId: '23',
+				isEscalated: true,
+				workflowState: 'TRIAGE',
+				transitionReason: 'Escalated during intake.',
+			};
+			return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : defaultValue;
+		},
+		async getCredentials(name) {
+			assert.equal(name, 'ticketSystemMockApi');
+			return { baseUrl: 'http://example.test/' };
+		},
+		helpers: {
+			requestWithAuthentication(credentialName, requestOptions) {
+				capturedRequest = { credentialName, requestOptions };
+				return JSON.stringify({ id: 77, title: 'Edge router outage' });
+			},
+		},
+		continueOnFail() {
+			return false;
+		},
+		getNode() {
+			return { name: 'TSM - Issue' };
+		},
+	};
+
+	await node.execute.call(context);
+
+	assert.deepEqual(capturedRequest.requestOptions.body, {
+		title: 'Edge router outage',
+		description_markdown: 'Customers cannot reach the branch office.',
+		collection: 2,
+		category: 8,
+		priority: 'CRITICAL',
+		group: null,
+		user: 23,
+		is_escalated: true,
+		workflow_state: 'TRIAGE',
+		transition_reason: 'Escalated during intake.',
+	});
+});
+
+test('Issue create operation rejects conflicting collection ID and collection name inputs', async () => {
+	const node = new Issue();
+
+	const context = {
+		getInputData() {
+			return [{}];
+		},
+		getNodeParameter(name, itemIndex, defaultValue) {
+			assert.equal(itemIndex, 0);
+			const parameters = {
+				operation: 'create',
+				title: 'Edge router outage',
+				descriptionMarkdown: 'Customers cannot reach the branch office.',
+				collectionId: 2,
+				collectionName: 'Infrastructure',
+				categoryId: 8,
+				issuePriority: 'CRITICAL',
+				groupId: 0,
+				userId: 23,
+				isEscalated: true,
+				workflowState: 'TRIAGE',
+			};
+			return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : defaultValue;
+		},
+		async getCredentials() {
+			return { baseUrl: 'http://example.test/' };
+		},
+		helpers: {
+			requestWithAuthentication() {
+				throw new Error('request should not run');
+			},
+		},
+		continueOnFail() {
+			return false;
+		},
+		getNode() {
+			return { name: 'TSM - Issue' };
+		},
+	};
+
+	await assert.rejects(
+		node.execute.call(context),
+		(error) => error instanceof NodeOperationError
+			&& error.message === 'Provide either Collection ID or Collection Name, not both.',
+	);
+});
+
+test('Issue update operation rejects duplicate category name matches', async () => {
+	const node = new Issue();
+
+	const context = {
+		getInputData() {
+			return [{}];
+		},
+		getNodeParameter(name, itemIndex, defaultValue) {
+			assert.equal(itemIndex, 0);
+			const parameters = {
+				operation: 'update',
+				issueId: 42,
+				updateFields: {
+					categoryName: 'Network Incident',
+				},
+			};
+			return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : defaultValue;
+		},
+		async getCredentials() {
+			return { baseUrl: 'http://example.test/' };
+		},
+		helpers: {
+			requestWithAuthentication(_credentialName, requestOptions) {
+				assert.equal(requestOptions.url, 'http://example.test/api/categories');
+				return JSON.stringify({
+					data: [
+						{ id: 8, name: 'Network Incident' },
+						{ id: 18, name: 'network incident' },
+					],
+				});
+			},
+		},
+		continueOnFail() {
+			return false;
+		},
+		getNode() {
+			return { name: 'TSM - Issue' };
+		},
+	};
+
+	await assert.rejects(
+		node.execute.call(context),
+		(error) => error instanceof NodeOperationError
+			&& error.message === 'Category name "Network Incident" matched multiple records. Use the numeric ID instead.',
+	);
+});
+
 test('Issue archive operation sends the archive confirmation body', async () => {
 	const node = new Issue();
 	let capturedRequest;
@@ -603,5 +756,51 @@ test('Issue update operation resolves collection, category, group, and user name
 			headers: undefined,
 			qs: undefined,
 		},
+	});
+});
+
+test('Issue update operation leaves optional group and user unchanged when blank values are supplied', async () => {
+	const node = new Issue();
+	let capturedRequest;
+
+	const context = {
+		getInputData() {
+			return [{}];
+		},
+		getNodeParameter(name, itemIndex, defaultValue) {
+			assert.equal(itemIndex, 0);
+			const parameters = {
+				operation: 'update',
+				issueId: 42,
+				updateFields: {
+					groupId: '',
+					userId: ' ',
+					issuePriority: 'HIGH',
+				},
+			};
+			return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : defaultValue;
+		},
+		async getCredentials(name) {
+			assert.equal(name, 'ticketSystemMockApi');
+			return { baseUrl: 'http://example.test/' };
+		},
+		helpers: {
+			requestWithAuthentication(credentialName, requestOptions) {
+				capturedRequest = { credentialName, requestOptions };
+				return JSON.stringify({ id: 42, status: 'updated' });
+			},
+		},
+		continueOnFail() {
+			return false;
+		},
+		getNode() {
+			return { name: 'TSM - Issue' };
+		},
+	};
+
+	await node.execute.call(context);
+
+	assert.deepEqual(capturedRequest.requestOptions.body, {
+		priority: 'HIGH',
 	});
 });

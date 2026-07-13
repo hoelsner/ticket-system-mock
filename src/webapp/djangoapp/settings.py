@@ -240,6 +240,14 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 SERVICE_BASE_URL = os.environ.get("SERVICE_BASE_URL", "http://localhost")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", [SERVICE_BASE_URL])
+SESSION_COOKIE_NAME = os.environ.get(
+    "DJANGO_SESSION_COOKIE_NAME",
+    "ticket-system-mock-sessionid",
+)
+CSRF_COOKIE_NAME = os.environ.get(
+    "DJANGO_CSRF_COOKIE_NAME",
+    "ticket-system-mock-csrftoken",
+)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = str(DJANGO_MEDIA_ROOT)
 
