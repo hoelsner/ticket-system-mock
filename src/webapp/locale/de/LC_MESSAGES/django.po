@@ -93,6 +93,14 @@ msgstr "Fehlgeschlagen"
 msgid "Subscribed event types must be a list."
 msgstr "Abonnierte Ereignistypen müssen eine Liste sein."
 
+#: djangoapp/core/models/webhook_endpoint.py:30
+msgid "Disable SSL certificate validation"
+msgstr "SSL-Zertifikatsprufung deaktivieren"
+
+#: djangoapp/core/models/webhook_endpoint.py:31
+msgid "Use only for trusted endpoints with self-signed or otherwise invalid HTTPS certificates."
+msgstr "Nur fur vertrauenswurdige Endpunkte mit selbstsignierten oder anderweitig ungunstigen HTTPS-Zertifikaten verwenden."
+
 #: djangoapp/core/models/webhook_endpoint.py:47
 #, python-format
 msgid "Unsupported event types: %(event_types)s"

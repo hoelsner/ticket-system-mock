@@ -55,6 +55,7 @@ Each `WebhookEndpoint` record defines:
 
 - the target URL
 - whether the endpoint is enabled
+- whether HTTPS certificate validation is disabled for that endpoint
 - the subscribed event types
 - an optional signing secret
 - timeout, retry count, and retry backoff settings
@@ -67,6 +68,10 @@ delivery target set stable for the life of the event.
 ## Request Format
 
 Each delivery attempt sends an HTTP `POST` request with a JSON body.
+
+By default, HTTPS deliveries use normal SSL certificate validation. Operators
+can disable certificate validation per endpoint for trusted development or
+internal targets that use self-signed certificates.
 
 The persisted and delivered webhook body uses these root-level contract fields:
 

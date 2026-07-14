@@ -4,7 +4,7 @@ const { NodeApiError } = require('n8n-workflow');
 
 const { ticketingApiRequest, unwrapDataArrayResponse } = require('../dist/transport/request.js');
 
-function createRequestContext(baseUrl, responder) {
+function createRequestContext(baseUrl, responder, credentialOverrides = {}) {
 	let capturedCall;
 
 	const context = {
@@ -13,7 +13,7 @@ function createRequestContext(baseUrl, responder) {
 		},
 		async getCredentials(name) {
 			assert.equal(name, 'ticketSystemMockApi');
-			return { baseUrl };
+			return { baseUrl, ...credentialOverrides };
 		},
 		helpers: {
 			requestWithAuthentication: function requestWithAuthentication(credentialName, requestOptions) {

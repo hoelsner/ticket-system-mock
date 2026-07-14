@@ -37,6 +37,13 @@ export class TicketSystemMockApi implements ICredentialType {
 			required: true,
 			description: 'Password used for HTTP Basic authentication.',
 		},
+		{
+			displayName: 'Disable SSL Certificate Validation',
+			name: 'skipSslCertificateValidation',
+			type: 'boolean',
+			default: false,
+			description: 'Disable HTTPS certificate validation for trusted development or internal instances that use self-signed certificates.',
+		},
 	];
 
 	authenticate: IAuthenticateGeneric = {
@@ -46,6 +53,7 @@ export class TicketSystemMockApi implements ICredentialType {
 				username: '={{$credentials.username}}',
 				password: '={{$credentials.password}}',
 			},
+			skipSslCertificateValidation: '={{$credentials.skipSslCertificateValidation}}',
 		},
 	};
 
@@ -53,6 +61,7 @@ export class TicketSystemMockApi implements ICredentialType {
 		request: {
 			url: '={{$credentials.baseUrl}}/api/health',
 			method: 'GET',
+			skipSslCertificateValidation: '={{$credentials.skipSslCertificateValidation}}',
 		},
 	};
 }

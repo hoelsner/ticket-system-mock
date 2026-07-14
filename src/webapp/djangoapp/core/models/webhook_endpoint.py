@@ -27,6 +27,11 @@ class WebhookEndpoint(models.Model):
     description = models.TextField(blank=True)
     target_url = models.CharField(max_length=200, validators=[validate_webhook_target_url])
     enabled = models.BooleanField(default=True)
+    disable_ssl_certificate_validation = models.BooleanField(
+        default=False,
+        verbose_name=_("Disable SSL certificate validation"),
+        help_text=_("Use only for trusted endpoints with self-signed or otherwise invalid HTTPS certificates."),
+    )
     subscribed_event_types = models.JSONField(default=list, blank=True)
     secret = models.CharField(max_length=255, blank=True)
     timeout_seconds = models.PositiveIntegerField(default=5)

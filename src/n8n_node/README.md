@@ -14,6 +14,8 @@ This package now contains the initial self-contained scaffold:
 - `TSM - Issue Poll Trigger` node for polling issue updates through `/api/issues`
 - `TSM - Issue Webhook Trigger` node for receiving outbound webhook deliveries from the application
 
+The shared `Ticket System Mock API` credential also supports `Disable SSL Certificate Validation` for trusted HTTPS environments that use self-signed certificates.
+
 ## Build
 
 ```bash

@@ -1,3 +1,4 @@
+import ssl
 from unittest.mock import MagicMock, patch
 from urllib import error
 
@@ -87,6 +88,33 @@ class WebhookDeliveryTests(TestCase):
         delivery_attempt = WebhookDeliveryAttempt.objects.get(webhook_event=self.webhook_event)
         self.assertIn("X-Webhook-Signature", delivery_attempt.request_headers)
         self.assertTrue(delivery_attempt.request_headers["X-Webhook-Signature"].startswith("sha256="))
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.request.urlopen")
+    def test_deliver_event_uses_default_ssl_validation(self, mock_urlopen):
+        response = MagicMock()
+        response.status = 204
+        response.read.return_value = b""
+        mock_urlopen.return_value.__enter__.return_value = response
+
+        WebhookDeliveryController.deliver_event(self.webhook_event.pk)
+
+        self.assertNotIn("context", mock_urlopen.call_args.kwargs)
+
+    @patch("djangoapp.core.controllers.webhook_delivery_controller.request.urlopen")
+    def test_deliver_event_can_disable_ssl_certificate_validation(self, mock_urlopen):
+        self.endpoint.disable_ssl_certificate_validation = True
+        self.endpoint.save(update_fields=["disable_ssl_certificate_validation", "updated_at"])
+        response = MagicMock()
+        response.status = 204
+        response.read.return_value = b""
+        mock_urlopen.return_value.__enter__.return_value = response
+
+        WebhookDeliveryController.deliver_event(self.webhook_event.pk)
+
+        ssl_context = mock_urlopen.call_args.kwargs["context"]
+        self.assertIsInstance(ssl_context, ssl.SSLContext)
+        self.assertFalse(ssl_context.check_hostname)
+        self.assertEqual(ssl_context.verify_mode, ssl.CERT_NONE)
 
     @patch("djangoapp.core.controllers.webhook_delivery_controller.request.urlopen")
     def test_process_pending_events_retries_due_failures(self, mock_urlopen):

@@ -234,13 +234,20 @@ def seed_workflow_rule(client: TicketSystemClient, group_ids: dict[str, int], us
     hide_input=True,
     help="Superuser password. Prompts securely when omitted.",
 )
-def main(base_url: str, username: str, password: str | None) -> None:
+@click.option(
+    "--ssl-verify/--no-ssl-verify",
+    default=True,
+    show_default=True,
+    help="Enable or disable TLS certificate validation for HTTPS connections.",
+)
+def main(base_url: str, username: str, password: str | None, ssl_verify: bool) -> None:
     """Reset and seed the issue triage with n8n scenario through the Ticket System Mock Python SDK."""
 
     if not password:
         password = click.prompt("Superuser password", hide_input=True)
+    assert password is not None
 
-    with TicketSystemClient(base_url, username, password) as client:
+    with TicketSystemClient(base_url, username, password, ssl_verify=ssl_verify) as client:
         authenticated_user = client.auth.me()
         if not authenticated_user.is_superuser:
             raise click.ClickException("The scenario seeding account must be a superuser.")

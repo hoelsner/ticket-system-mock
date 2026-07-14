@@ -200,7 +200,6 @@ export async function ticketingApiRequest(
 		headers: options.headers,
 		qs: options.qs,
 	};
-
 	let response: unknown;
 	try {
 		response = await context.helpers.requestWithAuthentication.call(

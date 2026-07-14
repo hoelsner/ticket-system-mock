@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import logging
+import ssl
 import threading
 import time
 from urllib import error, parse, request
@@ -110,9 +111,10 @@ class WebhookDeliveryController:
             request_body,
             request_headers,
         )
+        urlopen_kwargs = WebhookDeliveryController._build_urlopen_kwargs(webhook_endpoint)
 
         try:
-            with request.urlopen(http_request, timeout=webhook_endpoint.timeout_seconds) as response:  # nosec B310
+            with request.urlopen(http_request, **urlopen_kwargs) as response:  # nosec B310
                 status_code = response.status
                 response_body = response.read().decode("utf-8", errors="replace")
                 success = 200 <= status_code < 300
@@ -178,6 +180,17 @@ class WebhookDeliveryController:
             headers=request_headers,
             method="POST",
         )
+
+    @staticmethod
+    def _build_urlopen_kwargs(webhook_endpoint):
+        urlopen_kwargs = {"timeout": webhook_endpoint.timeout_seconds}
+        if webhook_endpoint.disable_ssl_certificate_validation:
+            urlopen_kwargs["context"] = WebhookDeliveryController._build_unverified_ssl_context()
+        return urlopen_kwargs
+
+    @staticmethod
+    def _build_unverified_ssl_context():
+        return ssl._create_unverified_context()  # nosec B323,B501
 
     @staticmethod
     def _create_delivery_attempt(
