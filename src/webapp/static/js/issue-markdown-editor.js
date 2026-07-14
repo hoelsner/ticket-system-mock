@@ -54,12 +54,40 @@
     return true;
   }
 
-  function getCookie(name) {
+  function getCsrfToken(editor) {
+    const configuredCookieName = editor?.dataset.csrfCookieName || "";
+    if (configuredCookieName) {
+      const cookies = document.cookie ? document.cookie.split(";") : [];
+      for (const cookie of cookies) {
+        const trimmed = cookie.trim();
+        const separatorIndex = trimmed.indexOf("=");
+        if (separatorIndex === -1) {
+          continue;
+        }
+
+        const cookieName = trimmed.slice(0, separatorIndex);
+        if (cookieName === configuredCookieName) {
+          return decodeURIComponent(trimmed.slice(separatorIndex + 1));
+        }
+      }
+    }
+
+    const formTokenField = editor?.closest("form")?.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (formTokenField?.value) {
+      return formTokenField.value;
+    }
+
     const cookies = document.cookie ? document.cookie.split(";") : [];
     for (const cookie of cookies) {
       const trimmed = cookie.trim();
-      if (trimmed.startsWith(name + "=")) {
-        return decodeURIComponent(trimmed.slice(name.length + 1));
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) {
+        continue;
+      }
+
+      const cookieName = trimmed.slice(0, separatorIndex);
+      if (cookieName === "csrftoken" || cookieName.endsWith("csrftoken")) {
+        return decodeURIComponent(trimmed.slice(separatorIndex + 1));
       }
     }
     return "";
@@ -87,7 +115,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "X-CSRFToken": getCookie("csrftoken"),
+        "X-CSRFToken": getCsrfToken(editor),
         "X-Requested-With": "XMLHttpRequest",
       },
       body: body.toString(),
@@ -145,7 +173,7 @@
     return fetch(uploadUrl, {
       method: "POST",
       headers: {
-        "X-CSRFToken": getCookie("csrftoken"),
+        "X-CSRFToken": getCsrfToken(editor),
         "X-Requested-With": "XMLHttpRequest",
       },
       body: body,

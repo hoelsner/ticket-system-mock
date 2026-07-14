@@ -95,13 +95,13 @@
           {% if issue %}
             {% url 'issue-markdown-preview' issue.pk as preview_url %}
             {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
-            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="1" preview_open="" only %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="1" preview_open="" csrf_cookie_name=csrf_cookie_name only %}
           {% else %}
             {% url 'markdown-preview' as preview_url %}
             {% url 'draft-attachment-suggestions' as attachment_suggestions_url %}
             {% url 'draft-attachment-upload' as attachment_upload_url %}
             {% translate "Upload from the editor when a file should appear inside the issue description. Use the attachments panel for files that should be added when you submit the issue." as draft_attachment_hint %}
-            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url=attachment_upload_url attachment_hint=draft_attachment_hint preview_collapsible="1" preview_open="1" only %}
+            {% include "core/partials/markdown_editor.html" with field=form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url=attachment_upload_url attachment_hint=draft_attachment_hint preview_collapsible="1" preview_open="1" csrf_cookie_name=csrf_cookie_name only %}
           {% endif %}
           {% if form.description_markdown.help_text %}<small>{{ form.description_markdown.help_text }}</small>{% endif %}
           <small class="markdown-editor__help-text">

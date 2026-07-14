@@ -64,11 +64,19 @@
     return columnIssueCounts;
   }
 
-  function getCookie(name) {
-    const cookieValue = `; ${document.cookie}`;
-    const parts = cookieValue.split(`; ${name}=`);
-    if (parts.length === 2) {
-      return parts.pop().split(";").shift();
+  function getCsrfToken() {
+    const cookies = document.cookie ? document.cookie.split(";") : [];
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) {
+        continue;
+      }
+
+      const cookieName = trimmed.slice(0, separatorIndex);
+      if (cookieName === "csrftoken" || cookieName.endsWith("csrftoken")) {
+        return decodeURIComponent(trimmed.slice(separatorIndex + 1));
+      }
     }
     return "";
   }
@@ -86,7 +94,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
+        "X-CSRFToken": getCsrfToken(),
         "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify({states: columnOpenStates}),
@@ -292,7 +300,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"),
+              "X-CSRFToken": getCsrfToken(),
               "X-Requested-With": "XMLHttpRequest",
             },
             body: JSON.stringify({

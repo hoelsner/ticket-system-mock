@@ -1309,6 +1309,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(create_response, "data-markdown-editor")
         self.assertContains(create_response, reverse("draft-attachment-suggestions"))
         self.assertContains(create_response, reverse("draft-attachment-upload"))
+        self.assertContains(create_response, f'data-csrf-cookie-name="{settings.CSRF_COOKIE_NAME}"', html=False)
         self.assertContains(
             create_response, "Upload from the editor when a file should appear inside the issue description."
         )
@@ -1327,6 +1328,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(update_response, "app-form-layout--issue-compose")
         self.assertContains(update_response, reverse("issue-markdown-preview", args=[issue.pk]))
         self.assertContains(update_response, reverse("attachment-suggestions", args=[issue.pk]))
+        self.assertContains(update_response, f'data-csrf-cookie-name="{settings.CSRF_COOKIE_NAME}"', html=False)
         self.assertContains(update_response, "data-markdown-preview-details")
         self.assertNotContains(update_response, "data-markdown-preview-details open")
         self.assertContains(update_response, "Attachments")
@@ -1340,6 +1342,7 @@ class UserInterfaceTests(TestCase):
         self.assertContains(comment_response, issue.title)
         self.assertContains(comment_response, reverse("issue-markdown-preview", args=[issue.pk]))
         self.assertContains(comment_response, reverse("attachment-suggestions", args=[issue.pk]))
+        self.assertContains(comment_response, f'data-csrf-cookie-name="{settings.CSRF_COOKIE_NAME}"', html=False)
 
     def test_issue_create_view_prefills_queue_from_query_parameter(self):
         self.client.force_login(self.user)

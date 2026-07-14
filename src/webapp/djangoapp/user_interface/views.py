@@ -165,6 +165,7 @@ class AuthenticatedTemplateView(AppLoginRequiredMixin, TemplateView):
         context.setdefault("active_nav", "")
         context.setdefault("board_fullscreen_mode", False)
         context.setdefault("board_fullscreen_querystring", "?fullscreen=1")
+        context.setdefault("csrf_cookie_name", settings.CSRF_COOKIE_NAME)
         return context
 
 
@@ -176,6 +177,7 @@ class AuthenticatedFormView(AppLoginRequiredMixin, FormView):
         context.setdefault("active_nav", "")
         context.setdefault("board_fullscreen_mode", False)
         context.setdefault("board_fullscreen_querystring", "?fullscreen=1")
+        context.setdefault("csrf_cookie_name", settings.CSRF_COOKIE_NAME)
         return context
 
     def form_invalid(self, form):

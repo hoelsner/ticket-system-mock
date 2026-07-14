@@ -55,7 +55,7 @@
               {% url 'user-suggestions' as user_suggestions_url %}
               {% url 'issue-suggestions' as issue_suggestions_url %}
               {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
-              {% include "core/partials/markdown_editor.html" with field=description_form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" only %}
+              {% include "core/partials/markdown_editor.html" with field=description_form.description_markdown preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" csrf_cookie_name=csrf_cookie_name only %}
               <div class="form-actions-row">
                 <button type="submit">{% translate "Save description" %}</button>
               </div>
@@ -120,7 +120,7 @@
           {% url 'issue-suggestions' as issue_suggestions_url %}
           {% url 'attachment-suggestions' issue.pk as attachment_suggestions_url %}
           <section class="app-form-section app-form-section--full">
-            {% include "core/partials/markdown_editor.html" with field=comment_form.body preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" only %}
+            {% include "core/partials/markdown_editor.html" with field=comment_form.body preview_url=preview_url user_suggestions_url=user_suggestions_url issue_suggestions_url=issue_suggestions_url attachment_suggestions_url=attachment_suggestions_url attachment_upload_url="" attachment_hint="" preview_collapsible="" preview_open="" csrf_cookie_name=csrf_cookie_name only %}
           </section>
           <section class="app-form-section">
             <div class="app-form-fields app-form-fields--compact">
